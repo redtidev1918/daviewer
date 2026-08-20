@@ -55,6 +55,18 @@ jobs:
           java-version: "17"
       - name: Install dependencies
         run: flutter pub get
+      - name: Set up signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PROPERTIES: ${{ secrets.KEYSTORE_PROPERTIES }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PROPERTIES" ]; then
+            echo "$KEYSTORE_B64" | base64 --decode > android/app/upload-keystore.p12
+            echo "$KEYSTORE_PROPERTIES" > android/key.properties
+            echo "Release signing enabled."
+          else
+            echo "No signing secrets; falling back to debug signing."
+          fi
       - name: Build release APK
         run: flutter build apk --release
       - name: Rename APK with version
