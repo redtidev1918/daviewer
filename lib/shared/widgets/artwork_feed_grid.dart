@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/feed/artwork_feed_controller.dart';
+import 'app_empty_state.dart';
+import 'app_error_state.dart';
 import 'artwork_card.dart';
 
 final class ArtworkFeedGrid extends StatelessWidget {
@@ -21,27 +23,20 @@ final class ArtworkFeedGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (feed.error != null && feed.items.isEmpty) {
-      return ListView(
-        children: <Widget>[
-          SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.7,
-            child: Center(child: Text('${feed.error}')),
-          ),
-        ],
+      return AppErrorState(
+        message: '${feed.error}',
+        onRetry: onRefresh == null
+            ? null
+            : () {
+                onRefresh?.call();
+              },
       );
     }
     if (feed.items.isEmpty && feed.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (feed.items.isEmpty) {
-      return ListView(
-        children: <Widget>[
-          SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.7,
-            child: Center(child: Text(emptyMessage)),
-          ),
-        ],
-      );
+      return AppEmptyState(message: emptyMessage);
     }
 
     final grid = GridView.builder(

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/runtime/runtime_provider.dart';
+import '../../shared/widgets/app_empty_state.dart';
+import '../../shared/widgets/app_error_state.dart';
 import 'downloads_providers.dart';
 
 final class DownloadsScreen extends ConsumerWidget {
@@ -15,9 +17,12 @@ final class DownloadsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Downloads')),
       body: records.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(child: Text('$error')),
+        error: (error, stackTrace) => AppErrorState(
+          message: '$error',
+          onRetry: () => ref.invalidate(downloadsProvider),
+        ),
         data: (items) => items.isEmpty
-            ? const Center(child: Text('No downloads yet.'))
+            ? const AppEmptyState(message: 'No downloads yet.')
             : ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: items.length,
