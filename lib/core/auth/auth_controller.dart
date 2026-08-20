@@ -29,17 +29,31 @@ final class AuthController extends StateNotifier<AuthState> {
     final runtime = _runtime;
     if (runtime.isConfigured && runtime.oauth != null) {
       try {
+        // 1. Resume an interrupted OAuth transaction (e.g. cold-start callback
+        //    from the system browser). Returns null when there is nothing to
+        //    resume, which is the normal case on every regular restart.
         final restored = await runtime.oauth!.resumePending(
           waitForCallback: false,
         );
-        _log.info('auth', 'initialize: oauth restored=${restored != null}');
         if (restored != null) {
-          await runtime.oauth!.validTokens(forceRefresh: false);
+          _log.info('auth', 'initialize: resumed pending OAuth login');
           await _loadAccount(runtime);
           _initializing = false;
           return;
         }
-        _log.info('auth', 'no oauth session');
+
+        // 2. Restore a session persisted by a previous run. validTokens()
+        //    reads the secure token store and refreshes an expired token when
+        //    possible; it throws oauth.session.missing when nothing is stored.
+        final tokens = await runtime.oauth!.validTokens(forceRefresh: false);
+        _log.info(
+          'auth',
+          'initialize: restored persisted session '
+          '(expires ${tokens.expiresAt.toUtc().toIso8601String()})',
+        );
+        await _loadAccount(runtime);
+        _initializing = false;
+        return;
       } on DAKitException catch (error) {
         _log.warning('auth', 'initialize: no usable oauth session', error);
       } on Object catch (error, stack) {
