@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../shared/widgets/artwork_card.dart';
+import '../../shared/widgets/artwork_feed_grid.dart';
 import 'search_providers.dart';
 
 final class SearchScreen extends ConsumerStatefulWidget {
@@ -24,9 +23,8 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final results = _query.trim().isEmpty
-        ? null
-        : ref.watch(searchResultsProvider(_query.trim()));
+    final query = _query.trim();
+    final feed = query.isEmpty ? null : ref.watch(searchFeedProvider(query));
 
     return Scaffold(
       appBar: AppBar(
@@ -41,31 +39,15 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
           onSubmitted: (value) => setState(() => _query = value),
         ),
       ),
-      body: results == null
+      body: feed == null
           ? const Center(child: Text('Type to search.'))
-          : results.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) => Center(child: Text('$error')),
-              data: (artworks) => artworks.isEmpty
-                  ? const Center(child: Text('No results found.'))
-                  : GridView.builder(
-                      padding: const EdgeInsets.all(12),
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 260,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            childAspectRatio: 0.72,
-                          ),
-                      itemCount: artworks.length,
-                      itemBuilder: (context, index) {
-                        final artwork = artworks[index];
-                        return ArtworkCard(
-                          artwork: artwork,
-                          onTap: () => context.go('/artwork/${artwork.id}'),
-                        );
-                      },
-                    ),
+          : ArtworkFeedGrid(
+              feed: feed,
+              emptyMessage: 'No results found.',
+              onRefresh: () =>
+                  ref.read(searchFeedProvider(query).notifier).refresh(),
+              onLoadMore: () =>
+                  ref.read(searchFeedProvider(query).notifier).loadMore(),
             ),
     );
   }
