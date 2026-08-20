@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chewie/chewie.dart';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
@@ -55,6 +56,14 @@ final class _ArtworkDetailScreenState
     } finally {
       if (mounted) setState(() => _favBusy = false);
     }
+  }
+
+  Future<void> _copyLink(String url) async {
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('链接已复制')));
   }
 
   Future<void> _download(MediaAsset original) async {
@@ -116,6 +125,14 @@ final class _ArtworkDetailScreenState
       appBar: AppBar(
         title: Text(artwork.valueOrNull?.title ?? '作品详情'),
         actions: <Widget>[
+          IconButton(
+            tooltip: '分享',
+            onPressed: () {
+              final url = artwork.valueOrNull?.pageUri.toString();
+              if (url != null) _copyLink(url);
+            },
+            icon: const Icon(Icons.share_outlined),
+          ),
           IconButton(
             tooltip: _favourite ? '取消收藏' : '收藏',
             onPressed: _toggleFavourite,

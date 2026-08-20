@@ -42,10 +42,10 @@ final class ArtworkFeedGrid extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         physics: const AlwaysScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 260,
+          maxCrossAxisExtent: 240,
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
-          childAspectRatio: 0.72,
+          childAspectRatio: 0.68,
         ),
         itemCount: feed.items.length + (feed.isLoading ? 1 : 0),
         itemBuilder: (context, index) {

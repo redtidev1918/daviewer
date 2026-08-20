@@ -6,6 +6,7 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/auth/auth_state.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
+import '../../shared/widgets/settings_action.dart';
 import 'favourites_providers.dart';
 
 final class FavouritesScreen extends ConsumerWidget {
@@ -17,7 +18,10 @@ final class FavouritesScreen extends ConsumerWidget {
     final s = strings(ref.watch(appLanguageProvider));
     if (auth.status != AuthStatus.signedIn) {
       return Scaffold(
-        appBar: AppBar(title: Text(s.favourites)),
+        appBar: AppBar(
+          title: Text(s.favourites),
+          actions: const <Widget>[SettingsAction()],
+        ),
         body: Center(
           child: FilledButton(
             onPressed: () => context.push('/login'),
@@ -29,7 +33,10 @@ final class FavouritesScreen extends ConsumerWidget {
 
     final favourites = ref.watch(currentFavouritesProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(s.favourites)),
+      appBar: AppBar(
+        title: Text(s.favourites),
+        actions: const <Widget>[SettingsAction()],
+      ),
       body: ArtworkFeedGrid(
         feed: favourites,
         emptyMessage: s.noFavourites,
