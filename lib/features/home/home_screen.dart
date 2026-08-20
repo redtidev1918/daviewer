@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/auth_state.dart';
 import '../../core/runtime/runtime_provider.dart';
+import '../../shared/widgets/app_empty_state.dart';
+import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
 import '../../shared/widgets/artwork_card.dart';
 import 'home_providers.dart';
@@ -156,27 +158,13 @@ final class _ArtworkGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (error != null && items.isEmpty) {
-      return ListView(
-        children: <Widget>[
-          SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.7,
-            child: Center(child: Text('$error')),
-          ),
-        ],
-      );
+      return AppErrorState(message: '$error');
     }
     if (items.isEmpty && isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (items.isEmpty) {
-      return ListView(
-        children: <Widget>[
-          SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.7,
-            child: Center(child: Text(emptyMessage)),
-          ),
-        ],
-      );
+      return AppEmptyState(message: emptyMessage);
     }
 
     return GridView.builder(
