@@ -21,6 +21,11 @@ final class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('DA Viewer'),
         actions: <Widget>[
+          IconButton(
+            tooltip: 'Search',
+            onPressed: () => context.go('/search'),
+            icon: const Icon(Icons.search),
+          ),
           if (auth.status == AuthStatus.signedOut)
             IconButton(
               tooltip: 'Login',
@@ -28,11 +33,27 @@ final class HomeScreen extends ConsumerWidget {
               icon: const Icon(Icons.login),
             )
           else if (auth.status == AuthStatus.signedIn)
-            IconButton(
-              tooltip: 'Logout',
-              onPressed: () =>
-                  ref.read(authControllerProvider.notifier).logout(),
-              icon: const Icon(Icons.logout),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'favourites') {
+                  context.go('/favourites');
+                } else if (value == 'downloads') {
+                  context.go('/downloads');
+                } else if (value == 'logout') {
+                  ref.read(authControllerProvider.notifier).logout();
+                }
+              },
+              itemBuilder: (context) => const <PopupMenuEntry<String>>[
+                PopupMenuItem<String>(
+                  value: 'favourites',
+                  child: Text('Favourites'),
+                ),
+                PopupMenuItem<String>(
+                  value: 'downloads',
+                  child: Text('Downloads'),
+                ),
+                PopupMenuItem<String>(value: 'logout', child: Text('Logout')),
+              ],
             ),
         ],
       ),
