@@ -22,6 +22,5 @@ final currentFavouritesProvider =
         return OfficialGalleryRepository(transport)
             .favourites(account.username, request);
       });
-      ref.onDispose(controller.dispose);
       return controller;
     });
