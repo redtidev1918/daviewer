@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "io.github.redtidev1918" "\0"
-            VALUE "FileDescription", "dA Viewer" "\0"
+            VALUE "FileDescription", "DA Viewer" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "deviantart_client" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 io.github.redtidev1918. All rights reserved." "\0"
             VALUE "OriginalFilename", "deviantart_client.exe" "\0"
-            VALUE "ProductName", "dA Viewer" "\0"
+            VALUE "ProductName", "DA Viewer" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

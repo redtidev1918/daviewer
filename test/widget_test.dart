@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:da_viewer/main.dart';
+import 'package:daviewer/main.dart';
 
 void main() {
   testWidgets('shows client id hint when unconfigured', (WidgetTester tester) async {
