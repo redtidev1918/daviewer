@@ -2,28 +2,18 @@
 
 一个基于 [DAKit](https://github.com/redtidev1918/dakit) 的第三方 DeviantArt 客户端。
 
-当前版本是可运行的 Flutter 桌面/移动客户端骨架：支持登录、查看当前账户和首页作品列表。
+当前版本是可运行的 Flutter 桌面/移动客户端，支持登录、首页/搜索、作品详情、
+原图后台下载、作者画廊/收藏夹、当前账户收藏与下载记录。
 
 ## 与 DAKit 的关系
 
 `DA Viewer` 是应用，DAKit 是 SDK。客户端只依赖 DAKit，不复制 SDK 代码。
 
-本地开发时通过 `path` 依赖使用 DAKit：
+DAKit 已发布到 pub.dev，客户端直接使用版本化依赖：
 
 ```yaml
 dependencies:
-  dakit_core:
-    path: ../dakit/packages/dakit_core
-  dakit_api:
-    path: ../dakit/packages/dakit_api
-  dakit_flutter:
-    path: ../dakit/packages/dakit_flutter
-
-dependency_overrides:
-  dakit_core:
-    path: ../dakit/packages/dakit_core
-  dakit_api:
-    path: ../dakit/packages/dakit_api
+  dakit_flutter: ^0.1.0
 ```
 
 ## 使用前准备
@@ -76,7 +66,20 @@ git config --local http.proxy http://127.0.0.1:7890
 
 ```text
 lib/
-  main.dart            应用入口、登录与首页骨架
+  main.dart                    应用入口与 ProviderScope
+  app/                        AppShell、主题、路由
+  core/
+    runtime/                   DAKit 组合根
+    auth/                      登录态、会话恢复、登出
+  features/
+    auth/                      登录页
+    home/                      首页信息流
+    search/                    搜索
+    artwork/                   作品详情与后台下载
+    artist/                    作者资料、画廊、收藏夹
+    favourites/                当前账户收藏
+    downloads/                 下载记录
+  shared/widgets/              通用作品卡片
 android/
 macos/
 windows/

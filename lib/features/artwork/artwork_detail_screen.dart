@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/runtime/runtime_provider.dart';
 import 'artwork_detail_providers.dart';
@@ -103,7 +104,11 @@ final class _ArtworkDetailScreenState
                 artwork.title,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
-              Text('by ${artwork.author.username}'),
+              TextButton(
+                onPressed: () =>
+                    context.go('/artist/${artwork.author.username}'),
+                child: Text('by ${artwork.author.username}'),
+              ),
               const SizedBox(height: 16),
               Text('Original: ${original.availability.name}'),
               if (original.mimeType != null) Text('MIME: ${original.mimeType}'),
