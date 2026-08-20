@@ -2,8 +2,9 @@
 
 一个基于 [DAKit](https://github.com/redtidev1918/dakit) 的第三方 DeviantArt 客户端。
 
-当前版本是可运行的 Flutter 桌面/移动客户端，支持登录、首页/搜索、作品详情、
-原图后台下载、作者画廊/收藏夹、当前账户收藏与下载记录。
+当前版本是可运行的 Flutter 桌面/移动客户端，支持 OAuth 登录、首页/每日推荐/关注信息流、
+搜索（含历史记录）、作品详情（图片/视频/GIF 播放、富文本简介）、原图下载（含全尺寸预览回退）、
+收藏与关注用户、作者画廊/收藏夹、下载记录，以及中英双语切换。
 
 ## 与 DAKit 的关系
 
@@ -26,6 +27,10 @@ dependencies:
 dakit://oauth/callback
 ```
 
+> 登录需要以下 OAuth 权限（应用启动时自动申请）：`basic`、`browse`、
+> `collection`（收藏）、`user`（关注列表）、`user.manage`（关注/取消关注）、
+> `gallery`、`feed`。
+
 ## 运行
 
 ```shell
@@ -47,7 +52,10 @@ flutter run -d windows --dart-define=DAKIT_CLIENT_ID=你的_PUBLIC_CLIENT_ID
 
 ## 代理
 
-如果你需要代理访问 `pub.dev` 或 GitHub，记得 `flutter pub get` 走 Dart HTTP 客户端，不是 Git 代理：
+应用运行时会自动读取系统代理（macOS 通过 `scutil`，Windows 通过注册表）。若需手动指定，
+可在「设置 → 网络代理」中填写 `host:port`。
+
+`flutter pub get` 走 Dart HTTP 客户端，不走 Git 代理；如需代理访问 pub.dev：
 
 ```shell
 export http_proxy=http://127.0.0.1:7890
@@ -56,30 +64,46 @@ export no_proxy=localhost,127.0.0.1
 flutter pub get
 ```
 
-如果 DAKit 使用 Git 依赖，还需要：
+## 构建 Release
+
+推送到 `main` 会触发 CI 的质量检查与 Android/macOS 构建；打 `v*` 标签会自动创建
+GitHub Release 并上传构建产物。
+
+本地构建：
 
 ```shell
-git config --local http.proxy http://127.0.0.1:7890
+flutter build apk --release          # Android APK
+flutter build macos --release        # macOS 应用
 ```
 
 ## 项目结构
 
 ```text
 lib/
-  main.dart                    应用入口与 ProviderScope
+  main.dart                    应用入口、代理注入、ProviderScope
   app/                        AppShell、主题、路由
   core/
-    runtime/                   DAKit 组合根
     auth/                      登录态、会话恢复、登出
+    data/                      统一数据访问层（官方 API + 网页抓取回退）
+    diagnostics/               文件日志、全局错误捕获
+    feed/                      分页信息流控制器
+    l10n/                      中英文案与语言状态
+    network/                   代理检测、浏览器打开、动态代理 Dio
+    runtime/                   DAKit 组合根
+    search/                    搜索历史持久化
   features/
-    auth/                      登录页
-    home/                      首页信息流
+    login/                     登录页
+    home/                      首页 / 每日推荐 / 关注信息流
     search/                    搜索
-    artwork/                   作品详情与后台下载
-    artist/                    作者资料、画廊、收藏夹
+    artwork/                   作品详情、媒体播放、下载、收藏
+    artist/                    作者资料、画廊、收藏夹、关注
     favourites/                当前账户收藏
+    watching/                  关注用户列表
     downloads/                 下载记录
-  shared/widgets/              通用作品卡片
+    settings/                  设置、代理、语言、日志
+    diagnostics/               日志与诊断页
+    splash/                    启动页
+  shared/widgets/              通用作品卡片、空态/错误态
 android/
 macos/
 windows/
