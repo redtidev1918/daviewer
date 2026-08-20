@@ -1,4 +1,5 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../runtime/app_runtime.dart';
@@ -40,8 +41,10 @@ final class AuthController extends StateNotifier<AuthState> {
       await runtime.oauth!.validTokens(forceRefresh: false);
       await _loadAccount(runtime);
     } on DAKitException {
+      debugPrint('[auth] initialize: no usable session');
       state = const AuthState(status: AuthStatus.signedOut);
     } on Object {
+      debugPrint('[auth] initialize: unexpected error');
       state = const AuthState(status: AuthStatus.signedOut);
     } finally {
       _initializing = false;
@@ -61,8 +64,10 @@ final class AuthController extends StateNotifier<AuthState> {
       await runtime.oauth!.authorize();
       await _loadAccount(runtime);
     } on DAKitException catch (error) {
+      debugPrint('[auth] login failed: $error');
       state = AuthState(status: AuthStatus.signedOut, error: error);
     } catch (error) {
+      debugPrint('[auth] login failed: $error');
       state = AuthState(status: AuthStatus.signedOut, error: error);
     }
   }
