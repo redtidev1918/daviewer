@@ -21,6 +21,14 @@ final class HomeScreen extends ConsumerStatefulWidget {
 }
 
 final class _HomeScreenState extends ConsumerState<HomeScreen> {
+  void _refreshFeeds() {
+    // Explicit refresh so the feeds reload regardless of input device
+    // (pull-to-refresh is unreliable with a mouse/trackpad on desktop).
+    ref.read(homeFeedProvider.notifier).refresh();
+    ref.read(followingFeedProvider.notifier).refresh();
+    ref.invalidate(dailyDeviationsProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
@@ -33,8 +41,24 @@ final class _HomeScreenState extends ConsumerState<HomeScreen> {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(s.appTitle),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(s.appTitle),
+              if (auth.account != null)
+                Text(
+                  auth.account!.username,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
+          ),
           actions: <Widget>[
+            IconButton(
+              tooltip: s.refresh,
+              onPressed: _refreshFeeds,
+              icon: const Icon(Icons.refresh),
+            ),
             IconButton(
               tooltip: s.settings,
               onPressed: () => context.push('/settings'),
