@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/auth_state.dart';
 import '../../core/runtime/runtime_provider.dart';
+import '../../shared/widgets/artwork_feed_grid.dart';
 import '../../shared/widgets/artwork_card.dart';
 import 'home_providers.dart';
 
@@ -45,7 +46,7 @@ final class _HomeScreenState extends ConsumerState<HomeScreen> {
     final auth = ref.watch(authControllerProvider);
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('DA Viewer'),
@@ -89,12 +90,15 @@ final class _HomeScreenState extends ConsumerState<HomeScreen> {
             tabs: <Widget>[
               Tab(text: 'Home'),
               Tab(text: 'Daily'),
+              Tab(text: 'Following'),
             ],
           ),
         ),
         body: !runtime.isConfigured
             ? const Center(child: Text('Pass DAKIT_CLIENT_ID at build time.'))
-            : const TabBarView(children: <Widget>[_HomeFeed(), _DailyFeed()]),
+            : const TabBarView(
+                children: <Widget>[_HomeFeed(), _DailyFeed(), _FollowingFeed()],
+              ),
       ),
     );
   }
@@ -136,6 +140,30 @@ final class _DailyFeed extends ConsumerWidget {
         error: null,
         emptyMessage: 'No daily deviations found.',
       ),
+    );
+  }
+}
+
+final class _FollowingFeed extends ConsumerWidget {
+  const _FollowingFeed();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authControllerProvider);
+    if (auth.status != AuthStatus.signedIn) {
+      return Center(
+        child: FilledButton(
+          onPressed: () => context.go('/login'),
+          child: const Text('Login to view followed artists'),
+        ),
+      );
+    }
+    final feed = ref.watch(followingFeedProvider);
+    return ArtworkFeedGrid(
+      feed: feed,
+      emptyMessage: 'No watched artwork yet.',
+      onRefresh: () => ref.read(followingFeedProvider.notifier).refresh(),
+      onLoadMore: () => ref.read(followingFeedProvider.notifier).loadMore(),
     );
   }
 }
