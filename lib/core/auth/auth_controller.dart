@@ -34,7 +34,9 @@ final class AuthController extends StateNotifier<AuthState> {
       final restored = await runtime.oauth!.resumePending(
         waitForCallback: false,
       );
+      debugPrint('[auth] initialize: restored=${restored != null}');
       if (restored == null) {
+        debugPrint('[auth] initialize: no session, signed out');
         state = const AuthState(status: AuthStatus.signedOut);
         return;
       }
