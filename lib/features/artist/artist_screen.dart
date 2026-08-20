@@ -2,9 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dakit_core/dakit_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../shared/widgets/artwork_card.dart';
+import '../../shared/widgets/artwork_feed_grid.dart';
 import 'artist_providers.dart';
 
 final class ArtistScreen extends ConsumerWidget {
@@ -15,6 +14,8 @@ final class ArtistScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(artistProfileProvider(username));
+    final galleryFeed = ref.watch(artistGalleryProvider(username));
+    final favouritesFeed = ref.watch(artistFavouritesProvider(username));
 
     return DefaultTabController(
       length: 2,
@@ -37,8 +38,26 @@ final class ArtistScreen extends ConsumerWidget {
               Expanded(
                 child: TabBarView(
                   children: <Widget>[
-                    _ArtworkList(provider: artistGalleryProvider(username)),
-                    _ArtworkList(provider: artistFavouritesProvider(username)),
+                    ArtworkFeedGrid(
+                      feed: galleryFeed,
+                      emptyMessage: 'No artworks found.',
+                      onRefresh: () => ref
+                          .read(artistGalleryProvider(username).notifier)
+                          .refresh(),
+                      onLoadMore: () => ref
+                          .read(artistGalleryProvider(username).notifier)
+                          .loadMore(),
+                    ),
+                    ArtworkFeedGrid(
+                      feed: favouritesFeed,
+                      emptyMessage: 'No favourites found.',
+                      onRefresh: () => ref
+                          .read(artistFavouritesProvider(username).notifier)
+                          .refresh(),
+                      onLoadMore: () => ref
+                          .read(artistFavouritesProvider(username).notifier)
+                          .loadMore(),
+                    ),
                   ],
                 ),
               ),
@@ -89,40 +108,6 @@ final class _ArtistHeader extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-final class _ArtworkList extends ConsumerWidget {
-  const _ArtworkList({required this.provider});
-
-  final AutoDisposeFutureProvider<List<Artwork>> provider;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final artworks = ref.watch(provider);
-    return artworks.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => Center(child: Text('$error')),
-      data: (items) => items.isEmpty
-          ? const Center(child: Text('No artworks found.'))
-          : GridView.builder(
-              padding: const EdgeInsets.all(12),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 260,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.72,
-              ),
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final artwork = items[index];
-                return ArtworkCard(
-                  artwork: artwork,
-                  onTap: () => context.go('/artwork/${artwork.id}'),
-                );
-              },
-            ),
     );
   }
 }
