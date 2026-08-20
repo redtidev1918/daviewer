@@ -1,4 +1,4 @@
-package io.github.redtidev1918.deviantart_client
+package io.github.redtidev1918.daviewer
 
 import io.flutter.embedding.android.FlutterActivity
 
