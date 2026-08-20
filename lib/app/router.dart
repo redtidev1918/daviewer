@@ -6,6 +6,7 @@ import '../core/auth/auth_controller.dart';
 import '../core/auth/auth_state.dart';
 import '../features/artist/artist_screen.dart';
 import '../features/artwork/artwork_detail_screen.dart';
+import '../features/diagnostics/diagnostics_screen.dart';
 import '../features/downloads/downloads_screen.dart';
 import '../features/favourites/favourites_screen.dart';
 import '../features/home/home_screen.dart';
@@ -13,6 +14,7 @@ import '../features/login/login_screen.dart';
 import '../features/search/search_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/splash/splash_screen.dart';
+import '../features/watching/watching_screen.dart';
 import 'app_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -39,6 +41,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+        routes: <RouteBase>[
+          GoRoute(
+            path: 'proxy',
+            builder: (context, state) => const ProxySettingsScreen(),
+          ),
+          GoRoute(
+            path: 'diagnostics',
+            builder: (context, state) => const DiagnosticsScreen(),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/watching',
+        builder: (context, state) => const WatchingScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -84,7 +100,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       final status = auth.status;
       final location = state.matchedLocation;
       if (status == AuthStatus.unknown) return '/splash';
-      if (status == AuthStatus.signedIn && location == '/login') return '/';
+      // Once signed in, always leave the splash or login pages for home.
+      if (status == AuthStatus.signedIn &&
+          (location == '/login' || location == '/splash')) {
+        return '/';
+      }
       if (status != AuthStatus.signedIn && location != '/login') {
         return '/login';
       }

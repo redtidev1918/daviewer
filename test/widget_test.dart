@@ -17,6 +17,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Pass DAKIT_CLIENT_ID at build time.'), findsOneWidget);
+    // Without DAKIT_CLIENT_ID the login screen shows setup guidance.
+    expect(find.text('未配置 DAKIT_CLIENT_ID'), findsOneWidget);
   });
 }

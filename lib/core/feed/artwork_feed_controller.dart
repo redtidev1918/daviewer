@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dakit_core/dakit_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,24 +19,34 @@ final class ArtworkFeedState {
   bool get hasMore => nextCursor != null;
 }
 
+/// A paged artwork feed that loads its first page automatically when created
+/// (so screens never sit on a spinner), then supports pull-to-refresh and
+/// infinite scroll via [refresh] / [loadMore].
 final class ArtworkFeedController extends StateNotifier<ArtworkFeedState> {
-  ArtworkFeedController(this._fetch)
-    : super(const ArtworkFeedState(isLoading: true));
+  ArtworkFeedController(this._fetch, {bool autoLoad = true})
+    : super(const ArtworkFeedState(isLoading: true)) {
+    if (autoLoad) {
+      unawaited(refresh());
+    }
+  }
 
   final Future<Page<Artwork>> Function(PageRequest request) _fetch;
 
   Future<void> refresh() async {
+    if (!mounted) return;
     state = const ArtworkFeedState(isLoading: true);
     try {
       final page = await _fetch(const PageRequest(limit: 24));
+      if (!mounted) return;
       state = ArtworkFeedState(items: page.items, nextCursor: page.nextCursor);
     } catch (error) {
+      if (!mounted) return;
       state = ArtworkFeedState(error: error);
     }
   }
 
   Future<void> loadMore() async {
-    if (state.isLoading || !state.hasMore) return;
+    if (!mounted || state.isLoading || !state.hasMore) return;
     final cursor = state.nextCursor;
     state = ArtworkFeedState(
       items: state.items,
@@ -43,11 +55,13 @@ final class ArtworkFeedController extends StateNotifier<ArtworkFeedState> {
     );
     try {
       final page = await _fetch(PageRequest(cursor: cursor, limit: 24));
+      if (!mounted) return;
       state = ArtworkFeedState(
         items: <Artwork>[...state.items, ...page.items],
         nextCursor: page.nextCursor,
       );
     } catch (error) {
+      if (!mounted) return;
       state = ArtworkFeedState(
         items: state.items,
         nextCursor: cursor,

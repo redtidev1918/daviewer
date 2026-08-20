@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final class AppErrorState extends StatelessWidget {
+import '../../core/l10n/app_strings.dart';
+
+final class AppErrorState extends ConsumerWidget {
   const AppErrorState({required this.message, this.onRetry, super.key});
 
   final String message;
   final VoidCallback? onRetry;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = strings(ref.watch(appLanguageProvider));
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -25,7 +29,7 @@ final class AppErrorState extends StatelessWidget {
               const SizedBox(height: 16),
               FilledButton.tonal(
                 onPressed: onRetry,
-                child: const Text('Retry'),
+                child: Text(s.retry),
               ),
             ],
           ],

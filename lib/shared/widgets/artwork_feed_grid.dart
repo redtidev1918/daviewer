@@ -22,8 +22,10 @@ final class ArtworkFeedGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Widget body;
+
     if (feed.error != null && feed.items.isEmpty) {
-      return AppErrorState(
+      body = AppErrorState(
         message: '${feed.error}',
         onRetry: onRefresh == null
             ? null
@@ -31,38 +33,53 @@ final class ArtworkFeedGrid extends StatelessWidget {
                 onRefresh?.call();
               },
       );
-    }
-    if (feed.items.isEmpty && feed.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (feed.items.isEmpty) {
-      return AppEmptyState(message: emptyMessage);
+    } else if (feed.items.isEmpty && feed.isLoading) {
+      body = const Center(child: CircularProgressIndicator());
+    } else if (feed.items.isEmpty) {
+      body = AppEmptyState(message: emptyMessage);
+    } else {
+      body = GridView.builder(
+        padding: const EdgeInsets.all(12),
+        physics: const AlwaysScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 260,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 0.72,
+        ),
+        itemCount: feed.items.length + (feed.isLoading ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index >= feed.items.length) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final artwork = feed.items[index];
+          return ArtworkCard(
+            artwork: artwork,
+            onTap: () => context.push('/artwork/${artwork.id}'),
+          );
+        },
+      );
     }
 
-    final grid = GridView.builder(
-      padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 260,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 0.72,
-      ),
-      itemCount: feed.items.length + (feed.isLoading ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index >= feed.items.length) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final artwork = feed.items[index];
-        return ArtworkCard(
-          artwork: artwork,
-          onTap: () => context.push('/artwork/${artwork.id}'),
-        );
-      },
-    );
-
+    // Wrap in a refreshable scroll view so pull-to-refresh works even when
+    // the grid is empty or not yet filled.
     final refreshable = onRefresh == null
-        ? grid
-        : RefreshIndicator(onRefresh: onRefresh!, child: grid);
+        ? body
+        : RefreshIndicator(
+            onRefresh: onRefresh!,
+            child: body is GridView
+                ? body
+                : LayoutBuilder(
+                    builder: (context, constraints) => SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: constraints.maxHeight,
+                        width: constraints.maxWidth,
+                        child: body,
+                      ),
+                    ),
+                  ),
+          );
 
     if (onLoadMore == null) return refreshable;
 

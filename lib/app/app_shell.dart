@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-final class AppShell extends StatelessWidget {
+import '../core/l10n/app_strings.dart';
+
+final class AppShell extends ConsumerWidget {
   const AppShell({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = strings(ref.watch(appLanguageProvider));
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: NavigationBar(
@@ -16,22 +20,22 @@ final class AppShell extends StatelessWidget {
           index,
           initialLocation: index == navigationShell.currentIndex,
         ),
-        destinations: const <NavigationDestination>[
+        destinations: <NavigationDestination>[
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home),
+            label: s.home,
           ),
-          NavigationDestination(icon: Icon(Icons.search), label: 'Search'),
+          NavigationDestination(icon: const Icon(Icons.search), label: s.search),
           NavigationDestination(
-            icon: Icon(Icons.favorite_outline),
-            selectedIcon: Icon(Icons.favorite),
-            label: 'Favourites',
+            icon: const Icon(Icons.favorite_outline),
+            selectedIcon: const Icon(Icons.favorite),
+            label: s.favourites,
           ),
           NavigationDestination(
-            icon: Icon(Icons.download_outlined),
-            selectedIcon: Icon(Icons.download),
-            label: 'Downloads',
+            icon: const Icon(Icons.download_outlined),
+            selectedIcon: const Icon(Icons.download),
+            label: s.downloads,
           ),
         ],
       ),

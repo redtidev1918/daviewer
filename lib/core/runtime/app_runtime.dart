@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
+import '../diagnostics/app_logger.dart';
 import '../network/desktop_uri_launcher.dart';
 import '../network/dynamic_proxy_dio.dart';
 import '../network/proxy_controller.dart';
@@ -18,6 +18,7 @@ final class AppRuntime {
     required this.transport,
     required this.transfers,
     this.proxyController,
+    this.dio,
   });
 
   final String clientId;
@@ -25,6 +26,7 @@ final class AppRuntime {
   final OfficialApiClient? transport;
   final BackgroundTransferManager transfers;
   final ProxyController? proxyController;
+  final Dio? dio;
 
   void Function()? _proxyListener;
 
@@ -36,10 +38,12 @@ final class AppRuntime {
   }
 
   static Future<AppRuntime> create() async {
+    final logger = AppLogger.instance;
     final proxyController = ProxyController();
     await proxyController.start();
-    debugPrint(
-      'DAViewer proxy: ${proxyController.config?.host}:${proxyController.config?.port ?? '-'}',
+    logger.info(
+      'runtime',
+      'proxy: ${proxyController.config?.host}:${proxyController.config?.port ?? '-'}',
     );
     final dio = createDynamicProxyDio(
       () => proxyController.directive,
@@ -59,15 +63,18 @@ final class AppRuntime {
     Dio? dio,
     ProxyController? proxyController,
   }) {
+    final logger = AppLogger.instance;
     final clientId = _clientId;
-    final transfers = BackgroundTransferManager();
+    final transfers = BackgroundTransferManager(diagnostics: logger);
     if (clientId.trim().isEmpty) {
+      logger.warning('runtime', 'DAKIT_CLIENT_ID not set; app is unconfigured');
       return AppRuntime(
         clientId: clientId,
         oauth: null,
         transport: null,
         transfers: transfers,
         proxyController: proxyController,
+        dio: dio,
       );
     }
 
@@ -75,16 +82,27 @@ final class AppRuntime {
       config: OAuthConfig(
         clientId: clientId,
         redirectUri: Uri.parse('dakit://oauth/callback'),
+        scopes: const <String>{
+          OAuthScope.basic,
+          OAuthScope.browse,
+          OAuthScope.collection,
+          OAuthScope.user,
+          OAuthScope.userManage,
+          OAuthScope.gallery,
+          OAuthScope.feed,
+        },
       ),
       endpoint: dio == null ? null : DioOAuthEndpoint(dio: dio),
       networkProfile: dio == null ? networkProfile : null,
       launcher: const DesktopUriLauncher(),
+      diagnostics: logger,
     );
     final transport = OfficialApiClient(
       session: oauth.session,
       dio: dio,
       networkProfile: dio == null ? networkProfile : null,
       config: ApiConfig(userAgent: 'DAViewer/1.0'),
+      diagnostics: logger,
     );
     return AppRuntime(
       clientId: clientId,
@@ -92,6 +110,7 @@ final class AppRuntime {
       transport: transport,
       transfers: transfers,
       proxyController: proxyController,
+      dio: dio,
     );
   }
 
