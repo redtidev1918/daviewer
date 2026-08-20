@@ -28,3 +28,17 @@ final dailyDeviationsProvider = FutureProvider.autoDispose<List<Artwork>>((
   }
   return OfficialDiscoveryRepository(transport).dailyDeviations();
 });
+
+final followingFeedProvider =
+    StateNotifierProvider<ArtworkFeedController, ArtworkFeedState>((ref) {
+      final controller = ArtworkFeedController((request) {
+        final runtime = ref.read(runtimeProvider);
+        final transport = runtime.transport;
+        if (transport == null) {
+          throw Exception('Pass DAKIT_CLIENT_ID at build time.');
+        }
+        return OfficialDiscoveryRepository(transport).watched(request);
+      });
+      ref.onDispose(controller.dispose);
+      return controller;
+    });
