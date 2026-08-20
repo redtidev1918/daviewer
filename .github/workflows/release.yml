@@ -1,0 +1,96 @@
+name: Release
+
+# One-click release: bumps the version, commits it, and pushes a `v*` tag.
+# The existing tag-triggered CI (ci.yml) then builds the signed APK + macOS
+# app and publishes the GitHub release.
+#
+# Why a PAT: pushes made with the default GITHUB_TOKEN do NOT trigger other
+# workflows (anti-recursion), so the tag push would never start the build.
+# RELEASE_TOKEN must be a PAT with `contents: write` (classic "repo" scope).
+#
+# One-time setup:
+#   1. GitHub -> Settings -> Developer settings -> Personal access tokens
+#      -> Generate new token (classic) -> check "repo".
+#   2. Repo -> Settings -> Secrets and variables -> Actions -> New secret:
+#      name RELEASE_TOKEN, value = the PAT.
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+      version:
+        description: 'Optional explicit version (X.Y.Z) to override the bump'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Bump version and push tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+    steps:
+      - name: Check for RELEASE_TOKEN
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "::error::RELEASE_TOKEN secret is not set. Add a PAT with 'repo' scope and retry."
+            exit 1
+          fi
+
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Bump version
+        id: bump
+        run: |
+          set -euo pipefail
+          CURRENT="$(grep '^version:' pubspec.yaml | sed 's/version: *//')"
+          BASE="${CURRENT%%+*}"
+          BUILD="${CURRENT##*+}"
+          if [ -n "${{ inputs.version }}" ]; then
+            NEXT="${{ inputs.version }}"
+          else
+            MAJOR="$(echo "$BASE" | cut -d. -f1)"
+            MINOR="$(echo "$BASE" | cut -d. -f2)"
+            PATCH="$(echo "$BASE" | cut -d. -f3)"
+            case "${{ inputs.bump }}" in
+              major) MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0 ;;
+              minor) MINOR=$((MINOR+1)); PATCH=0 ;;
+              patch) PATCH=$((PATCH+1)) ;;
+            esac
+            NEXT="$MAJOR.$MINOR.$PATCH"
+          fi
+          NEXT_BUILD=$((BUILD+1))
+          echo "Bumping ${CURRENT} -> ${NEXT}+${NEXT_BUILD}"
+          sed -i "s/^version: .*/version: ${NEXT}+${NEXT_BUILD}/" pubspec.yaml
+          sed -i "s/versionLabel = '.*'/versionLabel = '${NEXT}'/" lib/features/settings/settings_screen.dart
+          echo "NEXT=${NEXT}" >> "$GITHUB_OUTPUT"
+
+      - name: Commit, tag, and push
+        run: |
+          set -euo pipefail
+          NEXT="${{ steps.bump.outputs.NEXT }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pubspec.yaml lib/features/settings/settings_screen.dart
+          git commit -m "chore: bump version to ${NEXT}"
+          git push origin HEAD:main
+          git tag "v${NEXT}"
+          git push origin "v${NEXT}"
+          echo "Pushed tag v${NEXT}; CI will build and publish the release."
