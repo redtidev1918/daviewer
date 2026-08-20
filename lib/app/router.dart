@@ -50,7 +50,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
     redirect: (context, state) {
       final auth = ref.read(authControllerProvider);
-      if (auth.status == AuthStatus.unknown) return '/splash';
+      final status = auth.status;
+      final location = state.matchedLocation;
+      if (status == AuthStatus.unknown) return '/splash';
+      if (status == AuthStatus.signedIn && location == '/login') return '/';
+      if (status != AuthStatus.signedIn && location != '/login') {
+        return '/login';
+      }
       return null;
     },
   );

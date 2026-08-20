@@ -24,26 +24,25 @@ final class AuthController extends StateNotifier<AuthState> {
 
     final runtime = _runtime;
     if (!runtime.isConfigured) {
-      state = const AuthState(
-        status: AuthStatus.signedOut,
-        error: 'Pass DAKIT_CLIENT_ID at build time.',
-      );
+      state = const AuthState(status: AuthStatus.signedOut);
       _initializing = false;
       return;
     }
 
     try {
-      await runtime.oauth!.resumePending(waitForCallback: false);
+      final restored = await runtime.oauth!.resumePending(
+        waitForCallback: false,
+      );
+      if (restored == null) {
+        state = const AuthState(status: AuthStatus.signedOut);
+        return;
+      }
       await runtime.oauth!.validTokens(forceRefresh: false);
       await _loadAccount(runtime);
-    } on DAKitException catch (error) {
-      if (error.code == 'oauth.session.missing') {
-        state = const AuthState(status: AuthStatus.signedOut);
-      } else {
-        state = AuthState(status: AuthStatus.signedOut, error: error);
-      }
-    } catch (error) {
-      state = AuthState(status: AuthStatus.signedOut, error: error);
+    } on DAKitException {
+      state = const AuthState(status: AuthStatus.signedOut);
+    } on Object {
+      state = const AuthState(status: AuthStatus.signedOut);
     } finally {
       _initializing = false;
     }
@@ -52,10 +51,7 @@ final class AuthController extends StateNotifier<AuthState> {
   Future<void> login() async {
     final runtime = _runtime;
     if (!runtime.isConfigured) {
-      state = const AuthState(
-        status: AuthStatus.signedOut,
-        error: 'Pass DAKIT_CLIENT_ID at build time.',
-      );
+      state = const AuthState(status: AuthStatus.signedOut);
       return;
     }
     if (state.status == AuthStatus.signedIn) return;
