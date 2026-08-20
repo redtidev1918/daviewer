@@ -4,11 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth_controller.dart';
 import '../core/auth/auth_state.dart';
+import 'app_shell.dart';
 import '../features/artist/artist_screen.dart';
 import '../features/artwork/artwork_detail_screen.dart';
 import '../features/downloads/downloads_screen.dart';
 import '../features/favourites/favourites_screen.dart';
-import '../features/home/home_screen.dart';
 import '../features/login/login_screen.dart';
 import '../features/search/search_screen.dart';
 import '../features/splash/splash_screen.dart';
@@ -24,7 +24,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
+      GoRoute(path: '/', builder: (context, state) => const AppShell()),
       GoRoute(
         path: '/artwork/:id',
         builder: (context, state) =>
