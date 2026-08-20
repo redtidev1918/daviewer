@@ -24,7 +24,6 @@ final artistGalleryProvider = StateNotifierProvider.autoDispose
         }
         return OfficialGalleryRepository(transport).gallery(username, request);
       });
-      ref.onDispose(controller.dispose);
       return controller;
     });
 
@@ -39,6 +38,5 @@ final artistFavouritesProvider = StateNotifierProvider.autoDispose
         return OfficialGalleryRepository(transport)
             .favourites(username, request);
       });
-      ref.onDispose(controller.dispose);
       return controller;
     });

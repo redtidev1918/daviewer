@@ -14,6 +14,5 @@ final searchFeedProvider = StateNotifierProvider.autoDispose
         }
         return OfficialArtworkRepository(transport).search(query, request);
       });
-      ref.onDispose(controller.dispose);
       return controller;
     });

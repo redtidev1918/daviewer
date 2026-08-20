@@ -14,7 +14,6 @@ final homeFeedProvider =
         }
         return OfficialArtworkRepository(transport).browse(request);
       });
-      ref.onDispose(controller.dispose);
       return controller;
     });
 
@@ -39,6 +38,5 @@ final followingFeedProvider =
         }
         return OfficialDiscoveryRepository(transport).watched(request);
       });
-      ref.onDispose(controller.dispose);
       return controller;
     });

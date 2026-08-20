@@ -33,8 +33,10 @@ final class ArtworkCard extends StatelessWidget {
                       width: double.infinity,
                       placeholder: (context, url) =>
                           const ColoredBox(color: Color(0xffe9ecef)),
-                      errorWidget: (context, url, error) =>
-                          const Icon(Icons.image),
+                      errorWidget: (context, url, error) {
+                        debugPrint('[image] failed $url: $error');
+                        return const Icon(Icons.image);
+                      },
                     ),
             ),
             Padding(
