@@ -1,21 +1,39 @@
-# DA Viewer
+# DAViewer
 
 一个基于 [DAKit](https://github.com/redtidev1918/dakit) 的第三方 DeviantArt 客户端。
+A third-party DeviantArt client built on [DAKit](https://github.com/redtidev1918/dakit).
 
-当前版本是可运行的 Flutter 桌面/移动客户端，支持 OAuth 登录、首页/每日推荐/关注信息流、
-搜索（含历史记录）、作品详情（图片/视频/GIF 播放、富文本简介）、原图下载（含全尺寸预览回退）、
-收藏与关注用户、作者画廊/收藏夹、下载记录，以及中英双语切换。
+## 功能特性 / Features
 
-## 与 DAKit 的关系
+- **登录**：OAuth 登录，内置公开 client id，普通用户开箱即用
+- **信息流**：首页 / 每日推荐 / 关注动态，下拉刷新 + 无限滚动
+- **搜索**：关键词搜索 + 历史记录
+- **作品详情**：图片 / 视频（可拖动进度条）/ GIF 播放，富文本简介（网页抓取）
+- **大图查看**：全屏、双击缩放、捏合缩放
+- **下载**：原图后台下载，受限时回退全尺寸预览；下载记录支持打开文件/文件夹
+- **社交**：收藏作品、关注/取消关注作者、关注用户列表
+- **作者**：资料、画廊、收藏夹
+- **双语**：中文 / English 切换
+- **代理**：自动检测系统代理 + 手动配置（国内访问必需）
 
-`DA Viewer` 是应用，DAKit 是 SDK。客户端只依赖 DAKit，不复制 SDK 代码。
+## 与 DAKit 的关系 / Relationship with DAKit
 
+`DAViewer` 是应用，DAKit 是 SDK。客户端只依赖 DAKit，不复制 SDK 代码。
 DAKit 已发布到 pub.dev，客户端直接使用版本化依赖：
 
 ```yaml
 dependencies:
   dakit_flutter: ^0.1.0
 ```
+
+## 安装 / Install
+
+从 [Releases](https://github.com/redtidev1918/daviewer/releases) 下载对应平台的安装包：
+
+- **Android**：`DAViewer-<版本>.apk`
+- **macOS**：`DAViewer-<版本>-macos.zip`（解压后拖入「应用程序」）
+
+> 注意：macOS 未签名，首次打开需右键「打开」或到「系统设置 → 隐私与安全性」允许。
 
 ## 使用前准备
 
@@ -36,26 +54,16 @@ flutter run -d macos --dart-define=DAKIT_CLIENT_ID=你的_PUBLIC_CLIENT_ID
 
 > 用自己的应用时，需在其白名单中精确加入 `dakit://oauth/callback`。
 
-## 运行
+## 运行 / Run
 
 ```shell
 flutter pub get
-flutter run -d macos
+flutter run -d macos     # macOS
+flutter run -d android   # Android
+flutter run -d windows   # Windows
 ```
 
-Android：
-
-```shell
-flutter run -d android
-```
-
-Windows：
-
-```powershell
-flutter run -d windows
-```
-
-## 代理
+## 代理 / Proxy
 
 应用运行时会自动读取系统代理（macOS 通过 `scutil`，Windows 通过注册表）。若需手动指定，
 可在「设置 → 网络代理」中填写 `host:port`。
@@ -69,10 +77,10 @@ export no_proxy=localhost,127.0.0.1
 flutter pub get
 ```
 
-## 构建 Release
+## 构建 Release / Release Build
 
 推送到 `main` 会触发 CI 的质量检查与 Android/macOS 构建；打 `v*` 标签会自动创建
-GitHub Release 并上传构建产物。
+GitHub Release 并上传构建产物（带版本号、自动生成 changelog、只保留最新 release）。
 
 本地构建：
 
@@ -81,7 +89,7 @@ flutter build apk --release          # Android APK
 flutter build macos --release        # macOS 应用
 ```
 
-## 项目结构
+## 项目结构 / Project Structure
 
 ```text
 lib/
@@ -105,7 +113,7 @@ lib/
     favourites/                当前账户收藏
     watching/                  关注用户列表
     downloads/                 下载记录
-    settings/                  设置、代理、语言、日志
+    settings/                  设置、代理、语言、日志、关于
     diagnostics/               日志与诊断页
     splash/                    启动页
   shared/widgets/              通用作品卡片、空态/错误态
@@ -115,8 +123,8 @@ windows/
 test/
 ```
 
-## 说明
+## 说明 / Notes
 
-- `DA Viewer` 是第三方客户端，与 DeviantArt 无隶属关系；
+- `DAViewer` 是第三方客户端，与 DeviantArt 无隶属关系；
 - 客户端不保存 `client_secret`；
 - 登录在系统浏览器完成，不内置 WebView 或账号密码表单。

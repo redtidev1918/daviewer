@@ -68,4 +68,9 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '作品描述' : 'Description';
   String get artworkText =>
       _lang == AppLanguage.zh ? '作品文字' : 'Artwork text';
+  String get about => _lang == AppLanguage.zh ? '关于' : 'About';
+  String get githubRepository =>
+      _lang == AppLanguage.zh ? 'GitHub 仓库' : 'GitHub repository';
+  String get openInBrowser =>
+      _lang == AppLanguage.zh ? '在浏览器中打开' : 'Open in browser';
 }

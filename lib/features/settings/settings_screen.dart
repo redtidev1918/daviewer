@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/auth_state.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/network/system_proxy.dart';
 import '../../core/runtime/runtime_provider.dart';
+
+const String _githubUrl = 'https://github.com/redtidev1918/daviewer';
+const String versionLabel = '0.2.1';
 
 final class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -82,6 +86,13 @@ final class SettingsScreen extends ConsumerWidget {
             onTap: () => context.push('/settings/diagnostics'),
           ),
           const Divider(),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: Text(s.about),
+            subtitle: const Text('DAViewer · $versionLabel'),
+            onTap: () => _showAbout(context, language),
+          ),
+          const Divider(),
           if (auth.status == AuthStatus.signedIn)
             ListTile(
               leading: const Icon(Icons.logout),
@@ -134,6 +145,53 @@ final class SettingsScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAbout(BuildContext context, AppLanguage language) {
+    final isZh = language == AppLanguage.zh;
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isZh ? '关于 DAViewer' : 'About DAViewer'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const Text('DAViewer v$versionLabel'),
+            const SizedBox(height: 8),
+            Text(
+              isZh
+                  ? '一个基于 DAKit 的第三方 DeviantArt 客户端。'
+                  : 'A third-party DeviantArt client built on DAKit.',
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.code),
+              title: Text(
+                isZh ? 'GitHub 仓库' : 'GitHub repository',
+              ),
+              subtitle: const Text(
+                'github.com/redtidev1918/daviewer',
+                style: TextStyle(fontSize: 12),
+              ),
+              onTap: () async {
+                await launchUrl(
+                  Uri.parse(_githubUrl),
+                  mode: LaunchMode.externalApplication,
+                );
+              },
+            ),
+          ],
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(isZh ? '关闭' : 'Close'),
+          ),
+        ],
       ),
     );
   }
