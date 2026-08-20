@@ -93,13 +93,24 @@ final class SettingsScreen extends ConsumerWidget {
             onTap: () => _showAbout(context, language),
           ),
           const Divider(),
-          if (auth.status == AuthStatus.signedIn)
+          if (auth.status == AuthStatus.signedIn) ...[
+            ListTile(
+              leading: const Icon(Icons.swap_horiz),
+              title: Text(s.switchAccount),
+              subtitle: Text(
+                language == AppLanguage.zh
+                    ? '退出当前会话并登录其他账号'
+                    : 'Sign out and authorize another account',
+              ),
+              onTap: () =>
+                  ref.read(authControllerProvider.notifier).switchAccount(),
+            ),
             ListTile(
               leading: const Icon(Icons.logout),
               title: Text(s.logout),
               onTap: () => ref.read(authControllerProvider.notifier).logout(),
-            )
-          else
+            ),
+          ] else
             ListTile(
               leading: const Icon(Icons.login),
               title: Text(s.login),

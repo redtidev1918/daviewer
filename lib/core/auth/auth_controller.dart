@@ -161,6 +161,18 @@ final class AuthController extends StateNotifier<AuthState> {
     state = const AuthState(status: AuthStatus.signedOut);
   }
 
+  /// Signs out of the current account and immediately starts a fresh OAuth
+  /// authorization, so the user can authenticate as a different account.
+  ///
+  /// This is a combined "switch account": it clears the current session and
+  /// re-runs the browser flow in one step instead of logout + login.
+  Future<void> switchAccount() async {
+    if (_loggingIn) return;
+    _log.info('auth', 'switch account: logout then re-authorize');
+    await logout();
+    await login();
+  }
+
   Future<void> _loadAccount(AppRuntime runtime) async {
     _log.info('auth', 'loading account');
     final account = await OfficialAccountRepository(runtime.transport!)
