@@ -41,6 +41,8 @@ final class AppStrings {
   String get downloads => _lang == AppLanguage.zh ? '下载' : 'Downloads';
   String get settings => _lang == AppLanguage.zh ? '设置' : 'Settings';
   String get logout => _lang == AppLanguage.zh ? '退出登录' : 'Logout';
+  String get switchAccount =>
+      _lang == AppLanguage.zh ? '切换账号' : 'Switch account';
   String get login => _lang == AppLanguage.zh ? '登录' : 'Login';
   String get notLoggedIn => _lang == AppLanguage.zh ? '未登录' : 'Not signed in';
   String get loginFirst => _lang == AppLanguage.zh ? '请先登录。' : 'Please sign in.';
