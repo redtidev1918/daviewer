@@ -106,7 +106,7 @@ final class _ArtworkDetailScreenState
               ),
               TextButton(
                 onPressed: () =>
-                    context.go('/artist/${artwork.author.username}'),
+                    context.push('/artist/${artwork.author.username}'),
                 child: Text('by ${artwork.author.username}'),
               ),
               const SizedBox(height: 16),
