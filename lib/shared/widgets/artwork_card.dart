@@ -10,12 +10,13 @@ final class ArtworkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = artwork.media.isNotEmpty
-        ? artwork.media.first.uri.toString()
-        : null;
-    if (imageUrl == null) {
-      debugPrint('[image] missing media for ${artwork.id}');
-    }
+    // Prefer a static image for the grid thumbnail; fall back to any media
+    // (video / animation) so every card shows something.
+    final media = artwork.media;
+    final image = media.where((m) => m.kind == MediaKind.image).firstOrNull;
+    final thumbnail = image ?? media.firstOrNull;
+    final hasVideo = media.any((m) => m.kind == MediaKind.video);
+    final hasAnimation = media.any((m) => m.kind == MediaKind.animation);
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -25,22 +26,59 @@ final class ArtworkCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Expanded(
-              child: imageUrl == null
-                  ? const ColoredBox(
-                      color: Color(0xffe9ecef),
-                      child: Icon(Icons.image),
-                    )
-                  : CachedNetworkImage(
-                      imageUrl: imageUrl,
+              child: Stack(
+                fit: StackFit.expand,
+                children: <Widget>[
+                  if (thumbnail?.uri case final uri?)
+                    CachedNetworkImage(
+                      imageUrl: uri.toString(),
                       fit: BoxFit.cover,
-                      width: double.infinity,
                       placeholder: (context, url) =>
                           const ColoredBox(color: Color(0xffe9ecef)),
-                      errorWidget: (context, url, error) {
-                        debugPrint('[image] failed $url: $error');
-                        return const Icon(Icons.image);
-                      },
+                      errorWidget: (context, url, error) =>
+                          const ColoredBox(
+                            color: Color(0xffe9ecef),
+                            child: Icon(Icons.image),
+                          ),
+                    )
+                  else
+                    const ColoredBox(
+                      color: Color(0xffe9ecef),
+                      child: Icon(Icons.image),
                     ),
+                  if (hasVideo)
+                    const Center(
+                      child: Icon(
+                        Icons.play_circle_fill,
+                        size: 40,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  if (hasAnimation)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'GIF',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(8),

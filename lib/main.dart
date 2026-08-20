@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
+import 'core/diagnostics/app_logger.dart';
 import 'core/runtime/app_runtime.dart';
 import 'core/runtime/runtime_provider.dart';
 
@@ -20,6 +21,10 @@ final class _AppHttpOverrides extends HttpOverrides {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final logger = await AppLogger.initialize();
+  installGlobalErrorHandlers(logger);
+  logger.info('app', 'DAViewer starting');
+
   final runtime = await AppRuntime.create();
   _globalProxyDirective = runtime.proxyController?.directive ?? 'DIRECT';
   runtime.proxyController?.addListener(() {
