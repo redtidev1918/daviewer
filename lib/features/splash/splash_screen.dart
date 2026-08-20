@@ -27,7 +27,7 @@ final class _SplashScreenState extends ConsumerState<SplashScreen> {
   Widget build(BuildContext context) {
     ref.listen(authControllerProvider, (_, auth) {
       if (auth.status != AuthStatus.unknown && mounted) {
-        context.go('/');
+        context.go(auth.status == AuthStatus.signedIn ? '/' : '/login');
       }
     });
     return const Scaffold(body: Center(child: CircularProgressIndicator()));
