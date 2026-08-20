@@ -15,7 +15,7 @@
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundleDisplayName</key>
-	<string>dA Viewer</string>
+	<string>DA Viewer</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

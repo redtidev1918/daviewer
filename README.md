@@ -1,4 +1,4 @@
-# dA Viewer
+# DA Viewer
 
 一个基于 [DAKit](https://github.com/redtidev1918/dakit) 的第三方 DeviantArt 客户端。
 
@@ -6,7 +6,7 @@
 
 ## 与 DAKit 的关系
 
-`dA Viewer` 是应用，DAKit 是 SDK。客户端只依赖 DAKit，不复制 SDK 代码。
+`DA Viewer` 是应用，DAKit 是 SDK。客户端只依赖 DAKit，不复制 SDK 代码。
 
 本地开发时通过 `path` 依赖使用 DAKit：
 
@@ -85,6 +85,6 @@ test/
 
 ## 说明
 
-- `dA Viewer` 是第三方客户端，与 DeviantArt 无隶属关系；
+- `DA Viewer` 是第三方客户端，与 DeviantArt 无隶属关系；
 - 客户端不保存 `client_secret`；
 - 登录在系统浏览器完成，不内置 WebView 或账号密码表单。
