@@ -19,35 +19,40 @@ dependencies:
 
 ## 使用前准备
 
-1. 有一个 DeviantArt 账号；
-2. 注册一个 Public OAuth 应用，并准备 `client_id`；
-3. 在该应用白名单中精确加入：
-
-```text
-dakit://oauth/callback
-```
+普通用户只需要一个 DeviantArt 账号，无需注册 OAuth 应用 —— 客户端内置了
+公开的 client id（Public OAuth client 没有 secret，client id 可以随应用分发）。
 
 > 登录需要以下 OAuth 权限（应用启动时自动申请）：`basic`、`browse`、
 > `collection`（收藏）、`user`（关注列表）、`user.manage`（关注/取消关注）、
 > `gallery`、`feed`。
 
+### 开发者：覆盖内置 client id
+
+如果想用自己的 OAuth 应用（例如开发调试），通过 `--dart-define` 覆盖：
+
+```shell
+flutter run -d macos --dart-define=DAKIT_CLIENT_ID=你的_PUBLIC_CLIENT_ID
+```
+
+> 用自己的应用时，需在其白名单中精确加入 `dakit://oauth/callback`。
+
 ## 运行
 
 ```shell
 flutter pub get
-flutter run -d macos --dart-define=DAKIT_CLIENT_ID=你的_PUBLIC_CLIENT_ID
+flutter run -d macos
 ```
 
 Android：
 
 ```shell
-flutter run -d android --dart-define=DAKIT_CLIENT_ID=你的_PUBLIC_CLIENT_ID
+flutter run -d android
 ```
 
 Windows：
 
 ```powershell
-flutter run -d windows --dart-define=DAKIT_CLIENT_ID=你的_PUBLIC_CLIENT_ID
+flutter run -d windows
 ```
 
 ## 代理

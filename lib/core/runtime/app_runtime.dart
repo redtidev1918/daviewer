@@ -9,7 +9,14 @@ import '../network/desktop_uri_launcher.dart';
 import '../network/dynamic_proxy_dio.dart';
 import '../network/proxy_controller.dart';
 
-const _clientId = String.fromEnvironment('DAKIT_CLIENT_ID');
+/// Public client id baked into the release build so ordinary users don't have
+/// to register their own DeviantArt app. A Public OAuth client has no secret,
+/// so the client id is safe to ship. Override with
+/// `--dart-define=DAKIT_CLIENT_ID=...` during development.
+const String _clientId = String.fromEnvironment(
+  'DAKIT_CLIENT_ID',
+  defaultValue: '75380',
+);
 
 final class AppRuntime {
   AppRuntime({
