@@ -13,6 +13,9 @@ final class ArtworkCard extends StatelessWidget {
     final imageUrl = artwork.media.isNotEmpty
         ? artwork.media.first.uri.toString()
         : null;
+    if (imageUrl == null) {
+      debugPrint('[image] missing media for ${artwork.id}');
+    }
 
     return Card(
       clipBehavior: Clip.antiAlias,

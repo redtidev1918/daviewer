@@ -5,6 +5,7 @@ import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../network/desktop_uri_launcher.dart';
 import '../network/dynamic_proxy_dio.dart';
 import '../network/proxy_controller.dart';
 
@@ -77,6 +78,7 @@ final class AppRuntime {
       ),
       endpoint: dio == null ? null : DioOAuthEndpoint(dio: dio),
       networkProfile: dio == null ? networkProfile : null,
+      launcher: const DesktopUriLauncher(),
     );
     final transport = OfficialApiClient(
       session: oauth.session,
