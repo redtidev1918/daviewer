@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dakit_flutter/dakit_flutter.dart';
 
 const _clientId = String.fromEnvironment('DAKIT_CLIENT_ID');
+const _proxyUrl = String.fromEnvironment('DAKIT_PROXY_URL');
 
 final class AppRuntime {
   AppRuntime({
@@ -53,9 +54,10 @@ final class AppRuntime {
   }
 
   static NetworkProfile _networkProfile() {
-    final rawProxy =
-        Platform.environment['https_proxy'] ??
-        Platform.environment['http_proxy'];
+    final rawProxy = _proxyUrl.trim().isNotEmpty
+        ? _proxyUrl
+        : Platform.environment['https_proxy'] ??
+              Platform.environment['http_proxy'];
     if (rawProxy == null || rawProxy.trim().isEmpty) {
       return NetworkProfile.environment();
     }
