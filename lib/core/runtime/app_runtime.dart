@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:dakit_flutter/dakit_flutter.dart';
 
+import '../network/system_proxy.dart';
+
 const _clientId = String.fromEnvironment('DAKIT_CLIENT_ID');
 const _proxyUrl = String.fromEnvironment('DAKIT_PROXY_URL');
 
@@ -20,10 +22,24 @@ final class AppRuntime {
 
   bool get isConfigured => clientId.trim().isNotEmpty;
 
-  factory AppRuntime.fromEnvironment() {
+  factory AppRuntime.fromEnvironment() => _build(_environmentNetworkProfile());
+
+  static Future<AppRuntime> create() async {
+    final systemProxy = await detectSystemProxy();
+    final networkProfile = systemProxy == null
+        ? _environmentNetworkProfile()
+        : NetworkProfile.httpProxy(
+            proxyServer: HttpProxyServer(
+              host: systemProxy.host,
+              port: systemProxy.port,
+            ),
+          );
+    return _build(networkProfile);
+  }
+
+  static AppRuntime _build(NetworkProfile networkProfile) {
     final clientId = _clientId;
     final transfers = BackgroundTransferManager();
-    final networkProfile = _networkProfile();
     if (clientId.trim().isEmpty) {
       return AppRuntime(
         clientId: clientId,
@@ -53,7 +69,7 @@ final class AppRuntime {
     );
   }
 
-  static NetworkProfile _networkProfile() {
+  static NetworkProfile _environmentNetworkProfile() {
     final rawProxy = _proxyUrl.trim().isNotEmpty
         ? _proxyUrl
         : Platform.environment['https_proxy'] ??

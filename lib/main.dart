@@ -5,9 +5,9 @@ import 'app/app.dart';
 import 'core/runtime/app_runtime.dart';
 import 'core/runtime/runtime_provider.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final runtime = AppRuntime.fromEnvironment();
+  final runtime = await AppRuntime.create();
   runApp(
     ProviderScope(
       overrides: <Override>[runtimeProvider.overrideWithValue(runtime)],
