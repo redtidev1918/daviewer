@@ -36,6 +36,7 @@ final class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _onScroll() {
+    if (!mounted) return;
     if (!_scrollController.hasClients) return;
     if (_scrollController.position.extentAfter < 400) {
       ref.read(homeFeedProvider.notifier).loadMore();
@@ -54,7 +55,7 @@ final class _HomeScreenState extends ConsumerState<HomeScreen> {
           actions: <Widget>[
             IconButton(
               tooltip: 'Settings',
-              onPressed: () => context.go('/settings'),
+              onPressed: () => context.push('/settings'),
               icon: const Icon(Icons.settings_outlined),
             ),
           ],
@@ -125,7 +126,7 @@ final class _FollowingFeed extends ConsumerWidget {
     if (auth.status != AuthStatus.signedIn) {
       return Center(
         child: FilledButton(
-          onPressed: () => context.go('/login'),
+          onPressed: () => context.push('/login'),
           child: const Text('Login to view followed artists'),
         ),
       );
@@ -184,7 +185,7 @@ final class _ArtworkGrid extends StatelessWidget {
         final artwork = items[index];
         return ArtworkCard(
           artwork: artwork,
-          onTap: () => context.go('/artwork/${artwork.id}'),
+          onTap: () => context.push('/artwork/${artwork.id}'),
         );
       },
     );

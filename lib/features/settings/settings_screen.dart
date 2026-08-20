@@ -48,7 +48,7 @@ final class SettingsScreen extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.login),
               title: const Text('Login with DeviantArt'),
-              onTap: () => context.go('/login'),
+              onTap: () => context.push('/login'),
             ),
         ],
       ),

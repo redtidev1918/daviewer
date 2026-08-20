@@ -18,7 +18,7 @@ final class FavouritesScreen extends ConsumerWidget {
         appBar: AppBar(title: const Text('Favourites')),
         body: Center(
           child: FilledButton(
-            onPressed: () => context.go('/login'),
+            onPressed: () => context.push('/login'),
             child: const Text('Login with DeviantArt'),
           ),
         ),

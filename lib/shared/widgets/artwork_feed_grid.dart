@@ -55,7 +55,7 @@ final class ArtworkFeedGrid extends StatelessWidget {
         final artwork = feed.items[index];
         return ArtworkCard(
           artwork: artwork,
-          onTap: () => context.go('/artwork/${artwork.id}'),
+          onTap: () => context.push('/artwork/${artwork.id}'),
         );
       },
     );
