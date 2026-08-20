@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 
+import 'artwork_detail_page.dart';
+
 const _clientId = String.fromEnvironment('DAKIT_CLIENT_ID');
 
 void main() {
@@ -152,6 +154,14 @@ final class _ClientHomeState extends State<ClientHome> {
                     itemBuilder: (context, index) {
                       final artwork = _artworks[index];
                       return ListTile(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (context) => ArtworkDetailPage(
+                              artworkId: artwork.id,
+                              transport: _transport!,
+                            ),
+                          ),
+                        ),
                         leading: artwork.media.isNotEmpty
                             ? Image.network(
                                 artwork.media.first.uri.toString(),
