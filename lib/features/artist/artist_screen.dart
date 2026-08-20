@@ -89,11 +89,15 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
         appBar: AppBar(
           title: Text(widget.username),
           actions: <Widget>[
-            IconButton(
-              tooltip: _watching ? '取消关注' : '关注',
-              onPressed: _watchBusy ? null : _toggleWatch,
-              icon: Icon(
-                _watching ? Icons.star : Icons.star_border,
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilledButton.tonalIcon(
+                onPressed: _watchBusy ? null : _toggleWatch,
+                icon: Icon(
+                  _watching ? Icons.check : Icons.person_add_alt_1,
+                  size: 18,
+                ),
+                label: Text(_watching ? '已关注' : '关注'),
               ),
             ),
           ],

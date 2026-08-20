@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/search/search_history_store.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
+import '../../shared/widgets/settings_action.dart';
 import 'search_providers.dart';
 
 final class SearchScreen extends ConsumerStatefulWidget {
@@ -43,6 +44,11 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (mounted) setState(() => _history = history);
   }
 
+  void _clear() {
+    _controller.clear();
+    setState(() => _query = '');
+  }
+
   @override
   Widget build(BuildContext context) {
     final query = _query.trim();
@@ -53,38 +59,33 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(isZh ? '搜索' : 'Search'),
+        actions: const <Widget>[SettingsAction()],
       ),
       body: Column(
         children: <Widget>[
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    autofocus: false,
-                    decoration: InputDecoration(
-                      hintText: isZh ? '搜索 DeviantArt' : 'Search DeviantArt',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            child: TextField(
+              controller: _controller,
+              autofocus: false,
+              decoration: InputDecoration(
+                hintText: isZh ? '搜索 DeviantArt' : 'Search DeviantArt',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: isZh ? '清空' : 'Clear',
+                        icon: const Icon(Icons.close),
+                        onPressed: _clear,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                    ),
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: _submit,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: () => _submit(_controller.text),
-                  child: Text(isZh ? '搜索' : 'Search'),
-                ),
-              ],
+              ),
+              textInputAction: TextInputAction.search,
+              onChanged: (value) {
+                if (value.trim().isEmpty && _query.isNotEmpty) {
+                  setState(() => _query = '');
+                }
+              },
+              onSubmitted: _submit,
             ),
           ),
           Expanded(
@@ -93,8 +94,9 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
                 : ArtworkFeedGrid(
                     feed: feed,
                     emptyMessage: s.noResults,
-                    onRefresh: () =>
-                        ref.read(searchFeedProvider(query).notifier).refresh(),
+                    onRefresh: () => ref
+                        .read(searchFeedProvider(query).notifier)
+                        .refresh(),
                     onLoadMore: () => ref
                         .read(searchFeedProvider(query).notifier)
                         .loadMore(),
@@ -140,24 +142,23 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              for (final item in _history)
-                ActionChip(
-                  label: Text(item),
-                  avatar: const Icon(Icons.history, size: 16),
-                  onPressed: () {
-                    _controller.text = item;
-                    _submit(item);
-                  },
-                ),
-            ],
+        for (final item in _history)
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: Text(item),
+            trailing: IconButton(
+              icon: const Icon(Icons.north_west, size: 18),
+              tooltip: isZh ? '搜索' : 'Search',
+              onPressed: () {
+                _controller.text = item;
+                _submit(item);
+              },
+            ),
+            onTap: () {
+              _controller.text = item;
+              _submit(item);
+            },
           ),
-        ),
       ],
     );
   }

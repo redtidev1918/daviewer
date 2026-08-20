@@ -9,6 +9,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
+import '../../shared/widgets/settings_action.dart';
 import 'downloads_providers.dart';
 
 final class DownloadsScreen extends ConsumerWidget {
@@ -16,63 +17,112 @@ final class DownloadsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final records = ref.watch(downloadsProvider);
+    final state = ref.watch(downloadsProvider);
     final s = strings(ref.watch(appLanguageProvider));
     return Scaffold(
-      appBar: AppBar(title: Text(s.downloads)),
-      body: records.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => AppErrorState(
-          message: '$error',
-          onRetry: () => ref.invalidate(downloadsProvider),
+      appBar: AppBar(
+        title: Text(s.downloads),
+        actions: const <Widget>[SettingsAction()],
+      ),
+      body: _buildBody(context, ref, state, s),
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    WidgetRef ref,
+    DownloadsState state,
+    AppStrings s,
+  ) {
+    if (state.error != null && state.items.isEmpty) {
+      return AppErrorState(
+        message: '${state.error}',
+        onRetry: () => ref.read(downloadsProvider.notifier).refresh(),
+      );
+    }
+    if (state.items.isEmpty && state.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (state.items.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: () => ref.read(downloadsProvider.notifier).refresh(),
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: SizedBox(
+              height: constraints.maxHeight,
+              width: constraints.maxWidth,
+              child: AppEmptyState(message: s.noDownloads),
+            ),
+          ),
         ),
-        data: (items) => items.isEmpty
-            ? AppEmptyState(message: s.noDownloads)
-            : ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: items.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final snapshot = items[index];
-                  return _DownloadTile(
-                    snapshot: snapshot,
-                    onChanged: () => ref.invalidate(downloadsProvider),
-                  );
-                },
-              ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: () => ref.read(downloadsProvider.notifier).refresh(),
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(12),
+        itemCount: state.items.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          final snapshot = state.items[index];
+          return _DownloadTile(snapshot: snapshot);
+        },
       ),
     );
   }
 }
 
 final class _DownloadTile extends ConsumerWidget {
-  const _DownloadTile({required this.snapshot, required this.onChanged});
+  const _DownloadTile({required this.snapshot});
 
   final TransferSnapshot snapshot;
-  final VoidCallback onChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final manager = ref.read(runtimeProvider).transfers;
     final language = ref.watch(appLanguageProvider);
     final s = strings(language);
+    final scheme = Theme.of(context).colorScheme;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              snapshot.filename ?? snapshot.id,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleSmall,
+            Row(
+              children: <Widget>[
+                Icon(
+                  _iconForState(snapshot.state),
+                  size: 20,
+                  color: _colorForState(snapshot.state, scheme),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    snapshot.filename ?? snapshot.id,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Text(
+                  _labelForState(snapshot.state, language),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: _colorForState(snapshot.state, scheme),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(snapshot.state.name),
-            const SizedBox(height: 4),
-            LinearProgressIndicator(value: snapshot.progress),
             const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: snapshot.progress,
+              borderRadius: BorderRadius.circular(4),
+            ),
             if (snapshot.localPath != null) ...[
               const SizedBox(height: 8),
               Text(
@@ -87,69 +137,88 @@ final class _DownloadTile extends ConsumerWidget {
                 children: <Widget>[
                   OutlinedButton.icon(
                     icon: const Icon(Icons.open_in_new, size: 18),
-                    label: Text(language == AppLanguage.zh ? '打开文件' : 'Open'),
+                    label: Text(language == AppLanguage.zh ? '打开' : 'Open'),
                     onPressed: () => _openFile(snapshot.localPath!),
                   ),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.folder_open, size: 18),
                     label: Text(
-                      language == AppLanguage.zh ? '打开文件夹' : 'Folder',
+                      language == AppLanguage.zh ? '文件夹' : 'Folder',
                     ),
                     onPressed: () => _openFolder(snapshot.localPath!),
                   ),
                 ],
               ),
             ],
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: <Widget>[
-                OutlinedButton(
-                  onPressed: snapshot.state == TransferState.running
-                      ? () async {
-                          await manager.pause(snapshot.id);
-                          onChanged();
-                        }
-                      : null,
-                  child: Text(s.pause),
-                ),
-                OutlinedButton(
-                  onPressed: snapshot.state == TransferState.paused
-                      ? () async {
-                          await manager.resume(snapshot.id);
-                          onChanged();
-                        }
-                      : null,
-                  child: Text(s.resume),
-                ),
-                OutlinedButton(
-                  onPressed: snapshot.isFinal
-                      ? null
-                      : () async {
-                          await manager.cancel(snapshot.id);
-                          onChanged();
-                        },
-                  child: Text(s.cancel),
-                ),
-              ],
-            ),
+            if (!snapshot.isFinal) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: <Widget>[
+                  OutlinedButton(
+                    onPressed: snapshot.state == TransferState.running
+                        ? () => manager.pause(snapshot.id)
+                        : null,
+                    child: Text(s.pause),
+                  ),
+                  OutlinedButton(
+                    onPressed: snapshot.state == TransferState.paused
+                        ? () => manager.resume(snapshot.id)
+                        : null,
+                    child: Text(s.resume),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => manager.cancel(snapshot.id),
+                    child: Text(s.cancel),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
+  static IconData _iconForState(TransferState state) => switch (state) {
+    TransferState.completed => Icons.check_circle,
+    TransferState.running => Icons.downloading,
+    TransferState.paused => Icons.pause_circle,
+    TransferState.failed => Icons.error,
+    TransferState.cancelled => Icons.cancel,
+    _ => Icons.schedule,
+  };
+
+  static Color _colorForState(TransferState state, ColorScheme scheme) =>
+      switch (state) {
+        TransferState.completed => Colors.green,
+        TransferState.failed => scheme.error,
+        TransferState.cancelled => scheme.outline,
+        TransferState.running => scheme.primary,
+        _ => scheme.outline,
+      };
+
+  static String _labelForState(TransferState state, AppLanguage language) {
+    final zh = language == AppLanguage.zh;
+    return switch (state) {
+      TransferState.completed => zh ? '已完成' : 'Done',
+      TransferState.running => zh ? '下载中' : 'Downloading',
+      TransferState.paused => zh ? '已暂停' : 'Paused',
+      TransferState.failed => zh ? '失败' : 'Failed',
+      TransferState.cancelled => zh ? '已取消' : 'Cancelled',
+      _ => zh ? '排队中' : 'Queued',
+    };
+  }
+
   static Future<void> _openFile(String path) async {
-    final uri = Uri.file(path);
-    if (!await launchUrl(uri)) {
+    if (!await launchUrl(Uri.file(path))) {
       throw Exception('Could not open $path');
     }
   }
 
   static Future<void> _openFolder(String filePath) async {
     final dir = File(filePath).parent.path;
-    final uri = Uri.directory(dir);
-    if (!await launchUrl(uri)) {
+    if (!await launchUrl(Uri.directory(dir))) {
       throw Exception('Could not open folder $dir');
     }
   }

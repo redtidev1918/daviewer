@@ -122,11 +122,36 @@ final class _FollowingFeed extends ConsumerWidget {
       );
     }
     final feed = ref.watch(followingFeedProvider);
-    return ArtworkFeedGrid(
-      feed: feed,
-      emptyMessage: s.noWatched,
-      onRefresh: () => ref.read(followingFeedProvider.notifier).refresh(),
-      onLoadMore: () => ref.read(followingFeedProvider.notifier).loadMore(),
+    return Column(
+      children: <Widget>[
+        // Entry to the followed-users list, kept adjacent to the followed
+        // artwork feed so it is discoverable without digging into Settings.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: TextButton.icon(
+              onPressed: () => context.push('/watching'),
+              icon: const Icon(Icons.people_outline, size: 18),
+              label: Text(
+                ref.watch(appLanguageProvider) == AppLanguage.zh
+                    ? '关注用户'
+                    : 'Watching',
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: ArtworkFeedGrid(
+            feed: feed,
+            emptyMessage: s.noWatched,
+            onRefresh: () =>
+                ref.read(followingFeedProvider.notifier).refresh(),
+            onLoadMore: () =>
+                ref.read(followingFeedProvider.notifier).loadMore(),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -182,10 +207,10 @@ final class _ArtworkGrid extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       physics: const AlwaysScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 260,
+        maxCrossAxisExtent: 240,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 0.72,
+        childAspectRatio: 0.68,
       ),
       itemCount: items.length + (isLoading ? 1 : 0),
       itemBuilder: (context, index) {

@@ -81,21 +81,43 @@ final class ArtworkCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
                     artwork.title,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      height: 1.25,
+                    ),
                   ),
-                  Text(
-                    artwork.author.username,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
+                  const SizedBox(height: 4),
+                  Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.person_outline,
+                        size: 14,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          artwork.author.username,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
