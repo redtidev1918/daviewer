@@ -20,29 +20,6 @@ final class HomeScreen extends ConsumerStatefulWidget {
 }
 
 final class _HomeScreenState extends ConsumerState<HomeScreen> {
-  final ScrollController _scrollController = ScrollController();
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (!mounted) return;
-    if (!_scrollController.hasClients) return;
-    if (_scrollController.position.extentAfter < 400) {
-      ref.read(homeFeedProvider.notifier).loadMore();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final runtime = ref.watch(runtimeProvider);
@@ -83,17 +60,11 @@ final class _HomeFeed extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(homeFeedProvider);
-    return RefreshIndicator(
+    return ArtworkFeedGrid(
+      feed: feed,
+      emptyMessage: 'No artworks found.',
       onRefresh: () => ref.read(homeFeedProvider.notifier).refresh(),
-      child: _ArtworkGrid(
-        scrollController: context
-            .findAncestorStateOfType<_HomeScreenState>()
-            ?._scrollController,
-        items: feed.items,
-        isLoading: feed.isLoading,
-        error: feed.error,
-        emptyMessage: 'No artworks found.',
-      ),
+      onLoadMore: () => ref.read(homeFeedProvider.notifier).loadMore(),
     );
   }
 }
@@ -147,15 +118,12 @@ final class _ArtworkGrid extends StatelessWidget {
     required this.isLoading,
     required this.error,
     required this.emptyMessage,
-    this.scrollController,
   });
 
   final List<Artwork> items;
   final bool isLoading;
   final Object? error;
   final String emptyMessage;
-  final ScrollController? scrollController;
-
   @override
   Widget build(BuildContext context) {
     if (error != null && items.isEmpty) {
@@ -169,7 +137,6 @@ final class _ArtworkGrid extends StatelessWidget {
     }
 
     return GridView.builder(
-      controller: scrollController,
       padding: const EdgeInsets.all(12),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 260,
