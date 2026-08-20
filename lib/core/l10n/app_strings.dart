@@ -51,6 +51,7 @@ final class AppStrings {
   String get noDownloads => _lang == AppLanguage.zh ? '暂无下载' : 'No downloads.';
   String get noResults => _lang == AppLanguage.zh ? '无搜索结果' : 'No results found.';
   String get retry => _lang == AppLanguage.zh ? '重试' : 'Retry';
+  String get refresh => _lang == AppLanguage.zh ? '刷新' : 'Refresh';
   String get pause => _lang == AppLanguage.zh ? '暂停' : 'Pause';
   String get resume => _lang == AppLanguage.zh ? '继续' : 'Resume';
   String get cancel => _lang == AppLanguage.zh ? '取消' : 'Cancel';
