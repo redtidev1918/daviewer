@@ -23,56 +23,34 @@ final class LoginScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              if (!runtime.isConfigured) ...[
-                const Icon(Icons.vpn_key_off, size: 48),
-                const SizedBox(height: 16),
-                const Text(
-                  '未配置 DAKIT_CLIENT_ID',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '请在 DeviantArt 注册一个 Public OAuth 应用，\n'
-                  '并用下面的命令启动：',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const SelectableText(
-                    'flutter run -d macos \\\n'
-                    '  --dart-define=DAKIT_CLIENT_ID=你的client_id',
-                    style: TextStyle(fontFamily: 'monospace', fontSize: 13),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'OAuth 回调白名单需精确包含：\ndakit://oauth/callback',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12),
-                ),
-                const SizedBox(height: 24),
-              ] else ...[
-                FilledButton.icon(
-                  onPressed: auth.status == AuthStatus.signedIn
-                      ? null
-                      : () =>
-                            ref.read(authControllerProvider.notifier).login(),
-                  icon: const Icon(Icons.login),
-                  label: const Text('使用 DeviantArt 账号登录'),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '将打开浏览器完成授权，登录后返回应用。',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12),
-                ),
-              ],
+              const Icon(Icons.login, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                '登录 DeviantArt',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '使用你的 DeviantArt 账号登录，'
+                '浏览作品、收藏、关注作者并下载原图。',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: auth.status == AuthStatus.signedIn || !runtime.isConfigured
+                    ? null
+                    : () => ref.read(authControllerProvider.notifier).login(),
+                icon: const Icon(Icons.login),
+                label: const Text('使用 DeviantArt 账号登录'),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '将打开系统浏览器完成授权，登录后自动返回应用。',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12),
+              ),
               if (error != null) ...[
                 const SizedBox(height: 16),
                 SelectableText(

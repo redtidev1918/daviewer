@@ -1,23 +1,14 @@
-import 'package:daviewer/app/app.dart';
 import 'package:daviewer/core/runtime/app_runtime.dart';
-import 'package:daviewer/core/runtime/runtime_provider.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('shows client id hint when unconfigured', (tester) async {
+  test('release build ships a built-in public client id', () {
     final runtime = AppRuntime.fromEnvironment();
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: <Override>[runtimeProvider.overrideWithValue(runtime)],
-        child: const DAViewerApp(),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-
-    // Without DAKIT_CLIENT_ID the login screen shows setup guidance.
-    expect(find.text('未配置 DAKIT_CLIENT_ID'), findsOneWidget);
+    // Ordinary users must not have to register their own OAuth app: the
+    // release build has a public client id baked in.
+    expect(runtime.isConfigured, isTrue);
+    expect(runtime.clientId, isNotEmpty);
+    expect(runtime.oauth, isNotNull);
+    expect(runtime.transport, isNotNull);
   });
 }
