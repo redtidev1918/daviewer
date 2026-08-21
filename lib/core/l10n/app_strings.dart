@@ -32,7 +32,7 @@ final class AppStrings {
   static const AppStrings en = AppStrings._(AppLanguage.en);
 
   String get appTitle => _lang == AppLanguage.zh ? 'DA 查看器' : 'DA Viewer';
-  String get home => _lang == AppLanguage.zh ? '首页' : 'Home';
+  String get home => _lang == AppLanguage.zh ? '推荐' : 'For you';
   String get daily => _lang == AppLanguage.zh ? '每日推荐' : 'Daily';
   String get following => _lang == AppLanguage.zh ? '关注' : 'Following';
   String get search => _lang == AppLanguage.zh ? '搜索' : 'Search';

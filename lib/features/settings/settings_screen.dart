@@ -43,27 +43,6 @@ final class SettingsScreen extends ConsumerWidget {
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.favorite_outline),
-            title: Text(s.favourites),
-            onTap: () => context.go('/favourites'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.star_outline),
-            title: Text(language == AppLanguage.zh ? '关注用户' : 'Watching'),
-            onTap: () => context.push('/watching'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.download_outlined),
-            title: Text(s.downloads),
-            onTap: () => context.go('/downloads'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.notifications_outlined),
-            title: Text(s.notifications),
-            onTap: () => context.push('/notifications'),
-          ),
-          const Divider(),
-          ListTile(
             leading: const Icon(Icons.translate),
             title: Text(s.language),
             subtitle: Text(
@@ -113,7 +92,7 @@ final class SettingsScreen extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.login),
               title: Text(s.login),
-              onTap: () => context.push('/login'),
+              onTap: () => context.push('/web-login'),
             ),
         ],
       ),

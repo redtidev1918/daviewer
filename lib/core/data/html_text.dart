@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// Converts a provider-authored HTML fragment to readable plain text.
 ///
 /// DeviantArt descriptions arrive as HTML (`descriptionText.html.markup`, or
@@ -30,4 +32,44 @@ String htmlToPlainText(String html) {
   text = text.replaceAll(RegExp(r' *\n *'), '\n');
   text = text.replaceAll(RegExp(r'\n{3,}'), '\n\n');
   return text.trim();
+}
+
+/// Extracts readable plain text from a tiptap document JSON string (the
+/// `deviation/content` `original_markup` field), which DeviantArt uses for
+/// descriptions when the rendered `html` field is empty.
+String tiptapToPlainText(String json) {
+  try {
+    final decoded = jsonDecode(json);
+    final buffer = StringBuffer();
+    _walkTiptap(decoded, buffer);
+    return buffer.toString().replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+  } on Object {
+    return '';
+  }
+}
+
+void _walkTiptap(Object? node, StringBuffer buffer) {
+  if (node is Map) {
+    final type = node['type'];
+    final text = node['text'];
+    if (type == 'text' && text is String) {
+      buffer.write(text);
+    }
+    final content = node['content'];
+    if (content is List) {
+      for (final child in content) {
+        _walkTiptap(child, buffer);
+      }
+    }
+    if (type == 'paragraph' ||
+        type == 'heading' ||
+        type == 'listItem' ||
+        type == 'blockquote') {
+      buffer.write('\n');
+    }
+  } else if (node is List) {
+    for (final child in node) {
+      _walkTiptap(child, buffer);
+    }
+  }
 }
