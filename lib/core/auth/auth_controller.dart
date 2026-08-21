@@ -1,5 +1,6 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../diagnostics/app_logger.dart';
@@ -157,6 +158,13 @@ final class AuthController extends StateNotifier<AuthState> {
       } on Object catch (error, stack) {
         _log.warning('auth', 'logout: revocation failed', error, stack);
       }
+    }
+    // Clear the embedded web session too so the two sign-in states (OAuth and
+    // the DeviantArt web home) stay in sync instead of confusing the user.
+    try {
+      await CookieManager.instance().deleteAllCookies();
+    } on Object catch (error, stack) {
+      _log.warning('auth', 'logout: web session clear failed', error, stack);
     }
     state = const AuthState(status: AuthStatus.signedOut);
   }

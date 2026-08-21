@@ -1,0 +1,66 @@
+import 'package:dio/dio.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+
+/// The web session credentials the native `rfy/deviations` feed needs.
+final class WebSessionInfo {
+  const WebSessionInfo({
+    required this.cookieHeader,
+    required this.csrfToken,
+    required this.isLoggedIn,
+  });
+
+  final String cookieHeader;
+  final String csrfToken;
+  final bool isLoggedIn;
+}
+
+/// Reads the DeviantArt web session established by the in-app WebView so the
+/// native home feed can call the private `rfy/deviations` endpoint.
+///
+/// The WebView only owns the session; after the user signs in there, the
+/// cookies live in the platform cookie store and the CSRF token is embedded in
+/// a freshly fetched page, so this class works even when no WebView is mounted.
+final class WebSession {
+  const WebSession(this._dio);
+
+  final Dio _dio;
+
+  static final Uri _home = Uri.parse('https://www.deviantart.com/');
+
+  Future<WebSessionInfo> read() async {
+    final cookies = await CookieManager.instance().getCookies(
+      url: WebUri(_home.toString()),
+    );
+    final cookieHeader = cookies
+        .map((cookie) => '${cookie.name}=${cookie.value}')
+        .join('; ');
+
+    final response = await _dio.get<String>(
+      _home.toString(),
+      options: Options(
+        responseType: ResponseType.plain,
+        headers: <String, dynamic>{
+          if (cookieHeader.isNotEmpty) 'Cookie': cookieHeader,
+          'User-Agent': _userAgent,
+        },
+      ),
+    );
+    final html = response.data ?? '';
+    final csrf = RegExp("__CSRF_TOKEN__ = '([^']+)'").firstMatch(html)?.group(1) ?? '';
+    final isLoggedIn =
+        RegExp('"@@publicSession":\\{"isLoggedIn":(true|false)')
+                .firstMatch(html)
+                ?.group(1) ==
+            'true';
+
+    return WebSessionInfo(
+      cookieHeader: cookieHeader,
+      csrfToken: csrf,
+      isLoggedIn: isLoggedIn,
+    );
+  }
+
+  static const String _userAgent =
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+      'AppleWebKit/537.36 Chrome/126.0 Safari/537.36';
+}

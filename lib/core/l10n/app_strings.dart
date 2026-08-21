@@ -41,8 +41,11 @@ final class AppStrings {
   String get downloads => _lang == AppLanguage.zh ? '下载' : 'Downloads';
   String get settings => _lang == AppLanguage.zh ? '设置' : 'Settings';
   String get logout => _lang == AppLanguage.zh ? '退出登录' : 'Logout';
+  String get signedOut => _lang == AppLanguage.zh ? '已登出' : 'Signed out';
   String get switchAccount =>
       _lang == AppLanguage.zh ? '切换账号' : 'Switch account';
+  String get switchingAccount =>
+      _lang == AppLanguage.zh ? '正在切换账号…' : 'Switching account…';
   String get login => _lang == AppLanguage.zh ? '登录' : 'Login';
   String get webLogin => _lang == AppLanguage.zh ? '登录网页版' : 'Web login';
   String get notLoggedIn => _lang == AppLanguage.zh ? '未登录' : 'Not signed in';
@@ -64,6 +67,7 @@ final class AppStrings {
   String get retry => _lang == AppLanguage.zh ? '重试' : 'Retry';
   String get refresh => _lang == AppLanguage.zh ? '刷新' : 'Refresh';
   String get back => _lang == AppLanguage.zh ? '返回' : 'Back';
+  String get done => _lang == AppLanguage.zh ? '完成' : 'Done';
   String get pause => _lang == AppLanguage.zh ? '暂停' : 'Pause';
   String get resume => _lang == AppLanguage.zh ? '继续' : 'Resume';
   String get cancel => _lang == AppLanguage.zh ? '取消' : 'Cancel';
