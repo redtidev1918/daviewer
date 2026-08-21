@@ -105,7 +105,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           (location == '/login' || location == '/splash')) {
         return '/';
       }
-      if (status != AuthStatus.signedIn && location != '/login') {
+      // The home tab is an embedded web page and works without an OAuth
+      // session; keep it public like the DeviantArt website.
+      if (status == AuthStatus.signedOut && location == '/splash') {
+        return '/';
+      }
+      if (status != AuthStatus.signedIn &&
+          location != '/login' &&
+          location != '/') {
         return '/login';
       }
       return null;
