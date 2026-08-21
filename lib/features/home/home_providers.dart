@@ -25,6 +25,9 @@ final rfyFeedProvider =
       final fetcher = RfyFeedFetcher(runtime.dio!);
       final controller = ArtworkFeedController((request) async {
         final session = await webSession.read();
+        if (!session.isLoggedIn) {
+          throw const WebLoginRequired();
+        }
         final page = await fetcher.fetch(
           cookieHeader: session.cookieHeader,
           csrfToken: session.csrfToken,
