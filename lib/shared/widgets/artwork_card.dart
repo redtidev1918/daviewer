@@ -83,7 +83,7 @@ final class ArtworkCard extends StatelessWidget {
                       right: 6,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
+                          horizontal: 5,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
@@ -100,10 +100,10 @@ final class ArtworkCard extends StatelessWidget {
                             ),
                             SizedBox(width: 2),
                             Text(
-                              '多图',
+                              'MULTI',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 10,
+                                fontSize: 9,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

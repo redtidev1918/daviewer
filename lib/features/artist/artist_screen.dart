@@ -99,7 +99,11 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                   _watching ? Icons.check : Icons.person_add_alt_1,
                   size: 18,
                 ),
-                label: Text(_watching ? '已关注' : '关注'),
+                label: Text(
+                  _watching
+                      ? (isZh ? '已关注' : 'Following')
+                      : (isZh ? '关注' : 'Watch'),
+                ),
               ),
             ),
           ],
@@ -210,12 +214,13 @@ final class _JournalsView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final journals = ref.watch(artistJournalsProvider(username));
+    final isZh = ref.watch(appLanguageProvider) == AppLanguage.zh;
     return journals.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('$error')),
       data: (items) {
         if (items.isEmpty) {
-          return const Center(child: Text('暂无文章'));
+          return Center(child: Text(isZh ? '暂无文章' : 'No journals'));
         }
         return ListView.separated(
           padding: const EdgeInsets.all(8),
@@ -255,12 +260,13 @@ final class _FoldersView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final folders = ref.watch(artistFoldersProvider(username));
+    final isZh = ref.watch(appLanguageProvider) == AppLanguage.zh;
     return folders.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('$error')),
       data: (items) {
         if (items.isEmpty) {
-          return const Center(child: Text('暂无画集'));
+          return Center(child: Text(isZh ? '暂无画集' : 'No folders'));
         }
         return GridView.builder(
           padding: const EdgeInsets.all(12),
@@ -315,11 +321,30 @@ final class _FoldersView extends ConsumerWidget {
                     ),
                     Padding(
                       padding: const EdgeInsets.all(8),
-                      child: Text(
-                        folder.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            folder.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            folder.size == null || folder.size == 0
+                                ? (isZh ? '空画集' : 'Empty')
+                                : (isZh
+                                    ? '${folder.size} 作品'
+                                    : '${folder.size} artworks'),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
