@@ -31,9 +31,8 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
   Future<void> _loadWatchState() async {
     try {
       final runtime = ref.read(runtimeProvider);
-      final watching = await OfficialUserRepository(
-        runtime.transport!,
-      ).isWatching(widget.username);
+      final watching = await OfficialUserRepository(runtime.transport!)
+          .isWatching(widget.username);
       if (mounted) {
         setState(() {
           _watching = watching;
@@ -59,16 +58,15 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
     } on Object catch (error) {
       if (mounted) {
         final message = '$error';
-        final isForbidden = message.contains('403') ||
+        final isForbidden =
+            message.contains('403') ||
             message.contains('authorization') ||
             message.contains('Forbidden');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               isForbidden
-                  ? strings(
-                      ref.read(appLanguageProvider),
-                    ).permissionDeniedWatch
+                  ? strings(ref.read(appLanguageProvider)).permissionDeniedWatch
                   : message,
             ),
           ),
@@ -85,7 +83,6 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
     final galleryFeed = ref.watch(artistGalleryProvider(widget.username));
     final favouritesFeed = ref.watch(artistFavouritesProvider(widget.username));
     final s = strings(ref.watch(appLanguageProvider));
-    final isZh = ref.watch(appLanguageProvider) == AppLanguage.zh;
 
     return DefaultTabController(
       length: 4,
@@ -101,11 +98,7 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                   _watching ? Icons.check : Icons.person_add_alt_1,
                   size: 18,
                 ),
-                label: Text(
-                  _watching
-                      ? (isZh ? '已关注' : 'Following')
-                      : (isZh ? '关注' : 'Watch'),
-                ),
+                label: Text(_watching ? s.watchStateOn : s.watchStateOff),
               ),
             ),
           ],
@@ -114,8 +107,8 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
             tabs: <Widget>[
               Tab(text: s.gallery),
               Tab(text: s.favourites),
-              Tab(text: isZh ? '文章' : 'Journal'),
-              Tab(text: isZh ? '画集' : 'Folders'),
+              Tab(text: s.journal),
+              Tab(text: s.folders),
             ],
           ),
         ),
@@ -216,13 +209,13 @@ final class _JournalsView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final journals = ref.watch(artistJournalsProvider(username));
-    final isZh = ref.watch(appLanguageProvider) == AppLanguage.zh;
+    final s = strings(ref.watch(appLanguageProvider));
     return journals.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('$error')),
       data: (items) {
         if (items.isEmpty) {
-          return Center(child: Text(isZh ? '暂无文章' : 'No journals'));
+          return Center(child: Text(s.noJournals));
         }
         return ListView.separated(
           padding: const EdgeInsets.all(8),
@@ -262,13 +255,13 @@ final class _FoldersView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final folders = ref.watch(artistFoldersProvider(username));
-    final isZh = ref.watch(appLanguageProvider) == AppLanguage.zh;
+    final s = strings(ref.watch(appLanguageProvider));
     return folders.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('$error')),
       data: (items) {
         if (items.isEmpty) {
-          return Center(child: Text(isZh ? '暂无画集' : 'No folders'));
+          return Center(child: Text(s.noFolders));
         }
         return GridView.builder(
           padding: const EdgeInsets.all(12),
@@ -284,15 +277,15 @@ final class _FoldersView extends ConsumerWidget {
             // Pick the smallest image (the thumbnail) — `media.first` is the
             // full-size `content` and would make the grid painfully slow.
             final thumbUri = folder.thumbnail?.media
-                    .where((m) => m.kind == MediaKind.image)
-                    .fold<MediaAsset?>(
-                      null,
-                      (best, m) =>
-                          best == null || (m.width ?? 0) < (best.width ?? 0)
-                          ? m
-                          : best,
-                    )
-                    ?.uri;
+                .where((m) => m.kind == MediaKind.image)
+                .fold<MediaAsset?>(
+                  null,
+                  (best, m) =>
+                      best == null || (m.width ?? 0) < (best.width ?? 0)
+                      ? m
+                      : best,
+                )
+                ?.uri;
             return InkWell(
               onTap: () => context.push(
                 '/artist/$username/folder/${folder.id}?name=${Uri.encodeComponent(folder.name)}',
@@ -335,15 +328,13 @@ final class _FoldersView extends ConsumerWidget {
                           const SizedBox(height: 2),
                           Text(
                             folder.size == null || folder.size == 0
-                                ? (isZh ? '空画集' : 'Empty')
-                                : (isZh
-                                    ? '${folder.size} 作品'
-                                    : '${folder.size} artworks'),
+                                ? s.emptyFolderBadge
+                                : s.folderArtworkCount(folder.size!),
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                                 ),
                           ),
                         ],

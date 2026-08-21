@@ -4,6 +4,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../diagnostics/app_logger.dart';
+import '../l10n/app_strings.dart';
 import '../runtime/app_runtime.dart';
 import '../runtime/runtime_provider.dart';
 import 'auth_state.dart';
@@ -16,7 +17,8 @@ final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
 /// Owns the OAuth sign-in lifecycle only. The embedded DeviantArt web session
 /// is managed by the separate [WebSessionController].
 final class AuthController extends StateNotifier<AuthState> {
-  AuthController(this._ref) : super(const AuthState(status: AuthStatus.unknown));
+  AuthController(this._ref)
+    : super(const AuthState(status: AuthStatus.unknown));
 
   final Ref _ref;
   bool _initializing = false;
@@ -50,7 +52,7 @@ final class AuthController extends StateNotifier<AuthState> {
         _log.info(
           'auth',
           'initialize: restored persisted session '
-          '(expires ${tokens.expiresAt.toUtc().toIso8601String()})',
+              '(expires ${tokens.expiresAt.toUtc().toIso8601String()})',
         );
         await _loadAccount(runtime);
         _initializing = false;
@@ -71,9 +73,9 @@ final class AuthController extends StateNotifier<AuthState> {
     final runtime = _runtime;
     if (!runtime.isConfigured || runtime.oauth == null) {
       _log.warning('auth', 'OAuth login requires DAKIT_CLIENT_ID');
-      state = const AuthState(
+      state = AuthState(
         status: AuthStatus.signedOut,
-        error: 'OAuth 登录需要配置 DAKIT_CLIENT_ID。',
+        error: strings(_ref.read(appLanguageProvider)).oauthClientIdMissing,
       );
       return;
     }
@@ -131,11 +133,7 @@ final class AuthController extends StateNotifier<AuthState> {
         throw DAKitException(
           kind: DAKitFailureKind.configuration,
           code: 'oauth.client_id.invalid',
-          message:
-              'DAKIT_CLIENT_ID 无效或未在 DeviantArt 注册。\n'
-              '请在 deviantart.com/settings/applications 注册一个 '
-              'Public OAuth 应用，并把 client_id 通过 '
-              '--dart-define=DAKIT_CLIENT_ID=你的ID 传入。',
+          message: strings(_ref.read(appLanguageProvider)).oauthClientIdInvalid,
           details: <String, Object?>{'location': location},
         );
       }

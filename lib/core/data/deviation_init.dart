@@ -162,7 +162,10 @@ final class DeviationInitFetcher {
       if (best == null) {
         uri = Uri.tryParse(_withToken(base, null, tokens));
       } else {
-        final transform = (best['c'] as String).replaceAll('<prettyName>', pretty);
+        final transform = (best['c'] as String).replaceAll(
+          '<prettyName>',
+          pretty,
+        );
         uri = Uri.tryParse(_withToken('$base$transform', best, tokens));
       }
     }
@@ -177,7 +180,11 @@ final class DeviationInitFetcher {
     );
   }
 
-  static String _withToken(String url, Map<Object?, Object?>? type, List<String> tokens) {
+  static String _withToken(
+    String url,
+    Map<Object?, Object?>? type,
+    List<String> tokens,
+  ) {
     if (tokens.isEmpty) return url;
     final index = type?['r'];
     final token = index is int && index >= 0 && index < tokens.length

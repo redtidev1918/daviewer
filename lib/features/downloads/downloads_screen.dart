@@ -82,8 +82,7 @@ final class _DownloadTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final manager = ref.read(runtimeProvider).transfers;
-    final language = ref.watch(appLanguageProvider);
-    final s = strings(language);
+    final s = strings(ref.watch(appLanguageProvider));
     final scheme = Theme.of(context).colorScheme;
 
     return Card(
@@ -105,16 +104,14 @@ final class _DownloadTile extends ConsumerWidget {
                     snapshot.filename ?? snapshot.id,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: Theme.of(context).textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
                 Text(
-                  _labelForState(snapshot.state, language),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: _colorForState(snapshot.state, scheme),
-                  ),
+                  _labelForState(snapshot.state, s),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: _colorForState(snapshot.state, scheme)),
                 ),
               ],
             ),
@@ -137,14 +134,12 @@ final class _DownloadTile extends ConsumerWidget {
                 children: <Widget>[
                   OutlinedButton.icon(
                     icon: const Icon(Icons.open_in_new, size: 18),
-                    label: Text(language == AppLanguage.zh ? '打开' : 'Open'),
+                    label: Text(s.open),
                     onPressed: () => _openFile(snapshot.localPath!),
                   ),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.folder_open, size: 18),
-                    label: Text(
-                      language == AppLanguage.zh ? '文件夹' : 'Folder',
-                    ),
+                    label: Text(s.openFolderLabel),
                     onPressed: () => _openFolder(snapshot.localPath!),
                   ),
                 ],
@@ -198,15 +193,14 @@ final class _DownloadTile extends ConsumerWidget {
         _ => scheme.outline,
       };
 
-  static String _labelForState(TransferState state, AppLanguage language) {
-    final zh = language == AppLanguage.zh;
+  static String _labelForState(TransferState state, AppStrings s) {
     return switch (state) {
-      TransferState.completed => zh ? '已完成' : 'Done',
-      TransferState.running => zh ? '下载中' : 'Downloading',
-      TransferState.paused => zh ? '已暂停' : 'Paused',
-      TransferState.failed => zh ? '失败' : 'Failed',
-      TransferState.cancelled => zh ? '已取消' : 'Cancelled',
-      _ => zh ? '排队中' : 'Queued',
+      TransferState.completed => s.transferDone,
+      TransferState.running => s.transferDownloading,
+      TransferState.paused => s.transferPaused,
+      TransferState.failed => s.transferFailed,
+      TransferState.cancelled => s.transferCancelled,
+      _ => s.transferQueued,
     };
   }
 

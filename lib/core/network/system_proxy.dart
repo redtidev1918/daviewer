@@ -10,9 +10,7 @@ final class SystemProxyConfig {
 
   @override
   bool operator ==(Object other) =>
-      other is SystemProxyConfig &&
-      other.host == host &&
-      other.port == port;
+      other is SystemProxyConfig && other.host == host && other.port == port;
 
   @override
   int get hashCode => Object.hash(host, port);
@@ -131,9 +129,7 @@ Future<SystemProxyConfig?> _detectLinuxProxy(AppLogger logger) async {
       'org.gnome.system.proxy.http',
       'port',
     ]);
-    final port = int.tryParse(
-      (portResult.stdout as String? ?? '').trim(),
-    );
+    final port = int.tryParse((portResult.stdout as String? ?? '').trim());
     if (port == null || port <= 0 || port > 65535) {
       logger.warning('proxy', 'Linux: invalid proxy port');
       return null;

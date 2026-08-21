@@ -40,20 +40,23 @@ final deviationInitProvider = FutureProvider.autoDispose
 
 /// The OAuth UUID for an artwork id (numeric web ids are resolved through
 /// [deviationInitProvider]).
-final artworkUuidProvider = FutureProvider.autoDispose
-    .family<String, String>((ref, artworkId) async {
-      if (!isNumericDeviationId(artworkId)) return artworkId;
-      final init = await ref.watch(deviationInitProvider(artworkId).future);
-      return init!.uuid;
-    });
+final artworkUuidProvider = FutureProvider.autoDispose.family<String, String>((
+  ref,
+  artworkId,
+) async {
+  if (!isNumericDeviationId(artworkId)) return artworkId;
+  final init = await ref.watch(deviationInitProvider(artworkId).future);
+  return init!.uuid;
+});
 
 /// Whether the signed-in user has favourited this artwork, read from the
 /// mapped [Artwork.isFavourited] (no extra provider call needed).
-final favouriteStatusProvider = FutureProvider.autoDispose
-    .family<bool, String>((ref, artworkId) async {
-      final artwork = await ref.watch(artworkDetailProvider(artworkId).future);
-      return artwork.isFavourited;
-    });
+final favouriteStatusProvider = FutureProvider.autoDispose.family<bool, String>(
+  (ref, artworkId) async {
+    final artwork = await ref.watch(artworkDetailProvider(artworkId).future);
+    return artwork.isFavourited;
+  },
+);
 
 /// Display-size assets for each additional page of a multi-image deviation
 /// (web-feed items only; the official API no longer exposes these pages).

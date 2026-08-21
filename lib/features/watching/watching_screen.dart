@@ -41,9 +41,8 @@ final class _WatchingScreenState extends ConsumerState<WatchingScreen> {
       if (account == null) {
         throw StateError('not signed in');
       }
-      final page = await OfficialUserRepository(
-        runtime.transport!,
-      ).friends(account.username, const PageRequest(limit: 24));
+      final page = await OfficialUserRepository(runtime.transport!)
+          .friends(account.username, const PageRequest(limit: 24));
       if (!mounted) return;
       setState(() {
         _items
@@ -89,26 +88,21 @@ final class _WatchingScreenState extends ConsumerState<WatchingScreen> {
   @override
   Widget build(BuildContext context) {
     final s = strings(ref.watch(appLanguageProvider));
-    final isZh = ref.watch(appLanguageProvider) == AppLanguage.zh;
     return Scaffold(
-      appBar: AppBar(title: Text(isZh ? '关注用户' : 'Watching')),
-      body: _buildBody(context, s, isZh),
+      appBar: AppBar(title: Text(s.watching)),
+      body: _buildBody(context, s),
     );
   }
 
-  Widget _buildBody(BuildContext context, AppStrings s, bool isZh) {
+  Widget _buildBody(BuildContext context, AppStrings s) {
     if (_error != null && _items.isEmpty) {
       final message = '$_error';
-      final isForbidden = message.contains('403') ||
+      final isForbidden =
+          message.contains('403') ||
           message.contains('authorization') ||
           message.contains('Forbidden');
       return AppErrorState(
-        message: isForbidden
-            ? (isZh
-                ? '获取关注列表失败：权限不足。\n'
-                    '请退出登录后重新登录，以获取最新权限。'
-                : 'Permission denied. Please sign out and sign in again.')
-            : message,
+        message: isForbidden ? s.watchListPermissionError : message,
         onRetry: _load,
       );
     }
@@ -116,7 +110,7 @@ final class _WatchingScreenState extends ConsumerState<WatchingScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_items.isEmpty) {
-      return AppEmptyState(message: isZh ? '尚未关注任何用户' : 'No watched users');
+      return AppEmptyState(message: s.noWatchedUsers);
     }
     return RefreshIndicator(
       onRefresh: _load,
@@ -148,9 +142,11 @@ final class _WatchingScreenState extends ConsumerState<WatchingScreen> {
                     ? null
                     : CachedNetworkImageProvider(user.avatarUri.toString()),
                 child: user.avatarUri == null
-                    ? Text(user.username.isNotEmpty
-                        ? user.username[0].toUpperCase()
-                        : '?')
+                    ? Text(
+                        user.username.isNotEmpty
+                            ? user.username[0].toUpperCase()
+                            : '?',
+                      )
                     : null,
               ),
               title: Text(user.displayName ?? user.username),

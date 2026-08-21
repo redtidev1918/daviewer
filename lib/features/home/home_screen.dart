@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dakit_core/dakit_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -141,7 +143,7 @@ Future<void> _showOpenLinkDialog(BuildContext context, AppStrings s) async {
     ),
   );
   if (route != null && context.mounted) {
-    context.push(route);
+    unawaited(context.push(route));
   }
 }
 
@@ -208,9 +210,7 @@ final class _RfyFeed extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(rfyFeedProvider);
     final s = strings(ref.watch(appLanguageProvider));
-    final oauthSignedIn = ref
-        .watch(authControllerProvider)
-        .oauthSignedIn;
+    final oauthSignedIn = ref.watch(authControllerProvider).oauthSignedIn;
     final needLogin = feed.error is WebLoginRequired;
 
     if (needLogin) {
@@ -241,10 +241,7 @@ final class _DailyFeed extends ConsumerWidget {
     final auth = ref.watch(authControllerProvider);
     final s = strings(ref.watch(appLanguageProvider));
     if (!auth.oauthSignedIn) {
-      return _LoginPrompt(
-        s: s,
-        onLogin: () => context.push('/web-login'),
-      );
+      return _LoginPrompt(s: s, onLogin: () => context.push('/web-login'));
     }
     final daily = ref.watch(dailyDeviationsProvider);
     return daily.when(
@@ -279,13 +276,9 @@ final class _FollowingFeed extends ConsumerWidget {
     final auth = ref.watch(authControllerProvider);
     final s = strings(ref.watch(appLanguageProvider));
     if (!auth.oauthSignedIn) {
-      return _LoginPrompt(
-        s: s,
-        onLogin: () => context.push('/web-login'),
-      );
+      return _LoginPrompt(s: s, onLogin: () => context.push('/web-login'));
     }
     final feed = ref.watch(followingFeedProvider);
-    final isZh = ref.watch(appLanguageProvider) == AppLanguage.zh;
     return Column(
       children: <Widget>[
         // Keep the followed-users list adjacent to the followed artwork feed
@@ -297,7 +290,7 @@ final class _FollowingFeed extends ConsumerWidget {
             child: TextButton.icon(
               onPressed: () => context.push('/watching'),
               icon: const Icon(Icons.people_outline, size: 18),
-              label: Text(isZh ? '关注用户' : 'Watching'),
+              label: Text(s.watching),
             ),
           ),
         ),

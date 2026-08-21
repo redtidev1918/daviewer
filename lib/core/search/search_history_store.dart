@@ -28,7 +28,12 @@ final class SearchHistoryStore {
         return decoded.whereType<String>().toList(growable: false);
       }
     } on Object catch (error, stack) {
-      AppLogger.instance.warning('search', 'failed to load history', error, stack);
+      AppLogger.instance.warning(
+        'search',
+        'failed to load history',
+        error,
+        stack,
+      );
     }
     return const <String>[];
   }
@@ -45,7 +50,12 @@ final class SearchHistoryStore {
       await file.writeAsString(jsonEncode(capped));
       return capped;
     } on Object catch (error, stack) {
-      AppLogger.instance.warning('search', 'failed to save history', error, stack);
+      AppLogger.instance.warning(
+        'search',
+        'failed to save history',
+        error,
+        stack,
+      );
     }
     return load();
   }
@@ -55,7 +65,12 @@ final class SearchHistoryStore {
       final file = await _file();
       if (await file.exists()) await file.delete();
     } on Object catch (error, stack) {
-      AppLogger.instance.warning('search', 'failed to clear history', error, stack);
+      AppLogger.instance.warning(
+        'search',
+        'failed to clear history',
+        error,
+        stack,
+      );
     }
   }
 }

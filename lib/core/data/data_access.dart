@@ -20,7 +20,8 @@ final class DataAccess {
       OfficialGalleryRepository(runtime.transport!).gallery(username, request);
 
   Future<Page<Artwork>> favourites(String username, PageRequest request) =>
-      OfficialGalleryRepository(runtime.transport!).favourites(username, request);
+      OfficialGalleryRepository(runtime.transport!)
+          .favourites(username, request);
 
   Future<UserProfileDetails> profile(String username) =>
       OfficialUserRepository(runtime.transport!).profile(username);

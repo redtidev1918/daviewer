@@ -18,8 +18,10 @@ final class WebViewOAuthBridge implements ExternalUriLauncher {
     : _fallback = fallback ?? const DesktopUriLauncher();
 
   final ExternalUriLauncher _fallback;
-  final StreamController<Uri> _launchController = StreamController<Uri>.broadcast();
-  final StreamController<Uri> _callbackController = StreamController<Uri>.broadcast();
+  final StreamController<Uri> _launchController =
+      StreamController<Uri>.broadcast();
+  final StreamController<Uri> _callbackController =
+      StreamController<Uri>.broadcast();
 
   /// Authorize URLs that should be loaded in the home WebView.
   Stream<Uri> get launchRequests => _launchController.stream;

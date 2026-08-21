@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -58,7 +60,7 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (query.startsWith('#')) {
       final tag = query.substring(1).trim();
       if (tag.isNotEmpty) {
-        context.push('/tag/${Uri.encodeComponent(tag)}');
+        unawaited(context.push('/tag/${Uri.encodeComponent(tag)}'));
         return;
       }
     }
@@ -76,11 +78,10 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final query = _query.trim();
     final s = strings(ref.watch(appLanguageProvider));
-    final isZh = ref.watch(appLanguageProvider) == AppLanguage.zh;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isZh ? '搜索' : 'Search'),
+        title: Text(s.search),
         actions: const <Widget>[SettingsAction()],
       ),
       body: Column(
@@ -91,14 +92,12 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
               controller: _controller,
               autofocus: false,
               decoration: InputDecoration(
-                hintText: isZh
-                    ? '搜索作品 / 用户，或用 #标签 搜标签'
-                    : 'Search artworks, users, or #tags',
+                hintText: s.searchHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _query.isEmpty
                     ? null
                     : IconButton(
-                        tooltip: isZh ? '清空' : 'Clear',
+                        tooltip: s.clear,
                         icon: const Icon(Icons.close),
                         onPressed: _clear,
                       ),
@@ -117,14 +116,8 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
               child: SegmentedButton<int>(
                 segments: <ButtonSegment<int>>[
-                  ButtonSegment<int>(
-                    value: 0,
-                    label: Text(isZh ? '作品' : 'Artworks'),
-                  ),
-                  ButtonSegment<int>(
-                    value: 1,
-                    label: Text(isZh ? '用户' : 'Users'),
-                  ),
+                  ButtonSegment<int>(value: 0, label: Text(s.artworks)),
+                  ButtonSegment<int>(value: 1, label: Text(s.users)),
                 ],
                 selected: <int>{_mode},
                 onSelectionChanged: (selection) =>
@@ -133,17 +126,15 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
           Expanded(
             child: query.isEmpty
-                ? _buildIdle(context, s, isZh)
+                ? _buildIdle(context, s)
                 : _mode == 0
                 ? ArtworkFeedGrid(
                     feed: ref.watch(searchFeedProvider(query)),
                     emptyMessage: s.noResults,
-                    onRefresh: () => ref
-                        .read(searchFeedProvider(query).notifier)
-                        .refresh(),
-                    onLoadMore: () => ref
-                        .read(searchFeedProvider(query).notifier)
-                        .loadMore(),
+                    onRefresh: () =>
+                        ref.read(searchFeedProvider(query).notifier).refresh(),
+                    onLoadMore: () =>
+                        ref.read(searchFeedProvider(query).notifier).loadMore(),
                   )
                 : _UserResults(query: query),
           ),
@@ -152,14 +143,14 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _buildIdle(BuildContext context, AppStrings s, bool isZh) {
+  Widget _buildIdle(BuildContext context, AppStrings s) {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Text(
-            isZh ? '热门标签' : 'Popular tags',
+            s.popularTags,
             style: Theme.of(context).textTheme.titleSmall,
           ),
         ),
@@ -184,9 +175,7 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
           Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              isZh
-                  ? '输入关键词搜索作品，或输入 #标签 浏览标签。'
-                  : 'Search artworks, or type #tag to browse a tag.',
+              s.searchIdleHint,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
@@ -196,10 +185,7 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: <Widget>[
-                Text(
-                  isZh ? '搜索记录' : 'Recent',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
+                Text(s.recent, style: Theme.of(context).textTheme.titleSmall),
                 const Spacer(),
                 TextButton(
                   onPressed: () async {
@@ -208,7 +194,7 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
                       setState(() => _history = const <String>[]);
                     }
                   },
-                  child: Text(isZh ? '清除' : 'Clear'),
+                  child: Text(s.clearHistory),
                 ),
               ],
             ),
@@ -236,15 +222,13 @@ final class _UserResults extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final users = ref.watch(userSearchProvider(query));
-    final isZh = ref.watch(appLanguageProvider) == AppLanguage.zh;
+    final s = strings(ref.watch(appLanguageProvider));
     return users.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('$error')),
       data: (items) {
         if (items.isEmpty) {
-          return Center(
-            child: Text(isZh ? '无搜索结果' : 'No users found'),
-          );
+          return Center(child: Text(s.noUsersFound));
         }
         return ListView.separated(
           itemCount: items.length,
@@ -255,9 +239,7 @@ final class _UserResults extends ConsumerWidget {
               leading: user.avatarUri == null
                   ? const CircleAvatar(child: Icon(Icons.person))
                   : CircleAvatar(
-                      foregroundImage: NetworkImage(
-                        user.avatarUri.toString(),
-                      ),
+                      foregroundImage: NetworkImage(user.avatarUri.toString()),
                     ),
               title: Text(user.username),
               subtitle: user.displayName == null

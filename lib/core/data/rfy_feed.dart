@@ -131,7 +131,13 @@ final class RfyFeedFetcher {
     final assets = <MediaAsset>[];
 
     // Thumbnail (~400px) for the feed grid. This also covers video posters.
-    final posterUri = _transformUri(base, pretty, tokens, types, targetWidth: 400);
+    final posterUri = _transformUri(
+      base,
+      pretty,
+      tokens,
+      types,
+      targetWidth: 400,
+    );
     if (posterUri != null) {
       assets.add(
         MediaAsset(
@@ -200,7 +206,8 @@ final class RfyFeedFetcher {
         // The resampled `types` for a GIF are static .jpg posters, so inline
         // display must use the animated `baseUri` (.gif) or the GIF never
         // animates.
-        final gifType = _typeNamed(types, 'fullview') ?? _largestImageType(types);
+        final gifType =
+            _typeNamed(types, 'fullview') ?? _largestImageType(types);
         assets.add(
           MediaAsset(
             id: '$id:display',
@@ -254,10 +261,7 @@ final class RfyFeedFetcher {
     return List<MediaAsset>.unmodifiable(assets);
   }
 
-  static Map<Object?, Object?>? _typeNamed(
-    List<Object?> types,
-    String name,
-  ) {
+  static Map<Object?, Object?>? _typeNamed(List<Object?> types, String name) {
     for (final type in types) {
       if (type is Map && type['t'] == name) return type;
     }
@@ -312,15 +316,18 @@ final class RfyFeedFetcher {
     if (best == null) {
       return Uri.tryParse(_withToken(base, null, tokens));
     }
-    final transform =
-        (best['c'] as String).replaceAll('<prettyName>', pretty);
+    final transform = (best['c'] as String).replaceAll('<prettyName>', pretty);
     return Uri.tryParse(_withToken('$base$transform', best, tokens));
   }
 
   /// Appends the access token (from [type]'s `r` index, falling back to the
   /// first token) to [url] as a query parameter. Returns [url] unchanged when
   /// no token is available.
-  static String _withToken(String url, Map<Object?, Object?>? type, List<String> tokens) {
+  static String _withToken(
+    String url,
+    Map<Object?, Object?>? type,
+    List<String> tokens,
+  ) {
     if (tokens.isEmpty) return url;
     final index = type?['r'];
     final token = index is int && index >= 0 && index < tokens.length

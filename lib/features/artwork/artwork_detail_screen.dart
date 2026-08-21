@@ -45,9 +45,7 @@ final class _ArtworkDetailScreenState
       final social = OfficialSocialRepository(runtime.transport!);
       // Resolve the OAuth UUID: numeric web-feed ids map through
       // dadeviation/init before they can be favourited.
-      final uuid = await ref.read(
-        artworkUuidProvider(widget.artworkId).future,
-      );
+      final uuid = await ref.read(artworkUuidProvider(widget.artworkId).future);
       final result = _favourite
           ? await social.unfavourite(uuid)
           : await social.favourite(uuid);
@@ -55,9 +53,8 @@ final class _ArtworkDetailScreenState
       setState(() => _favourite = result.isFavourite);
     } on Object catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('$error')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$error')));
       }
     } finally {
       if (mounted) setState(() => _favBusy = false);
@@ -68,9 +65,8 @@ final class _ArtworkDetailScreenState
     await Clipboard.setData(ClipboardData(text: url));
     if (!mounted) return;
     final s = strings(ref.read(appLanguageProvider));
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(s.linkCopied)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(s.linkCopied)));
   }
 
   Future<void> _download(MediaAsset original) async {
@@ -124,9 +120,7 @@ final class _ArtworkDetailScreenState
     final s = strings(ref.watch(appLanguageProvider));
     final artwork = ref.watch(artworkDetailProvider(widget.artworkId));
     final original = ref.watch(originalFileProvider(widget.artworkId));
-    final description = ref.watch(
-      artworkDescriptionProvider(widget.artworkId),
-    );
+    final description = ref.watch(artworkDescriptionProvider(widget.artworkId));
     final additionalMedia = ref.watch(
       additionalMediaProvider(widget.artworkId),
     );
@@ -135,15 +129,15 @@ final class _ArtworkDetailScreenState
 
     // Reflect the real favourite state once it loads (the heart must show as
     // filled when re-opening an already-favourited artwork).
-    ref.listen<AsyncValue<bool>>(
-      favouriteStatusProvider(widget.artworkId),
-      (previous, next) {
-        final value = next.valueOrNull;
-        if (value != null && mounted) {
-          setState(() => _favourite = value);
-        }
-      },
-    );
+    ref.listen<AsyncValue<bool>>(favouriteStatusProvider(widget.artworkId), (
+      previous,
+      next,
+    ) {
+      final value = next.valueOrNull;
+      if (value != null && mounted) {
+        setState(() => _favourite = value);
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -178,7 +172,8 @@ final class _ArtworkDetailScreenState
             original,
             transfer,
             description: description.valueOrNull,
-            additionalMedia: additionalMedia.valueOrNull ?? const <MediaAsset>[],
+            additionalMedia:
+                additionalMedia.valueOrNull ?? const <MediaAsset>[],
             tags: tags.valueOrNull ?? const <String>[],
           ),
         ),
@@ -213,10 +208,7 @@ final class _ArtworkDetailScreenState
           _MediaViewer(media: media, additionalMedia: additionalMedia),
           const SizedBox(height: 16),
         ],
-        Text(
-          artwork.title,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        Text(artwork.title, style: Theme.of(context).textTheme.headlineSmall),
         TextButton(
           onPressed: () => context.push('/artist/${artwork.author.username}'),
           child: Text('by ${artwork.author.username}'),
@@ -230,9 +222,8 @@ final class _ArtworkDetailScreenState
           const SizedBox(height: 8),
           SelectableText(
             description,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              height: 1.5,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(height: 1.5),
           ),
           const SizedBox(height: 16),
         ],
@@ -306,7 +297,9 @@ final class _MediaViewerState extends State<_MediaViewer> {
     // Inline display: prefer the largest resampled preview so we never force
     // the (potentially huge) original onto the image cache for inline use.
     return media
-            .where((m) => m.kind == MediaKind.image && m.role == MediaRole.preview)
+            .where(
+              (m) => m.kind == MediaKind.image && m.role == MediaRole.preview,
+            )
             .fold<MediaAsset?>(
               null,
               (best, m) =>
@@ -348,7 +341,10 @@ final class _MediaViewerState extends State<_MediaViewer> {
               top: 8,
               right: 8,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(12),
@@ -783,11 +779,7 @@ final class _FullScreenImageState extends ConsumerState<_FullScreenImage> {
                 child: CircularProgressIndicator(color: Colors.white),
               ),
               errorWidget: (context, url, error) => const Center(
-                child: Icon(
-                  Icons.broken_image,
-                  color: Colors.white,
-                  size: 48,
-                ),
+                child: Icon(Icons.broken_image, color: Colors.white, size: 48),
               ),
             ),
           ),

@@ -18,7 +18,6 @@ final class NotificationsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = strings(ref.watch(appLanguageProvider));
-    final isZh = ref.watch(appLanguageProvider) == AppLanguage.zh;
     final messages = ref.watch(notificationsProvider);
 
     return Scaffold(
@@ -29,7 +28,7 @@ final class NotificationsScreen extends ConsumerWidget {
           onRefresh: () => ref.refresh(notificationsProvider.future),
           child: _ScrollableFill(
             child: AppErrorState(
-              message: _friendlyError(error, isZh),
+              message: _friendlyError(error, s),
               onRetry: () => ref.invalidate(notificationsProvider),
             ),
           ),
@@ -53,7 +52,7 @@ final class NotificationsScreen extends ConsumerWidget {
               itemCount: items.length,
               separatorBuilder: (context, index) => const Divider(height: 1),
               itemBuilder: (context, index) =>
-                  _MessageTile(message: items[index], isZh: isZh),
+                  _MessageTile(message: items[index], s: s),
             ),
           );
         },
@@ -63,10 +62,10 @@ final class NotificationsScreen extends ConsumerWidget {
 }
 
 final class _MessageTile extends StatelessWidget {
-  const _MessageTile({required this.message, required this.isZh});
+  const _MessageTile({required this.message, required this.s});
 
   final ProviderMessage message;
-  final bool isZh;
+  final AppStrings s;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +82,7 @@ final class _MessageTile extends StatelessWidget {
         username: username.isEmpty ? artwork?.author.username : username,
       ),
       title: Text(
-        username.isEmpty ? (isZh ? '未知用户' : 'Unknown user') : '@$username',
+        username.isEmpty ? s.unknownUser : '@$username',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.bodyMedium?.copyWith(
@@ -91,7 +90,8 @@ final class _MessageTile extends StatelessWidget {
         ),
       ),
       subtitle: Text(
-        _typeLabel(message.type, isZh) + (artwork == null ? '' : ' · ${artwork.title}'),
+        s.notificationTypeLabel(message.type) +
+            (artwork == null ? '' : ' · ${artwork.title}'),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -99,7 +99,7 @@ final class _MessageTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Text(
-            _relativeTime(message.postedAt, isZh),
+            s.relativeTime(message.postedAt),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -151,74 +151,33 @@ final class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fallback = CircleAvatar(
-      child: Text((username?.isNotEmpty ?? false) ? username![0].toUpperCase() : '?'),
+      child: Text(
+        (username?.isNotEmpty ?? false) ? username![0].toUpperCase() : '?',
+      ),
     );
     final uri = url;
     if (uri == null || uri.isEmpty) return fallback;
     return CachedNetworkImage(
       imageUrl: uri,
-      imageBuilder: (context, imageProvider) => CircleAvatar(
-        backgroundImage: imageProvider,
-      ),
+      imageBuilder: (context, imageProvider) =>
+          CircleAvatar(backgroundImage: imageProvider),
       placeholder: (context, url) => fallback,
       errorWidget: (context, url, error) => fallback,
     );
   }
 }
 
-String _typeLabel(String type, bool isZh) {
-  final label = switch (type) {
-    'watched' || 'watch' => isZh ? '关注了你' : 'watched you',
-    'deviation' || 'new_deviation' || 'posted' =>
-      isZh ? '更新了作品' : 'posted new work',
-    'deviation_faved' ||
-    'faved' ||
-    'favourited' =>
-      isZh ? '收藏了你的作品' : 'favourited your work',
-    'deviation_comment' ||
-    'comment_deviation' ||
-    'comment' =>
-      isZh ? '评论了你的作品' : 'commented on your work',
-    'mention' || 'mention_deviation' => isZh ? '提到了你' : 'mentioned you',
-    'collection' || 'added_to_collection' =>
-      isZh ? '把你的作品加入收藏集' : 'added your work to a collection',
-    'journal' || 'journal_faved' =>
-      isZh ? '发布了日志' : 'posted a journal',
-    'gift' => isZh ? '送了你礼物' : 'sent you a gift',
-    'note' => isZh ? '给你发了私信' : 'sent you a note',
-    'llama' => isZh ? '送你一个 Llama' : 'gave you a Llama',
-    'status' || 'status_update' => isZh ? '更新了状态' : 'updated their status',
-    _ => (isZh ? '更新了动态' : 'posted an update'),
-  };
-  return label;
-}
-
-String _friendlyError(Object error, bool isZh) {
+String _friendlyError(Object error, AppStrings s) {
   if (error is DAKitException) {
     switch (error.kind) {
       case DAKitFailureKind.authentication:
       case DAKitFailureKind.authorization:
-        return isZh
-            ? '登录授权已过期或缺少「通知」权限，请退出登录后重新登录一次。'
-            : 'Your login is missing the notifications permission. Please log out and log back in once.';
+        return s.notifPermissionError;
       default:
         break;
     }
   }
   return '$error';
-}
-
-String _relativeTime(DateTime? time, bool isZh) {
-  if (time == null) return '';
-  final diff = DateTime.now().difference(time.toLocal());
-  if (diff.inMinutes < 1) return isZh ? '刚刚' : 'now';
-  if (diff.inHours < 1) return isZh ? '${diff.inMinutes} 分钟前' : '${diff.inMinutes}m ago';
-  if (diff.inDays < 1) return isZh ? '${diff.inHours} 小时前' : '${diff.inHours}h ago';
-  if (diff.inDays < 30) return isZh ? '${diff.inDays} 天前' : '${diff.inDays}d ago';
-  final local = time.toLocal();
-  final month = local.month.toString().padLeft(2, '0');
-  final day = local.day.toString().padLeft(2, '0');
-  return '$month-$day';
 }
 
 final class _ScrollableFill extends StatelessWidget {
