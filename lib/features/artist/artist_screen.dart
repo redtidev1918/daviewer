@@ -86,7 +86,7 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
     final isZh = ref.watch(appLanguageProvider) == AppLanguage.zh;
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.username),
@@ -104,9 +104,11 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
             ),
           ],
           bottom: TabBar(
+            isScrollable: true,
             tabs: <Widget>[
               Tab(text: s.gallery),
               Tab(text: s.favourites),
+              Tab(text: isZh ? '文章' : 'Journal'),
               Tab(text: isZh ? '画集' : 'Folders'),
             ],
           ),
@@ -144,6 +146,7 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                           )
                           .loadMore(),
                     ),
+                    _JournalsView(username: widget.username),
                     _FoldersView(username: widget.username),
                   ],
                 ),
@@ -196,6 +199,51 @@ final class _ArtistHeader extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+final class _JournalsView extends ConsumerWidget {
+  const _JournalsView({required this.username});
+
+  final String username;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final journals = ref.watch(artistJournalsProvider(username));
+    return journals.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stackTrace) => Center(child: Text('$error')),
+      data: (items) {
+        if (items.isEmpty) {
+          return const Center(child: Text('暂无文章'));
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.all(8),
+          itemCount: items.length,
+          separatorBuilder: (context, index) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            final journal = items[index];
+            return ListTile(
+              leading: const Icon(Icons.article_outlined),
+              title: Text(
+                journal.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: journal.publishedAt == null
+                  ? null
+                  : Text(_formatDate(journal.publishedAt!)),
+              onTap: () => context.push('/artwork/${journal.id}'),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _formatDate(DateTime time) {
+    final local = time.toLocal();
+    return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
   }
 }
 
