@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
@@ -82,9 +83,10 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
     final galleryFeed = ref.watch(artistGalleryProvider(widget.username));
     final favouritesFeed = ref.watch(artistFavouritesProvider(widget.username));
     final s = strings(ref.watch(appLanguageProvider));
+    final isZh = ref.watch(appLanguageProvider) == AppLanguage.zh;
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.username),
@@ -105,6 +107,7 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
             tabs: <Widget>[
               Tab(text: s.gallery),
               Tab(text: s.favourites),
+              Tab(text: isZh ? '画集' : 'Folders'),
             ],
           ),
         ),
@@ -141,6 +144,7 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                           )
                           .loadMore(),
                     ),
+                    _FoldersView(username: widget.username),
                   ],
                 ),
               ),
@@ -191,6 +195,81 @@ final class _ArtistHeader extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+final class _FoldersView extends ConsumerWidget {
+  const _FoldersView({required this.username});
+
+  final String username;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final folders = ref.watch(artistFoldersProvider(username));
+    return folders.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stackTrace) => Center(child: Text('$error')),
+      data: (items) {
+        if (items.isEmpty) {
+          return const Center(child: Text('暂无画集'));
+        }
+        return GridView.builder(
+          padding: const EdgeInsets.all(12),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 200,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.9,
+          ),
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            final folder = items[index];
+            final thumbUri = folder.thumbnail?.media.firstOrNull?.uri;
+            return InkWell(
+              onTap: () => context.push(
+                '/artist/$username/folder/${folder.id}?name=${Uri.encodeComponent(folder.name)}',
+              ),
+              child: Card(
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: thumbUri != null
+                          ? CachedNetworkImage(
+                              imageUrl: thumbUri.toString(),
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              placeholder: (context, url) =>
+                                  const ColoredBox(color: Color(0xffe9ecef)),
+                              errorWidget: (context, url, error) =>
+                                  const ColoredBox(
+                                    color: Color(0xffe9ecef),
+                                    child: Icon(Icons.folder),
+                                  ),
+                            )
+                          : const ColoredBox(
+                              color: Color(0xffe9ecef),
+                              child: Icon(Icons.folder),
+                            ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Text(
+                        folder.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
