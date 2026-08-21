@@ -5,8 +5,10 @@ A third-party DeviantArt client built on [DAKit](https://github.com/redtidev1918
 
 ## 功能特性 / Features
 
-- **登录**：OAuth 登录，内置公开 client id，普通用户开箱即用
-- **信息流**：首页 / 每日推荐 / 关注动态，下拉刷新 + 无限滚动
+- **登录**：OAuth 登录，内置公开 client id，普通用户开箱即用；复用首页
+  WebView 的网页登录态，网页版已登录时无需重新输入密码
+- **首页**：内嵌 DeviantArt 网页版首页，个性化推荐与网页版一致
+  （`rfy/deviations`）；原生 AppBar、加载进度条、下拉刷新、Android 返回键接管
 - **搜索**：关键词搜索 + 历史记录
 - **作品详情**：图片 / 视频（可拖动进度条）/ GIF 播放，富文本简介（网页抓取）
 - **大图查看**：全屏、双击缩放、捏合缩放
@@ -96,7 +98,7 @@ lib/
   main.dart                    应用入口、代理注入、ProviderScope
   app/                        AppShell、主题、路由
   core/
-    auth/                      登录态、会话恢复、登出
+    auth/                      登录态、会话恢复、登出、WebView OAuth 桥接
     data/                      统一数据访问层（官方 API + 网页抓取回退）
     diagnostics/               文件日志、全局错误捕获
     feed/                      分页信息流控制器
@@ -106,7 +108,7 @@ lib/
     search/                    搜索历史持久化
   features/
     login/                     登录页
-    home/                      首页 / 每日推荐 / 关注信息流
+    home/                      内嵌网页首页（WebView）
     search/                    搜索
     artwork/                   作品详情、媒体播放、下载、收藏
     artist/                    作者资料、画廊、收藏夹、关注
@@ -123,8 +125,28 @@ windows/
 test/
 ```
 
+## 首页与登录态 / Home & sign-in state
+
+首页内嵌的是 DeviantArt 网页版首页。它的个性化推荐（`rfy/deviations`）由
+**网页登录态（Cookie + CSRF）** 驱动，官方 OAuth API 不提供等价接口——这是首页
+采用 WebView 的原因。
+
+App 里有两条独立的登录态：
+
+- **网页登录态**：存在首页 WebView 的 Cookie 里，决定首页推荐是否个性化；
+- **App OAuth 登录态**：决定收藏 / 关注 / 下载是否可用。
+
+两者不同步时，首页顶部会显示提示条：
+
+- 网页已登录、App 未登录 → 点「登录」直接在 WebView 内完成 OAuth 授权（复用网页
+  登录态，无需重输密码）；
+- App 已登录、网页未登录 → 点「登录网页版」跳转网页登录页。
+
+OAuth 授权优先在首页 WebView 内完成；WebView 不可用时自动回退系统浏览器。
+
 ## 说明 / Notes
 
 - `DAViewer` 是第三方客户端，与 DeviantArt 无隶属关系；
 - 客户端不保存 `client_secret`；
-- 登录在系统浏览器完成，不内置 WebView 或账号密码表单。
+- OAuth 授权优先在应用内 WebView 完成（复用网页登录态），系统浏览器作为回退；
+  不内置账号密码表单。
