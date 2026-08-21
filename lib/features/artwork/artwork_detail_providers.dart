@@ -72,6 +72,22 @@ final additionalMediaProvider = FutureProvider.autoDispose
       }
     });
 
+/// Searchable tag names for an artwork. Web-feed items read tags from the
+/// `dadeviation/init` endpoint; OAuth items from the mapped [Artwork.tags].
+final artworkTagsProvider = FutureProvider.autoDispose
+    .family<List<String>, String>((ref, artworkId) async {
+      if (isNumericDeviationId(artworkId)) {
+        try {
+          final init = await ref.watch(deviationInitProvider(artworkId).future);
+          return init?.tags ?? const <String>[];
+        } on Object {
+          return const <String>[];
+        }
+      }
+      final artwork = await ref.watch(artworkDetailProvider(artworkId).future);
+      return artwork.tags;
+    });
+
 /// Resolves an artwork by id, preferring the in-memory [artworkStoreProvider]
 /// cache so web-feed items (which use a numeric id the OAuth API cannot
 /// resolve) render without a failing `deviation/{id}` round-trip.

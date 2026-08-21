@@ -11,6 +11,7 @@ final class DeviationInit {
     required this.uuid,
     required this.description,
     this.additionalMedia = const <MediaAsset>[],
+    this.tags = const <String>[],
   });
 
   final String uuid;
@@ -20,6 +21,9 @@ final class DeviationInit {
 
   /// Display-size assets for each additional page of a multi-image deviation.
   final List<MediaAsset> additionalMedia;
+
+  /// Searchable tag names attached to the deviation.
+  final List<String> tags;
 }
 
 /// Resolves a numeric deviation id (the id used by the personalized `rfy`
@@ -105,10 +109,22 @@ final class DeviationInitFetcher {
       }
     }
 
+    final rawTags = extended is Map ? extended['tags'] : null;
+    final tags = <String>[];
+    if (rawTags is List) {
+      for (final tag in rawTags) {
+        if (tag is Map) {
+          final name = tag['name'];
+          if (name is String && name.isNotEmpty) tags.add(name);
+        }
+      }
+    }
+
     return DeviationInit(
       uuid: uuid,
       description: description,
       additionalMedia: List<MediaAsset>.unmodifiable(additional),
+      tags: List<String>.unmodifiable(tags),
     );
   }
 

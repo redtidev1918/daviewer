@@ -127,6 +127,7 @@ final class _ArtworkDetailScreenState
     final additionalMedia = ref.watch(
       additionalMediaProvider(widget.artworkId),
     );
+    final tags = ref.watch(artworkTagsProvider(widget.artworkId));
     final transfer = _transfer;
 
     // Reflect the real favourite state once it loads (the heart must show as
@@ -175,6 +176,7 @@ final class _ArtworkDetailScreenState
             transfer,
             description: description.valueOrNull,
             additionalMedia: additionalMedia.valueOrNull ?? const <MediaAsset>[],
+            tags: tags.valueOrNull ?? const <String>[],
           ),
         ),
       ),
@@ -187,6 +189,7 @@ final class _ArtworkDetailScreenState
     TransferSnapshot? transfer, {
     String? description,
     List<MediaAsset> additionalMedia = const <MediaAsset>[],
+    List<String> tags = const <String>[],
   }) {
     final media = artwork.media;
     // When the original download is restricted (e.g. free limit reached),
@@ -223,6 +226,23 @@ final class _ArtworkDetailScreenState
             ),
           ),
           const SizedBox(height: 16),
+        ],
+        if (tags.isNotEmpty) ...[
+          const Divider(),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: <Widget>[
+              for (final tag in tags)
+                ActionChip(
+                  label: Text('#$tag'),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () =>
+                      context.push('/tag/${Uri.encodeComponent(tag)}'),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
         ],
         const SizedBox(height: 8),
         _DownloadSection(
