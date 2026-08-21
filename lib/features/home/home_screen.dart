@@ -53,11 +53,24 @@ final class HomeScreen extends ConsumerWidget {
         appBar: AppBar(
           title: Text(s.appTitle),
           actions: <Widget>[
-            IconButton(
-              tooltip: s.webLogin,
-              onPressed: () => context.push('/web-login'),
-              icon: const Icon(Icons.language),
-            ),
+            if (oauthSignedIn)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Center(child: Text(auth.account?.username ?? '')),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Center(
+                  child: FilledButton.tonal(
+                    onPressed: () {
+                      context.push('/web-login');
+                      ref.read(authControllerProvider.notifier).login();
+                    },
+                    child: Text(s.login),
+                  ),
+                ),
+              ),
             IconButton(
               tooltip: s.settings,
               onPressed: () => context.push('/settings'),
@@ -131,62 +144,23 @@ final class _RfyFeed extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(rfyFeedProvider);
     final s = strings(ref.watch(appLanguageProvider));
-    final needWebLogin = feed.error is WebLoginRequired;
+    final needLogin = feed.error is WebLoginRequired;
 
-    return Column(
-      children: <Widget>[
-        if (needWebLogin)
-          Material(
-            color: Theme.of(context).colorScheme.secondaryContainer,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      ref.watch(appLanguageProvider) == AppLanguage.zh
-                          ? '登录网页版后，这里会显示你的个性化推荐。'
-                          : 'Sign in on the web to see your personalized feed.',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton.tonal(
-                    onPressed: () => context.push('/web-login'),
-                    child: Text(s.webLogin),
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-            child: Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: TextButton.icon(
-                onPressed: () => context.push('/web-login'),
-                icon: const Icon(Icons.language, size: 18),
-                label: Text(
-                  ref.watch(appLanguageProvider) == AppLanguage.zh
-                      ? '登录网页版获得个性化推荐'
-                      : 'Sign in on web for personalized feed',
-                ),
-              ),
-            ),
-          ),
-        Expanded(
-          child: needWebLogin
-              ? const SizedBox.shrink()
-              : ArtworkFeedGrid(
-                  feed: feed,
-                  emptyMessage: s.noArtworks,
-                  onRefresh: () => ref.read(rfyFeedProvider.notifier).refresh(),
-                  onLoadMore: () =>
-                      ref.read(rfyFeedProvider.notifier).loadMore(),
-                ),
-        ),
-      ],
+    if (needLogin) {
+      return _LoginPrompt(
+        s: s,
+        onLogin: () {
+          context.push('/web-login');
+          ref.read(authControllerProvider.notifier).login();
+        },
+      );
+    }
+
+    return ArtworkFeedGrid(
+      feed: feed,
+      emptyMessage: s.noArtworks,
+      onRefresh: () => ref.read(rfyFeedProvider.notifier).refresh(),
+      onLoadMore: () => ref.read(rfyFeedProvider.notifier).loadMore(),
     );
   }
 }
@@ -266,11 +240,34 @@ final class _LoginPrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
-      child: FilledButton.icon(
-        onPressed: onLogin,
-        icon: const Icon(Icons.login),
-        label: Text(s.login),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              Icons.person_outline,
+              size: 56,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              s.loginFirst,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: onLogin,
+              icon: const Icon(Icons.login),
+              label: Text(s.login),
+            ),
+          ],
+        ),
       ),
     );
   }
