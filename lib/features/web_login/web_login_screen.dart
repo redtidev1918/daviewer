@@ -196,8 +196,10 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
               // Navigate back to the deviantart home page; its onLoadStop then
               // reports the real web session (CSRF + login state). Do NOT read
               // the session here — the callback page has no __INITIAL_STATE__.
-              controller.loadUrl(
-                urlRequest: URLRequest(url: WebUri(_homeUri.toString())),
+              unawaited(
+                controller.loadUrl(
+                  urlRequest: URLRequest(url: WebUri(_homeUri.toString())),
+                ),
               );
               return NavigationActionPolicy.CANCEL;
             }

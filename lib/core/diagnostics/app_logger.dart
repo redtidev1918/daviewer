@@ -58,8 +58,12 @@ final class AppLogger implements DiagnosticSink {
   /// Number of error-level events recorded in this session.
   int get errorCount => _errorCount;
 
-  void debug(String scope, String message, [Object? error, StackTrace? stack]) =>
-      _write(DiagnosticLevel.debug, scope, message, error, stack);
+  void debug(
+    String scope,
+    String message, [
+    Object? error,
+    StackTrace? stack,
+  ]) => _write(DiagnosticLevel.debug, scope, message, error, stack);
 
   void info(String scope, String message, [Object? error, StackTrace? stack]) =>
       _write(DiagnosticLevel.info, scope, message, error, stack);
@@ -125,7 +129,9 @@ final class AppLogger implements DiagnosticSink {
     StackTrace? stack,
   }) {
     final now = DateTime.now().toIso8601String();
-    final buffer = StringBuffer('$now [${level.name.toUpperCase()}] [$scope] $message');
+    final buffer = StringBuffer(
+      '$now [${level.name.toUpperCase()}] [$scope] $message',
+    );
     if (error != null) buffer.write(' | error=$error');
     if (stack != null) buffer.write('\n$stack');
     return buffer.toString();

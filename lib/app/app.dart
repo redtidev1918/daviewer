@@ -14,7 +14,9 @@ final class DAViewerApp extends ConsumerWidget {
     final language = ref.watch(appLanguageProvider);
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      locale: language == AppLanguage.zh ? const Locale('zh') : const Locale('en'),
+      locale: language == AppLanguage.zh
+          ? const Locale('zh')
+          : const Locale('en'),
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.system,

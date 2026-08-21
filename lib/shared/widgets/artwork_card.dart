@@ -35,11 +35,10 @@ final class ArtworkCard extends StatelessWidget {
                       fit: BoxFit.cover,
                       placeholder: (context, url) =>
                           const ColoredBox(color: Color(0xffe9ecef)),
-                      errorWidget: (context, url, error) =>
-                          const ColoredBox(
-                            color: Color(0xffe9ecef),
-                            child: Icon(Icons.image),
-                          ),
+                      errorWidget: (context, url, error) => const ColoredBox(
+                        color: Color(0xffe9ecef),
+                        child: Icon(Icons.image),
+                      ),
                     )
                   else
                     const ColoredBox(
@@ -123,10 +122,8 @@ final class ArtworkCard extends StatelessWidget {
                     artwork.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      height: 1.25,
-                    ),
+                    style: Theme.of(context).textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600, height: 1.25),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -134,9 +131,7 @@ final class ArtworkCard extends StatelessWidget {
                       Icon(
                         Icons.person_outline,
                         size: 14,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
                       Expanded(
@@ -144,11 +139,12 @@ final class ArtworkCard extends StatelessWidget {
                           artwork.author.username,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
                         ),
                       ),
                     ],

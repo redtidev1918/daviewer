@@ -41,9 +41,7 @@ final class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.translate),
             title: Text(s.language),
-            subtitle: Text(
-              language == AppLanguage.zh ? s.chinese : s.english,
-            ),
+            subtitle: Text(language == AppLanguage.zh ? s.chinese : s.english),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _showLanguagePicker(context, ref, language),
           ),
@@ -76,9 +74,8 @@ final class SettingsScreen extends ConsumerWidget {
               leading: const Icon(Icons.logout),
               title: Text(s.logout),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(s.signedOut)),
-                );
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(s.signedOut)));
                 ref.read(authControllerProvider.notifier).logout();
               },
             ),
@@ -218,10 +215,7 @@ final class _ProxySettingsScreenState
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 4),
-          Text(
-            s.proxyHint,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text(s.proxyHint, style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 16),
           TextField(
             controller: _controller,
@@ -235,10 +229,7 @@ final class _ProxySettingsScreenState
           const SizedBox(height: 12),
           Row(
             children: <Widget>[
-              FilledButton(
-                onPressed: _apply,
-                child: Text(s.apply),
-              ),
+              FilledButton(onPressed: _apply, child: Text(s.apply)),
               const SizedBox(width: 12),
               OutlinedButton(
                 onPressed: proxy == null

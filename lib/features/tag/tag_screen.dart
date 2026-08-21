@@ -13,7 +13,8 @@ final tagFeedProvider = StateNotifierProvider.autoDispose
     .family<ArtworkFeedController, ArtworkFeedState, String>((ref, tag) {
       final runtime = ref.watch(runtimeProvider);
       final controller = ArtworkFeedController((request) {
-        return OfficialDiscoveryRepository(runtime.transport!).tag(tag, request);
+        return OfficialDiscoveryRepository(runtime.transport!)
+            .tag(tag, request);
       });
       return controller;
     });
@@ -22,11 +23,13 @@ final tagFeedProvider = StateNotifierProvider.autoDispose
 final relatedTagsProvider = FutureProvider.autoDispose
     .family<List<String>, String>((ref, tag) async {
       final runtime = ref.watch(runtimeProvider);
-      final tags = await OfficialDiscoveryRepository(
-        runtime.transport!,
-      ).suggestTags(tag);
+      final tags = await OfficialDiscoveryRepository(runtime.transport!)
+          .suggestTags(tag);
       // Exclude the tag itself and keep a short, readable list.
-      return tags.where((t) => t.toLowerCase() != tag.toLowerCase()).take(12).toList();
+      return tags
+          .where((t) => t.toLowerCase() != tag.toLowerCase())
+          .take(12)
+          .toList();
     });
 
 final class TagScreen extends ConsumerWidget {
@@ -39,7 +42,6 @@ final class TagScreen extends ConsumerWidget {
     final feed = ref.watch(tagFeedProvider(tag));
     final related = ref.watch(relatedTagsProvider(tag));
     final s = strings(ref.watch(appLanguageProvider));
-    final isZh = ref.watch(appLanguageProvider) == AppLanguage.zh;
     return Scaffold(
       appBar: AppBar(title: Text('#$tag')),
       body: Column(
@@ -55,7 +57,7 @@ final class TagScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          isZh ? '相关标签' : 'Related tags',
+                          s.relatedTags,
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
                         const SizedBox(height: 6),
@@ -81,7 +83,8 @@ final class TagScreen extends ConsumerWidget {
             child: ArtworkFeedGrid(
               feed: feed,
               emptyMessage: s.noArtworks,
-              onRefresh: () => ref.read(tagFeedProvider(tag).notifier).refresh(),
+              onRefresh: () =>
+                  ref.read(tagFeedProvider(tag).notifier).refresh(),
               onLoadMore: () =>
                   ref.read(tagFeedProvider(tag).notifier).loadMore(),
             ),

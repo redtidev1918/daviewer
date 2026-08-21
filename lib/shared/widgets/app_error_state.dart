@@ -27,10 +27,7 @@ final class AppErrorState extends ConsumerWidget {
             Text(message, textAlign: TextAlign.center),
             if (onRetry != null) ...[
               const SizedBox(height: 16),
-              FilledButton.tonal(
-                onPressed: onRetry,
-                child: Text(s.retry),
-              ),
+              FilledButton.tonal(onPressed: onRetry, child: Text(s.retry)),
             ],
           ],
         ),

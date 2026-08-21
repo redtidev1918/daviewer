@@ -81,7 +81,7 @@ final class ProxyController extends ChangeNotifier {
     AppLogger.instance.info(
       'proxy',
       'effective proxy: $_directive (manual=$_manual, '
-      'system=$_isUsingSystemProxy)',
+          'system=$_isUsingSystemProxy)',
     );
     notifyListeners();
   }

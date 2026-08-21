@@ -44,7 +44,9 @@ final class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
         return;
       }
       final lines = await target.readAsLines();
-      final tail = lines.length <= 120 ? lines : lines.sublist(lines.length - 120);
+      final tail = lines.length <= 120
+          ? lines
+          : lines.sublist(lines.length - 120);
       setState(() {
         _logTail = tail.join('\n');
         _loading = false;
@@ -106,10 +108,7 @@ final class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : SelectableText(
                     _logTail,
-                    style: const TextStyle(
-                      fontFamily: 'Menlo',
-                      fontSize: 11,
-                    ),
+                    style: const TextStyle(fontFamily: 'Menlo', fontSize: 11),
                   ),
           ),
         ],

@@ -14,7 +14,9 @@ final class DaLink {
 DaLink? parseDeviantArtUrl(String text) {
   final trimmed = text.trim();
   if (trimmed.isEmpty) return null;
-  final uri = Uri.tryParse(trimmed.contains('://') ? trimmed : 'https://$trimmed');
+  final uri = Uri.tryParse(
+    trimmed.contains('://') ? trimmed : 'https://$trimmed',
+  );
   if (uri == null) return null;
 
   final host = uri.host.toLowerCase();
@@ -43,7 +45,13 @@ DaLink? parseDeviantArtUrl(String text) {
   // /<user> (a bare username path).
   if (segments.length == 1 && !isFavMe) {
     final name = segments.first;
-    if (!const <String>{'art', 'users', 'favourites', 'gallery', 'search'}.contains(name.toLowerCase())) {
+    if (!const <String>{
+      'art',
+      'users',
+      'favourites',
+      'gallery',
+      'search',
+    }.contains(name.toLowerCase())) {
       return DaLink._('/artist/$name');
     }
   }

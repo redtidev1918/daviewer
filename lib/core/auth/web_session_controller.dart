@@ -8,11 +8,7 @@ import 'web_session_store.dart';
 /// separate from the OAuth account so the two sign-in mechanisms no longer
 /// bleed into one another.
 final class WebSessionState {
-  const WebSessionState({
-    this.csrf = '',
-    this.isLoggedIn,
-    this.username = '',
-  });
+  const WebSessionState({this.csrf = '', this.isLoggedIn, this.username = ''});
 
   /// CSRF token read from the WebView page, used by the native rfy feed.
   final String csrf;
@@ -52,10 +48,7 @@ final class WebSessionController extends StateNotifier<WebSessionState> {
   /// Records the web session read from the WebView and reconciles it with the
   /// OAuth account: a mismatched username clears the web cookies so the app
   /// never shows two accounts at once.
-  Future<void> report({
-    required String csrf,
-    required String username,
-  }) async {
+  Future<void> report({required String csrf, required String username}) async {
     final loggedIn = username.isNotEmpty;
     final oauthUsername = _ref.read(authControllerProvider).account?.username;
     if (loggedIn &&
@@ -76,11 +69,7 @@ final class WebSessionController extends StateNotifier<WebSessionState> {
       isLoggedIn: loggedIn,
       username: username,
     );
-    await _store.write(
-      csrf: csrf,
-      isLoggedIn: loggedIn,
-      username: username,
-    );
+    await _store.write(csrf: csrf, isLoggedIn: loggedIn, username: username);
   }
 
   Future<void> clear() async {

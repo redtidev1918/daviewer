@@ -43,9 +43,7 @@ final class DownloadsState {
       isLoading = true,
       error = null;
 
-  const DownloadsState.data(this.items)
-    : isLoading = false,
-      error = null;
+  const DownloadsState.data(this.items) : isLoading = false, error = null;
 
   const DownloadsState.error(this.error)
     : items = const <TransferSnapshot>[],
@@ -58,5 +56,5 @@ final class DownloadsState {
 
 final downloadsProvider =
     StateNotifierProvider<DownloadsController, DownloadsState>(
-  (ref) => DownloadsController(ref),
-);
+      (ref) => DownloadsController(ref),
+    );

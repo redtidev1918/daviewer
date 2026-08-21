@@ -28,8 +28,10 @@ final class FolderScreen extends ConsumerWidget {
       body: ArtworkFeedGrid(
         feed: feed,
         emptyMessage: s.emptyFolder,
-        onRefresh: () => ref.read(folderContentsProvider(request).notifier).refresh(),
-        onLoadMore: () => ref.read(folderContentsProvider(request).notifier).loadMore(),
+        onRefresh: () =>
+            ref.read(folderContentsProvider(request).notifier).refresh(),
+        onLoadMore: () =>
+            ref.read(folderContentsProvider(request).notifier).loadMore(),
       ),
     );
   }
