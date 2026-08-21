@@ -205,14 +205,39 @@ final class AuthController extends StateNotifier<AuthState> {
 
   /// Re-reads the embedded DeviantArt web session and updates only the
   /// [AuthState.webLoggedIn] field, leaving the OAuth account untouched.
+  ///
+  /// Also reconciles the two sign-in identities: if the web session belongs to
+  /// a *different* account than the OAuth session, the web session is cleared
+  /// so the app never shows two accounts at once.
   Future<void> refreshWebSession() async {
     try {
       final info = await _ref.read(webSessionProvider).read();
+      var webLoggedIn = info.isLoggedIn;
+
+      final oauthUsername = state.account?.username;
+      if (webLoggedIn &&
+          oauthUsername != null &&
+          oauthUsername.isNotEmpty &&
+          info.username.isNotEmpty &&
+          info.username.toLowerCase() != oauthUsername.toLowerCase()) {
+        _log.warning(
+          'auth',
+          'web session is a different account '
+          '(web=${info.username}, oauth=$oauthUsername); logging the web out',
+        );
+        try {
+          await CookieManager.instance().deleteAllCookies();
+        } on Object catch (error, stack) {
+          _log.warning('auth', 'failed to clear mismatched web session', error, stack);
+        }
+        webLoggedIn = false;
+      }
+
       state = AuthState(
         status: state.status,
         account: state.account,
         error: state.error,
-        webLoggedIn: info.isLoggedIn,
+        webLoggedIn: webLoggedIn,
       );
     } on Object catch (error, stack) {
       _log.warning('auth', 'refresh web session failed', error, stack);

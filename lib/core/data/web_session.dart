@@ -16,11 +16,15 @@ final class WebSessionInfo {
     required this.cookieHeader,
     required this.csrfToken,
     required this.isLoggedIn,
+    required this.username,
   });
 
   final String cookieHeader;
   final String csrfToken;
   final bool isLoggedIn;
+
+  /// The username signed in on the web (`''` when anonymous or unknown).
+  final String username;
 }
 
 /// Reads the DeviantArt web session established by the in-app WebView so the
@@ -61,11 +65,19 @@ final class WebSession {
     final isLoggedIn =
         RegExp(r'\\"isLoggedIn\\":(true|false)').firstMatch(html)?.group(1) ==
         'true';
+    // The web username lives in @@publicSession.user.username; "anonymous"
+    // means nobody is signed in on the web.
+    final username =
+        RegExp(r'@@publicSession[^@]{0,300}?username\\":\\"([^\\"]+)')
+            .firstMatch(html)
+            ?.group(1) ??
+        '';
 
     return WebSessionInfo(
       cookieHeader: cookieHeader,
       csrfToken: csrf,
       isLoggedIn: isLoggedIn,
+      username: username,
     );
   }
 
