@@ -63,7 +63,7 @@ final class RfyFeedFetcher {
     final items = <Artwork>[];
     for (final raw in rawDeviations) {
       if (raw is Map) {
-        items.add(_mapDeviation(raw));
+        items.add(mapDeviation(raw));
       }
     }
     return RfyPage(
@@ -72,7 +72,7 @@ final class RfyFeedFetcher {
     );
   }
 
-  static Artwork _mapDeviation(Map<Object?, Object?> json) {
+  static Artwork mapDeviation(Map<Object?, Object?> json) {
     final id = '${json['deviationId']}';
     final author = json['author'] as Map? ?? const <Object?, Object?>{};
     final username = author['username'] as String? ?? '';

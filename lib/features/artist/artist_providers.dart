@@ -2,6 +2,7 @@ import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/data/data_access.dart';
+import '../../core/data/rfy_feed.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/runtime/runtime_provider.dart';
 
@@ -37,6 +38,31 @@ final artistFoldersProvider = FutureProvider.autoDispose
         runtime.transport!,
       ).galleryFolders(username: username);
       return page.items;
+    });
+
+/// The artist's journal posts (articles), via the official
+/// `user/profile/posts` endpoint filtered to `/journal/` entries.
+final artistJournalsProvider = FutureProvider.autoDispose
+    .family<List<Artwork>, String>((ref, username) async {
+      final runtime = ref.watch(runtimeProvider);
+      final json = await runtime.transport!.getJson(
+        'user/profile/posts',
+        query: <String, Object?>{
+          'username': username,
+          'limit': 50,
+          'mature_content': true,
+        },
+      );
+      final rawResults = json['results'];
+      if (rawResults is! List) return const <Artwork>[];
+      final items = <Artwork>[];
+      for (final raw in rawResults) {
+        if (raw is! Map) continue;
+        final url = raw['url'];
+        if (url is! String || !url.contains('/journal/')) continue;
+        items.add(RfyFeedFetcher.mapDeviation(raw));
+      }
+      return items;
     });
 
 /// The contents of one gallery folder.
