@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/auth_state.dart';
 import '../../core/auth/webview_oauth_bridge.dart';
+import '../../core/data/web_session.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 
@@ -87,10 +88,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     final seq = ++_reportSeq;
     try {
       final raw = await controller.evaluateJavascript(
-        source:
-            "JSON.stringify({csrf: window.__CSRF_TOKEN__ || '', "
-            "isLoggedIn: !!window.__INITIAL_STATE__?.['@@publicSession']?.isLoggedIn, "
-            "username: window.__INITIAL_STATE__?.['@@publicSession']?.user?.username || ''})",
+        source: "JSON.stringify({csrf: window.__CSRF_TOKEN__ || ''})",
       );
       if (seq != _reportSeq) return; // a newer report superseded this one
       if (raw is! String || raw.isEmpty) return;
@@ -99,15 +97,19 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       // Pages without a session state (the OAuth callback) have no CSRF token;
       // skip them so they don't overwrite a good session.
       if (csrf.isEmpty) return;
-      final isLoggedIn = (data['isLoggedIn'] as bool?) ?? false;
+      // Read the login identity from the long-lived `userinfo` cookie instead
+      // of the page's __INITIAL_STATE__, which the login/authorize pages do
+      // not populate reliably.
+      final username = await const WebSession().webUsername();
+      final isLoggedIn = username.isNotEmpty;
       debugPrint(
         '[web-session] csrf=${csrf.length} isLoggedIn=$isLoggedIn '
-        'username=${data['username']}',
+        'username=$username',
       );
       await _authController.updateWebSessionInfo(
         csrf: csrf,
         isLoggedIn: isLoggedIn,
-        username: (data['username'] as String?) ?? '',
+        username: username,
       );
       _maybeClose();
     } on Object {
