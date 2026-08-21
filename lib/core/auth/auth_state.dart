@@ -12,6 +12,7 @@ final class AuthState {
     this.webLoggedIn,
     this.webCsrf = '',
     this.webUsername = '',
+    this.isLoggingIn = false,
   });
 
   final AuthStatus status;
@@ -27,6 +28,11 @@ final class AuthState {
 
   /// The username signed in on the web (`''` when anonymous or unknown).
   final String webUsername;
+
+  /// Whether an OAuth authorization is currently in flight. The UI suppresses
+  /// the login-sync banner while this is true to avoid a transient "web signed
+  /// in, complete app login" flash during the normal login flow.
+  final bool isLoggingIn;
 
   bool get oauthSignedIn => status == AuthStatus.signedIn;
 }

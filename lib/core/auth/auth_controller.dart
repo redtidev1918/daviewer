@@ -7,6 +7,7 @@ import '../diagnostics/app_logger.dart';
 import '../runtime/app_runtime.dart';
 import '../runtime/runtime_provider.dart';
 import 'auth_state.dart';
+import 'web_session_store.dart';
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
   (ref) => AuthController(ref),
@@ -17,6 +18,7 @@ final class AuthController extends StateNotifier<AuthState> {
     : super(const AuthState(status: AuthStatus.unknown));
 
   final Ref _ref;
+  final WebSessionStore _webStore = const WebSessionStore();
   bool _initializing = false;
   bool _loggingIn = false;
 
@@ -26,6 +28,22 @@ final class AuthController extends StateNotifier<AuthState> {
   Future<void> initialize() async {
     if (_initializing || state.status != AuthStatus.unknown) return;
     _initializing = true;
+
+    // Restore the web-session snapshot so the home feed stays personalized
+    // across restarts (the OAuth token alone is not enough for `rfy`).
+    final web = await _webStore.read();
+    final webCsrf = web['csrf'] as String? ?? '';
+    final webLoggedIn = web['isLoggedIn'] as bool?;
+    final webUsername = web['username'] as String? ?? '';
+
+    // Seed the state with the web snapshot so `_loadAccount` (which preserves
+    // web fields) keeps them on every path below.
+    state = AuthState(
+      status: AuthStatus.unknown,
+      webLoggedIn: webLoggedIn,
+      webCsrf: webCsrf,
+      webUsername: webUsername,
+    );
 
     final runtime = _runtime;
     if (runtime.isConfigured && runtime.oauth != null) {
@@ -62,7 +80,12 @@ final class AuthController extends StateNotifier<AuthState> {
       }
     }
 
-    state = const AuthState(status: AuthStatus.signedOut);
+    state = AuthState(
+      status: AuthStatus.signedOut,
+      webLoggedIn: webLoggedIn,
+      webCsrf: webCsrf,
+      webUsername: webUsername,
+    );
     _initializing = false;
   }
 
@@ -80,7 +103,19 @@ final class AuthController extends StateNotifier<AuthState> {
     if (state.status == AuthStatus.signedIn || _loggingIn) return;
 
     _loggingIn = true;
-    state = const AuthState(status: AuthStatus.signedOut);
+    // Mark the authorization as in-flight and treat the web session as
+    // unknown (rather than preserving a stale `false` from a previous logout),
+    // so the login-sync banner does not flash during the normal login flow.
+    // The WebView re-reads its page after the OAuth callback and reports the
+    // fresh web session via updateWebSessionInfo.
+    state = AuthState(
+      status: state.status,
+      account: state.account,
+      webLoggedIn: null,
+      webCsrf: state.webCsrf,
+      webUsername: state.webUsername,
+      isLoggingIn: true,
+    );
     try {
       await _preflightClientId(runtime);
       _log.info('auth', 'login: starting OAuth authorize');
@@ -91,10 +126,22 @@ final class AuthController extends StateNotifier<AuthState> {
       // reports the web session (CSRF + account) via updateWebSessionInfo.
     } on DAKitException catch (error) {
       _log.error('auth', 'OAuth login failed: ${error.code}', error);
-      state = AuthState(status: AuthStatus.signedOut, error: error);
+      state = AuthState(
+        status: AuthStatus.signedOut,
+        error: error,
+        webLoggedIn: state.webLoggedIn,
+        webCsrf: state.webCsrf,
+        webUsername: state.webUsername,
+      );
     } catch (error, stack) {
       _log.error('auth', 'OAuth login failed (unexpected)', error, stack);
-      state = AuthState(status: AuthStatus.signedOut, error: error);
+      state = AuthState(
+        status: AuthStatus.signedOut,
+        error: error,
+        webLoggedIn: state.webLoggedIn,
+        webCsrf: state.webCsrf,
+        webUsername: state.webUsername,
+      );
     } finally {
       _loggingIn = false;
     }
@@ -159,6 +206,15 @@ final class AuthController extends StateNotifier<AuthState> {
         await runtime.oauth!.logout(revoke: true);
       } on Object catch (error, stack) {
         _log.warning('auth', 'logout: revocation failed', error, stack);
+        // DAKit's logout can abort at the pending-authorization clear step when
+        // the macOS keychain is inaccessible, which would leave the token store
+        // intact and stop a re-login from requesting fresh scopes. Clear the
+        // session directly so the next authorize starts clean.
+        try {
+          await runtime.oauth!.session.logout(revoke: false);
+        } on Object catch (error2, stack2) {
+          _log.warning('auth', 'logout: token clear failed', error2, stack2);
+        }
       }
     }
     // Clear the embedded web session too so the two sign-in states (OAuth and
@@ -168,6 +224,7 @@ final class AuthController extends StateNotifier<AuthState> {
     } on Object catch (error, stack) {
       _log.warning('auth', 'logout: web session clear failed', error, stack);
     }
+    await _webStore.clear();
     state = const AuthState(
       status: AuthStatus.signedOut,
       webLoggedIn: false,
@@ -195,6 +252,8 @@ final class AuthController extends StateNotifier<AuthState> {
       status: AuthStatus.signedIn,
       account: account,
       webLoggedIn: state.webLoggedIn,
+      webCsrf: state.webCsrf,
+      webUsername: state.webUsername,
     );
   }
 
@@ -238,6 +297,14 @@ final class AuthController extends StateNotifier<AuthState> {
       webLoggedIn: resolvedLoggedIn,
       webCsrf: resolvedCsrf,
       webUsername: isLoggedIn ? username : '',
+      isLoggingIn: state.isLoggingIn,
+    );
+
+    // Persist the web-session snapshot so the next cold start restores it.
+    await _webStore.write(
+      csrf: resolvedCsrf,
+      isLoggedIn: resolvedLoggedIn,
+      username: isLoggedIn ? username : '',
     );
   }
 }

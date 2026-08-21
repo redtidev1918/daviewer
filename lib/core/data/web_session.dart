@@ -23,9 +23,18 @@ final class WebSession {
 
   /// Serializes the deviantart.com cookies into a `Cookie` header value.
   Future<String> cookieHeader() async {
-    final cookies = await CookieManager.instance().getCookies(
-      url: WebUri(_home.toString()),
-    );
-    return cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ');
+    try {
+      final cookies = await CookieManager.instance().getCookies(
+        url: WebUri(_home.toString()),
+      );
+      return cookies
+          .map((cookie) => '${cookie.name}=${cookie.value}')
+          .join('; ');
+    } on Object {
+      // The cookie manager can be unavailable very early in startup; an empty
+      // header simply makes the feed report an auth error, which the UI maps
+      // to a sign-in prompt rather than a crash.
+      return '';
+    }
   }
 }

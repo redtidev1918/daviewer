@@ -39,6 +39,9 @@ final class AppStrings {
   String get gallery => _lang == AppLanguage.zh ? '画廊' : 'Gallery';
   String get favourites => _lang == AppLanguage.zh ? '收藏' : 'Favourites';
   String get downloads => _lang == AppLanguage.zh ? '下载' : 'Downloads';
+  String get notifications => _lang == AppLanguage.zh ? '通知' : 'Notifications';
+  String get noNotifications =>
+      _lang == AppLanguage.zh ? '暂无通知' : 'No notifications.';
   String get settings => _lang == AppLanguage.zh ? '设置' : 'Settings';
   String get logout => _lang == AppLanguage.zh ? '退出登录' : 'Logout';
   String get signedOut => _lang == AppLanguage.zh ? '已登出' : 'Signed out';
@@ -50,6 +53,10 @@ final class AppStrings {
   String get webLogin => _lang == AppLanguage.zh ? '登录网页版' : 'Web login';
   String get notLoggedIn => _lang == AppLanguage.zh ? '未登录' : 'Not signed in';
   String get loginFirst => _lang == AppLanguage.zh ? '请先登录。' : 'Please sign in.';
+  String get webSessionExpired =>
+      _lang == AppLanguage.zh
+          ? '网页会话已过期，请重新登录网页版以刷新首页推荐。'
+          : 'Your web session expired. Sign in again to refresh home recommendations.';
   String get webLoggedInOAuthMissing =>
       _lang == AppLanguage.zh
           ? '网页版已登录，补全 App 登录后可使用收藏 / 关注 / 下载。'

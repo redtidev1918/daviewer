@@ -34,6 +34,13 @@ final class WebViewOAuthBridge implements ExternalUriLauncher {
 
   @override
   Future<void> launch(Uri uri) async {
+    // The WebLoginScreen subscribes in initState right after its route is
+    // pushed, so give it a short grace period before falling back to the
+    // system browser. Falling back too eagerly would leave the embedded web
+    // session out of sync with the OAuth account.
+    for (var i = 0; i < 25 && !_launchController.hasListener; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
     if (_launchController.hasListener) {
       _launchController.add(uri);
     } else {
