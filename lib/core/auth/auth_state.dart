@@ -10,6 +10,8 @@ final class AuthState {
     this.account,
     this.error,
     this.webLoggedIn,
+    this.webCsrf = '',
+    this.webUsername = '',
   });
 
   final AuthStatus status;
@@ -18,6 +20,13 @@ final class AuthState {
 
   /// Whether the DeviantArt web session is signed in (`null` while unknown).
   final bool? webLoggedIn;
+
+  /// The CSRF token read from the embedded web page, used by the native
+  /// `rfy/deviations` feed.
+  final String webCsrf;
+
+  /// The username signed in on the web (`''` when anonymous or unknown).
+  final String webUsername;
 
   bool get oauthSignedIn => status == AuthStatus.signedIn;
 }
