@@ -222,11 +222,32 @@ final class _FollowingFeed extends ConsumerWidget {
       );
     }
     final feed = ref.watch(followingFeedProvider);
-    return ArtworkFeedGrid(
-      feed: feed,
-      emptyMessage: s.noWatched,
-      onRefresh: () => ref.read(followingFeedProvider.notifier).refresh(),
-      onLoadMore: () => ref.read(followingFeedProvider.notifier).loadMore(),
+    final isZh = ref.watch(appLanguageProvider) == AppLanguage.zh;
+    return Column(
+      children: <Widget>[
+        // Keep the followed-users list adjacent to the followed artwork feed
+        // so it is discoverable without digging into Settings.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: TextButton.icon(
+              onPressed: () => context.push('/watching'),
+              icon: const Icon(Icons.people_outline, size: 18),
+              label: Text(isZh ? '关注用户' : 'Watching'),
+            ),
+          ),
+        ),
+        Expanded(
+          child: ArtworkFeedGrid(
+            feed: feed,
+            emptyMessage: s.noWatched,
+            onRefresh: () => ref.read(followingFeedProvider.notifier).refresh(),
+            onLoadMore: () =>
+                ref.read(followingFeedProvider.notifier).loadMore(),
+          ),
+        ),
+      ],
     );
   }
 }
