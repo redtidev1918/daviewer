@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dakit_core/dakit_core.dart';
+import 'package:flutter/foundation.dart';
 
 import '../network/desktop_uri_launcher.dart';
 
@@ -42,8 +43,10 @@ final class WebViewOAuthBridge implements ExternalUriLauncher {
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
     if (_launchController.hasListener) {
+      debugPrint('[oauth] routing authorize to embedded WebView');
       _launchController.add(uri);
     } else {
+      debugPrint('[oauth] NO WebView listener -> system browser fallback');
       await _fallback.launch(uri);
     }
   }

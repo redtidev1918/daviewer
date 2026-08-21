@@ -36,6 +36,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   Uri? _pendingAuthUri;
   bool _loading = true;
   bool _closeAfterReport = false;
+  int _reportSeq = 0;
   double _progress = 0;
   late final AuthController _authController;
 
@@ -83,6 +84,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   Future<void> _reportWebSession() async {
     final controller = _controller;
     if (controller == null) return;
+    final seq = ++_reportSeq;
     try {
       final raw = await controller.evaluateJavascript(
         source:
@@ -90,16 +92,21 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
             "isLoggedIn: !!window.__INITIAL_STATE__?.['@@publicSession']?.isLoggedIn, "
             "username: window.__INITIAL_STATE__?.['@@publicSession']?.user?.username || ''})",
       );
+      if (seq != _reportSeq) return; // a newer report superseded this one
       if (raw is! String || raw.isEmpty) return;
       final data = jsonDecode(raw) as Map<String, dynamic>;
       final csrf = (data['csrf'] as String?) ?? '';
-      // Pages without a session state (the OAuth callback, the login page) have
-      // no CSRF token; skip them so they don't overwrite a good session with a
-      // bogus "logged out" report.
+      // Pages without a session state (the OAuth callback) have no CSRF token;
+      // skip them so they don't overwrite a good session.
       if (csrf.isEmpty) return;
+      final isLoggedIn = (data['isLoggedIn'] as bool?) ?? false;
+      debugPrint(
+        '[web-session] csrf=${csrf.length} isLoggedIn=$isLoggedIn '
+        'username=${data['username']}',
+      );
       await _authController.updateWebSessionInfo(
         csrf: csrf,
-        isLoggedIn: (data['isLoggedIn'] as bool?) ?? false,
+        isLoggedIn: isLoggedIn,
         username: (data['username'] as String?) ?? '',
       );
       _maybeClose();
@@ -200,13 +207,11 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
           },
           onLoadStop: (controller, url) {
             if (mounted) setState(() => _loading = false);
-            // Only report from the deviantart home page, where the session
-            // state is complete. The login/authorize pages would report a
-            // stale anonymous state.
+            // Report from any deviantart.com page. A sequence counter makes
+            // the latest page win, so an earlier anonymous page (login) cannot
+            // overwrite a later signed-in page (home).
             final uri = url;
-            if (uri != null &&
-                uri.host == 'www.deviantart.com' &&
-                (uri.path == '/' || uri.path.isEmpty)) {
+            if (uri != null && uri.host == 'www.deviantart.com') {
               unawaited(_reportWebSession());
             }
           },
