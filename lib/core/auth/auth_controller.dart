@@ -7,7 +7,6 @@ import '../diagnostics/app_logger.dart';
 import '../runtime/app_runtime.dart';
 import '../runtime/runtime_provider.dart';
 import 'auth_state.dart';
-import 'session_state.dart';
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
   (ref) => AuthController(ref),
@@ -40,7 +39,6 @@ final class AuthController extends StateNotifier<AuthState> {
         if (restored != null) {
           _log.info('auth', 'initialize: resumed pending OAuth login');
           await _loadAccount(runtime);
-          await refreshWebSession();
           _initializing = false;
           return;
         }
@@ -55,7 +53,6 @@ final class AuthController extends StateNotifier<AuthState> {
           '(expires ${tokens.expiresAt.toUtc().toIso8601String()})',
         );
         await _loadAccount(runtime);
-        await refreshWebSession();
         _initializing = false;
         return;
       } on DAKitException catch (error) {
@@ -66,7 +63,6 @@ final class AuthController extends StateNotifier<AuthState> {
     }
 
     state = const AuthState(status: AuthStatus.signedOut);
-    await refreshWebSession();
     _initializing = false;
   }
 
@@ -91,9 +87,8 @@ final class AuthController extends StateNotifier<AuthState> {
       await runtime.oauth!.authorize();
       _log.info('auth', 'login: authorize returned, loading account');
       await _loadAccount(runtime);
-      // A WebView OAuth login also establishes the web session; refresh it so
-      // the personalized home feed and sync banner follow immediately.
-      await refreshWebSession();
+      // The embedded WebView re-reads its own page after the OAuth callback and
+      // reports the web session (CSRF + account) via updateWebSessionInfo.
     } on DAKitException catch (error) {
       _log.error('auth', 'OAuth login failed: ${error.code}', error);
       state = AuthState(status: AuthStatus.signedOut, error: error);
@@ -203,44 +198,46 @@ final class AuthController extends StateNotifier<AuthState> {
     );
   }
 
-  /// Re-reads the embedded DeviantArt web session and updates only the
-  /// [AuthState.webLoggedIn] field, leaving the OAuth account untouched.
+  /// Records the web session state read from the embedded WebView page.
   ///
-  /// Also reconciles the two sign-in identities: if the web session belongs to
-  /// a *different* account than the OAuth session, the web session is cleared
-  /// so the app never shows two accounts at once.
-  Future<void> refreshWebSession() async {
-    try {
-      final info = await _ref.read(webSessionProvider).read();
-      var webLoggedIn = info.isLoggedIn;
+  /// Reconciles the two sign-in identities: if the web session belongs to a
+  /// *different* account than the OAuth session, the web session is cleared so
+  /// the app never shows two accounts at once.
+  Future<void> updateWebSessionInfo({
+    required String csrf,
+    required bool isLoggedIn,
+    required String username,
+  }) async {
+    var resolvedLoggedIn = isLoggedIn;
+    var resolvedCsrf = csrf;
 
-      final oauthUsername = state.account?.username;
-      if (webLoggedIn &&
-          oauthUsername != null &&
-          oauthUsername.isNotEmpty &&
-          info.username.isNotEmpty &&
-          info.username.toLowerCase() != oauthUsername.toLowerCase()) {
-        _log.warning(
-          'auth',
-          'web session is a different account '
-          '(web=${info.username}, oauth=$oauthUsername); logging the web out',
-        );
-        try {
-          await CookieManager.instance().deleteAllCookies();
-        } on Object catch (error, stack) {
-          _log.warning('auth', 'failed to clear mismatched web session', error, stack);
-        }
-        webLoggedIn = false;
-      }
-
-      state = AuthState(
-        status: state.status,
-        account: state.account,
-        error: state.error,
-        webLoggedIn: webLoggedIn,
+    final oauthUsername = state.account?.username;
+    if (resolvedLoggedIn &&
+        oauthUsername != null &&
+        oauthUsername.isNotEmpty &&
+        username.isNotEmpty &&
+        username.toLowerCase() != oauthUsername.toLowerCase()) {
+      _log.warning(
+        'auth',
+        'web session is a different account '
+        '(web=$username, oauth=$oauthUsername); logging the web out',
       );
-    } on Object catch (error, stack) {
-      _log.warning('auth', 'refresh web session failed', error, stack);
+      try {
+        await CookieManager.instance().deleteAllCookies();
+      } on Object catch (error, stack) {
+        _log.warning('auth', 'failed to clear mismatched web session', error, stack);
+      }
+      resolvedLoggedIn = false;
+      resolvedCsrf = '';
     }
+
+    state = AuthState(
+      status: state.status,
+      account: state.account,
+      error: state.error,
+      webLoggedIn: resolvedLoggedIn,
+      webCsrf: resolvedCsrf,
+      webUsername: isLoggedIn ? username : '',
+    );
   }
 }

@@ -16,16 +16,17 @@ final rfyFeedProvider =
     ) {
       final runtime = ref.watch(runtimeProvider);
       final webSession = ref.watch(webSessionProvider);
-      ref.watch(authControllerProvider.select((auth) => auth.webLoggedIn));
+      ref.watch(authControllerProvider.select((auth) => auth.webCsrf));
       final fetcher = RfyFeedFetcher(runtime.dio!);
       final controller = ArtworkFeedController((request) async {
-        final session = await webSession.read();
-        if (!session.isLoggedIn) {
+        final csrf = ref.read(authControllerProvider).webCsrf;
+        if (csrf.isEmpty) {
           throw const WebLoginRequired();
         }
+        final cookieHeader = await webSession.cookieHeader();
         final page = await fetcher.fetch(
-          cookieHeader: session.cookieHeader,
-          csrfToken: session.csrfToken,
+          cookieHeader: cookieHeader,
+          csrfToken: csrf,
           cursor: request.cursor,
         );
         return Page<Artwork>(

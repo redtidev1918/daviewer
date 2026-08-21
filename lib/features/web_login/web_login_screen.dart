@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -52,10 +53,6 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   @override
   void dispose() {
     unawaited(_launchSub?.cancel());
-    // The web session may have changed; refresh the web sign-in state when
-    // this screen closes so the home feed and sync banner follow. The
-    // controller was captured in initState because `ref` is unusable here.
-    unawaited(_authController.refreshWebSession());
     super.dispose();
   }
 
@@ -66,6 +63,31 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       return;
     }
     controller.loadUrl(urlRequest: URLRequest(url: WebUri(uri.toString())));
+  }
+
+  /// Reads the web session (CSRF + login state + username) from the WebView
+  /// page and reports it to the auth controller. The page must be read here
+  /// because a plain HTTP client is rejected by deviantart.com's bot filter.
+  Future<void> _reportWebSession() async {
+    final controller = _controller;
+    if (controller == null) return;
+    try {
+      final raw = await controller.evaluateJavascript(
+        source:
+            "JSON.stringify({csrf: window.__CSRF_TOKEN__ || '', "
+            "isLoggedIn: !!window.__INITIAL_STATE__?.['@@publicSession']?.isLoggedIn, "
+            "username: window.__INITIAL_STATE__?.['@@publicSession']?.user?.username || ''})",
+      );
+      if (raw is! String || raw.isEmpty) return;
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      await _authController.updateWebSessionInfo(
+        csrf: (data['csrf'] as String?) ?? '',
+        isLoggedIn: (data['isLoggedIn'] as bool?) ?? false,
+        username: (data['username'] as String?) ?? '',
+      );
+    } on Object {
+      // Best effort; the page may not expose the state during navigation.
+    }
   }
 
   @override
@@ -141,6 +163,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
           },
           onLoadStop: (controller, url) {
             if (mounted) setState(() => _loading = false);
+            unawaited(_reportWebSession());
           },
           onProgressChanged: (controller, progress) {
             if (mounted) setState(() => _progress = progress / 100);
