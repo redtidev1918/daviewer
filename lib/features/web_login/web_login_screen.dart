@@ -92,8 +92,13 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       );
       if (raw is! String || raw.isEmpty) return;
       final data = jsonDecode(raw) as Map<String, dynamic>;
+      final csrf = (data['csrf'] as String?) ?? '';
+      // Pages without a session state (the OAuth callback, the login page) have
+      // no CSRF token; skip them so they don't overwrite a good session with a
+      // bogus "logged out" report.
+      if (csrf.isEmpty) return;
       await _authController.updateWebSessionInfo(
-        csrf: (data['csrf'] as String?) ?? '',
+        csrf: csrf,
         isLoggedIn: (data['isLoggedIn'] as bool?) ?? false,
         username: (data['username'] as String?) ?? '',
       );
