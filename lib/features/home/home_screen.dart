@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_controller.dart';
-import '../../core/auth/auth_state.dart';
+import '../../core/auth/session_state.dart';
 import '../../core/data/web_session.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_empty_state.dart';
@@ -25,9 +25,9 @@ final class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = strings(ref.watch(appLanguageProvider));
-    final auth = ref.watch(authControllerProvider);
-    final webLoggedIn = ref.watch(webLoggedInProvider);
-    final oauthSignedIn = auth.status == AuthStatus.signedIn;
+    final session = ref.watch(sessionStateProvider);
+    final oauthSignedIn = session.oauthSignedIn;
+    final webLoggedIn = session.webLoggedIn;
 
     Widget? syncBanner;
     if (webLoggedIn == true && !oauthSignedIn) {
@@ -56,7 +56,7 @@ final class HomeScreen extends ConsumerWidget {
             if (oauthSignedIn)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Center(child: Text(auth.account?.username ?? '')),
+                child: Center(child: Text(session.account?.username ?? '')),
               )
             else
               Padding(
@@ -170,9 +170,9 @@ final class _DailyFeed extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authControllerProvider);
+    final session = ref.watch(sessionStateProvider);
     final s = strings(ref.watch(appLanguageProvider));
-    if (auth.status != AuthStatus.signedIn) {
+    if (!session.oauthSignedIn) {
       return _LoginPrompt(
         s: s,
         onLogin: () {
@@ -211,9 +211,9 @@ final class _FollowingFeed extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authControllerProvider);
+    final session = ref.watch(sessionStateProvider);
     final s = strings(ref.watch(appLanguageProvider));
-    if (auth.status != AuthStatus.signedIn) {
+    if (!session.oauthSignedIn) {
       return _LoginPrompt(
         s: s,
         onLogin: () {
