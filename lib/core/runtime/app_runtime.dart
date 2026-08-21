@@ -100,6 +100,7 @@ final class AppRuntime {
           OAuthScope.userManage,
           OAuthScope.gallery,
           OAuthScope.feed,
+          OAuthScope.message,
         },
       ),
       endpoint: dio == null ? null : DioOAuthEndpoint(dio: dio),

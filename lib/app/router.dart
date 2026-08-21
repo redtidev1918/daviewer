@@ -11,6 +11,7 @@ import '../features/downloads/downloads_screen.dart';
 import '../features/favourites/favourites_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/login/login_screen.dart';
+import '../features/notifications/notifications_screen.dart';
 import '../features/search/search_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/splash/splash_screen.dart';
@@ -60,6 +61,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/watching',
         builder: (context, state) => const WatchingScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

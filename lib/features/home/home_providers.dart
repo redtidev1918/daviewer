@@ -1,4 +1,5 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_controller.dart';
@@ -7,6 +8,7 @@ import '../../core/data/rfy_feed.dart';
 import '../../core/data/web_session.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/runtime/runtime_provider.dart';
+import '../artwork/artwork_store.dart';
 
 /// The personalized home feed (`rfy/deviations`) rendered natively. It rebuilds
 /// whenever the web sign-in state changes.
@@ -24,11 +26,26 @@ final rfyFeedProvider =
           throw const WebLoginRequired();
         }
         final cookieHeader = await webSession.cookieHeader();
-        final page = await fetcher.fetch(
-          cookieHeader: cookieHeader,
-          csrfToken: csrf,
-          cursor: request.cursor,
-        );
+        final RfyPage page;
+        try {
+          page = await fetcher.fetch(
+            cookieHeader: cookieHeader,
+            csrfToken: csrf,
+            cursor: request.cursor,
+          );
+        } on DioException catch (error) {
+          final status = error.response?.statusCode;
+          // A stale/expired web session (e.g. a persisted CSRF that rotated)
+          // returns 400 (`invalid_request`/`csrf`) or 401/403; surface a web
+          // sign-in prompt rather than a raw home error.
+          if (status == 400 || status == 401 || status == 403) {
+            throw const WebLoginRequired();
+          }
+          rethrow;
+        }
+        // Cache the fully mapped artwork so the detail screen can render web
+        // items (numeric ids) without an OAuth `deviation/{id}` lookup.
+        ref.read(artworkStoreProvider.notifier).putAll(page.items);
         return Page<Artwork>(
           items: page.items,
           hasMore: page.hasMore,

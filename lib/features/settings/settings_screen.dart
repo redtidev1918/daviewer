@@ -57,6 +57,11 @@ final class SettingsScreen extends ConsumerWidget {
             title: Text(s.downloads),
             onTap: () => context.go('/downloads'),
           ),
+          ListTile(
+            leading: const Icon(Icons.notifications_outlined),
+            title: Text(s.notifications),
+            onTap: () => context.push('/notifications'),
+          ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.translate),
@@ -94,22 +99,6 @@ final class SettingsScreen extends ConsumerWidget {
           ),
           const Divider(),
           if (auth.status == AuthStatus.signedIn) ...[
-            ListTile(
-              leading: const Icon(Icons.swap_horiz),
-              title: Text(s.switchAccount),
-              subtitle: Text(
-                language == AppLanguage.zh
-                    ? '退出当前会话并登录其他账号'
-                    : 'Sign out and authorize another account',
-              ),
-              onTap: () {
-                // Open the in-app WebView first so the re-authorization happens
-                // there (reusing the login flow) instead of a jarring bounce to
-                // the system browser.
-                context.push('/web-login');
-                ref.read(authControllerProvider.notifier).switchAccount();
-              },
-            ),
             ListTile(
               leading: const Icon(Icons.logout),
               title: Text(s.logout),

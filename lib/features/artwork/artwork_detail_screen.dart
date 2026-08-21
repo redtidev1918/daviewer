@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../core/data/html_text.dart';
 import '../../core/runtime/runtime_provider.dart';
 import 'artwork_detail_providers.dart';
 
@@ -42,9 +43,14 @@ final class _ArtworkDetailScreenState
     try {
       final runtime = ref.read(runtimeProvider);
       final social = OfficialSocialRepository(runtime.transport!);
+      // Resolve the OAuth UUID: numeric web-feed ids map through
+      // dadeviation/init before they can be favourited.
+      final uuid = await ref.read(
+        artworkUuidProvider(widget.artworkId).future,
+      );
       final result = _favourite
-          ? await social.unfavourite(widget.artworkId)
-          : await social.favourite(widget.artworkId);
+          ? await social.unfavourite(uuid)
+          : await social.favourite(uuid);
       if (!mounted) return;
       setState(() => _favourite = result.isFavourite);
     } on Object catch (error) {
@@ -194,7 +200,12 @@ final class _ArtworkDetailScreenState
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
-          Text(description),
+          SelectableText(
+            htmlToPlainText(description),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              height: 1.5,
+            ),
+          ),
           const SizedBox(height: 16),
         ],
         const SizedBox(height: 8),
@@ -232,7 +243,17 @@ final class _MediaViewer extends StatelessWidget {
     }
 
     final video = media.where((m) => m.kind == MediaKind.video).firstOrNull;
-    final image = media.where((m) => m.kind == MediaKind.image).firstOrNull;
+    // Inline display: prefer the largest resampled preview so we never force
+    // the (potentially huge) original onto the image cache for inline use.
+    final image =
+        media
+            .where((m) => m.kind == MediaKind.image && m.role == MediaRole.preview)
+            .fold<MediaAsset?>(
+              null,
+              (best, m) =>
+                  best == null || (m.width ?? 0) > (best.width ?? 0) ? m : best,
+            ) ??
+        media.where((m) => m.kind == MediaKind.image).firstOrNull;
     final animation = media
         .where((m) => m.kind == MediaKind.animation)
         .firstOrNull;
@@ -244,6 +265,12 @@ final class _MediaViewer extends StatelessWidget {
       return _AnimatedImage(url: animation.uri.toString());
     }
     if (image != null && image.uri != null) {
+      // Animated GIFs render through Image.network so they actually animate
+      // (the static resampled posters are .jpg, but the display asset points at
+      // the animated .gif baseUri for GIF deviations).
+      if (image.mimeType == 'image/gif') {
+        return _AnimatedImage(url: image.uri.toString());
+      }
       return _TappableImage(url: image.uri.toString());
     }
     return _TappableImage(url: media.first.uri.toString());

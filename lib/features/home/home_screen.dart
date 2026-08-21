@@ -29,7 +29,10 @@ final class HomeScreen extends ConsumerWidget {
     final webLoggedIn = auth.webLoggedIn;
 
     Widget? syncBanner;
-    if (webLoggedIn == true && !oauthSignedIn) {
+    // Skip the sync banner while an OAuth authorization is in flight, so the
+    // normal login flow doesn't flash a transient "web signed in, complete app
+    // login" prompt before the account finishes loading.
+    if (!auth.isLoggingIn && webLoggedIn == true && !oauthSignedIn) {
       syncBanner = _LoginSyncBanner(
         message: s.webLoggedInOAuthMissing,
         actionLabel: s.login,
@@ -38,7 +41,7 @@ final class HomeScreen extends ConsumerWidget {
           ref.read(authControllerProvider.notifier).login();
         },
       );
-    } else if (webLoggedIn == false && oauthSignedIn) {
+    } else if (!auth.isLoggingIn && webLoggedIn == false && oauthSignedIn) {
       syncBanner = _LoginSyncBanner(
         message: s.webLoggedOutOAuthActive,
         actionLabel: s.webLogin,
@@ -70,6 +73,11 @@ final class HomeScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+            IconButton(
+              tooltip: s.notifications,
+              onPressed: () => context.push('/notifications'),
+              icon: const Icon(Icons.notifications_outlined),
+            ),
             IconButton(
               tooltip: s.settings,
               onPressed: () => context.push('/settings'),
@@ -143,14 +151,23 @@ final class _RfyFeed extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(rfyFeedProvider);
     final s = strings(ref.watch(appLanguageProvider));
+    final oauthSignedIn = ref
+        .watch(authControllerProvider)
+        .oauthSignedIn;
     final needLogin = feed.error is WebLoginRequired;
 
     if (needLogin) {
+      // When OAuth is already signed in, the home feed only needs its web
+      // session refreshed (the embedded WebView re-reads the CSRF/cookies);
+      // when fully signed out, run the whole login flow.
       return _LoginPrompt(
         s: s,
+        message: oauthSignedIn ? s.webSessionExpired : null,
         onLogin: () {
           context.push('/web-login');
-          ref.read(authControllerProvider.notifier).login();
+          if (!oauthSignedIn) {
+            ref.read(authControllerProvider.notifier).login();
+          }
         },
       );
     }
@@ -253,10 +270,11 @@ final class _FollowingFeed extends ConsumerWidget {
 }
 
 final class _LoginPrompt extends StatelessWidget {
-  const _LoginPrompt({required this.s, required this.onLogin});
+  const _LoginPrompt({required this.s, required this.onLogin, this.message});
 
   final AppStrings s;
   final VoidCallback onLogin;
+  final String? message;
 
   @override
   Widget build(BuildContext context) {
@@ -274,7 +292,7 @@ final class _LoginPrompt extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              s.loginFirst,
+              message ?? s.loginFirst,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
