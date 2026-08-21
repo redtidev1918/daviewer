@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/auth_state.dart';
+import '../../core/data/web_session.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
@@ -65,31 +66,60 @@ final class _RfyFeed extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(rfyFeedProvider);
     final s = strings(ref.watch(appLanguageProvider));
+    final needWebLogin = feed.error is WebLoginRequired;
 
     return Column(
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-          child: Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: TextButton.icon(
-              onPressed: () => context.push('/web-login'),
-              icon: const Icon(Icons.language, size: 18),
-              label: Text(
-                ref.watch(appLanguageProvider) == AppLanguage.zh
-                    ? '登录网页版获得个性化推荐'
-                    : 'Sign in on web for personalized feed',
+        if (needWebLogin)
+          Material(
+            color: Theme.of(context).colorScheme.secondaryContainer,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      ref.watch(appLanguageProvider) == AppLanguage.zh
+                          ? '登录网页版后，这里会显示你的个性化推荐。'
+                          : 'Sign in on the web to see your personalized feed.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.tonal(
+                    onPressed: () => context.push('/web-login'),
+                    child: Text(s.webLogin),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                onPressed: () => context.push('/web-login'),
+                icon: const Icon(Icons.language, size: 18),
+                label: Text(
+                  ref.watch(appLanguageProvider) == AppLanguage.zh
+                      ? '登录网页版获得个性化推荐'
+                      : 'Sign in on web for personalized feed',
+                ),
               ),
             ),
           ),
-        ),
         Expanded(
-          child: ArtworkFeedGrid(
-            feed: feed,
-            emptyMessage: s.noArtworks,
-            onRefresh: () => ref.read(rfyFeedProvider.notifier).refresh(),
-            onLoadMore: () => ref.read(rfyFeedProvider.notifier).loadMore(),
-          ),
+          child: needWebLogin
+              ? const SizedBox.shrink()
+              : ArtworkFeedGrid(
+                  feed: feed,
+                  emptyMessage: s.noArtworks,
+                  onRefresh: () => ref.read(rfyFeedProvider.notifier).refresh(),
+                  onLoadMore: () =>
+                      ref.read(rfyFeedProvider.notifier).loadMore(),
+                ),
         ),
       ],
     );
