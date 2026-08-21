@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/data/da_uri.dart';
 import '../../core/data/web_session.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_empty_state.dart';
@@ -68,6 +69,11 @@ final class HomeScreen extends ConsumerWidget {
                 ),
               ),
             IconButton(
+              tooltip: '打开链接',
+              onPressed: () => _showOpenLinkDialog(context),
+              icon: const Icon(Icons.link),
+            ),
+            IconButton(
               tooltip: s.notifications,
               onPressed: () => context.push('/notifications'),
               icon: const Icon(Icons.notifications_outlined),
@@ -101,7 +107,41 @@ final class HomeScreen extends ConsumerWidget {
   }
 }
 
-final class _LoginSyncBanner extends StatelessWidget {
+Future<void> _showOpenLinkDialog(BuildContext context) async {
+  final controller = TextEditingController();
+  final route = await showDialog<String>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('打开 DeviantArt 链接'),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        decoration: const InputDecoration(
+          hintText: '粘贴作品或作者链接，例如\nhttps://www.deviantart.com/xxx/art/xxx-123456789',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final link = parseDeviantArtUrl(controller.text);
+            Navigator.of(context).pop(link?.route);
+          },
+          child: const Text('打开'),
+        ),
+      ],
+    ),
+  );
+  if (route != null && context.mounted) {
+    context.push(route);
+  }
+}
+
+final class _LoginSyncBanner extends StatefulWidget {
   const _LoginSyncBanner({
     required this.message,
     required this.actionLabel,
@@ -113,24 +153,41 @@ final class _LoginSyncBanner extends StatelessWidget {
   final VoidCallback onAction;
 
   @override
+  State<_LoginSyncBanner> createState() => _LoginSyncBannerState();
+}
+
+final class _LoginSyncBannerState extends State<_LoginSyncBanner> {
+  bool _dismissed = false;
+
+  @override
   Widget build(BuildContext context) {
+    if (_dismissed) return const SizedBox.shrink();
     final theme = Theme.of(context);
     return Material(
       color: theme.colorScheme.secondaryContainer,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
+        padding: const EdgeInsets.fromLTRB(16, 6, 4, 6),
         child: Row(
           children: <Widget>[
             Expanded(
               child: Text(
-                message,
+                widget.message,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSecondaryContainer,
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            TextButton(onPressed: onAction, child: Text(actionLabel)),
+            TextButton(
+              onPressed: widget.onAction,
+              child: Text(widget.actionLabel),
+            ),
+            IconButton(
+              tooltip: '关闭',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => setState(() => _dismissed = true),
+              icon: const Icon(Icons.close, size: 18),
+            ),
           ],
         ),
       ),
