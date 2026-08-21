@@ -81,3 +81,169 @@ void _walkTiptap(Object? node, StringBuffer buffer) {
     }
   }
 }
+
+/// Converts a tiptap document JSON string into an HTML fragment, preserving
+/// inline marks (bold/italic/underline/link) and rendering embedded
+/// `da-deviation` nodes (a journal's inline artwork) as `<img>` elements with
+/// a resolved Wix image URL.
+String tiptapToHtml(String json) {
+  try {
+    final decoded = jsonDecode(json);
+    Object? document = decoded;
+    if (decoded is Map && decoded['document'] is Map) {
+      document = decoded['document'];
+    }
+    final buffer = StringBuffer();
+    _walkTiptapHtml(document, buffer);
+    return buffer.toString();
+  } on Object {
+    return '';
+  }
+}
+
+void _walkTiptapHtml(Object? node, StringBuffer buffer) {
+  if (node is Map) {
+    final type = node['type'];
+    if (type == 'text') {
+      final text = node['text'];
+      if (text is String) {
+        buffer.write(_applyTiptapMarks(_escapeHtml(text), node['marks']));
+      }
+      return;
+    }
+    if (type == 'hardBreak') {
+      buffer.write('<br>');
+      return;
+    }
+    if (type == 'da-deviation') {
+      final attrs = node['attrs'];
+      final deviation = attrs is Map ? attrs['deviation'] : null;
+      final media = deviation is Map ? deviation['media'] : null;
+      final url = media is Map ? _wixImageUrl(media) : null;
+      if (url != null) {
+        buffer.write(
+          '<img src="$url" style="max-width:100%;height:auto;" />',
+        );
+      }
+      return;
+    }
+    final tag = switch (type) {
+      'heading' => 'h${_headingLevel(node['attrs'])}',
+      'paragraph' => 'p',
+      'blockquote' => 'blockquote',
+      'bulletList' => 'ul',
+      'orderedList' => 'ol',
+      'listItem' => 'li',
+      _ => null,
+    };
+    if (tag != null) buffer.write('<$tag>');
+    final content = node['content'];
+    if (content is List) {
+      for (final child in content) {
+        _walkTiptapHtml(child, buffer);
+      }
+    }
+    if (tag != null) buffer.write('</$tag>');
+  } else if (node is List) {
+    for (final child in node) {
+      _walkTiptapHtml(child, buffer);
+    }
+  }
+}
+
+String _applyTiptapMarks(String text, Object? marks) {
+  if (marks is! List || marks.isEmpty) return text;
+  String? href;
+  final opens = <String>[];
+  final closes = <String>[];
+  for (final mark in marks) {
+    if (mark is! Map) continue;
+    switch (mark['type']) {
+      case 'bold':
+        opens.add('<b>');
+        closes.insert(0, '</b>');
+      case 'italic':
+        opens.add('<i>');
+        closes.insert(0, '</i>');
+      case 'underline':
+        opens.add('<u>');
+        closes.insert(0, '</u>');
+      case 'strike':
+        opens.add('<s>');
+        closes.insert(0, '</s>');
+      case 'link':
+        final attrs = mark['attrs'];
+        href = attrs is Map ? attrs['href'] as String? : null;
+    }
+  }
+  if (href != null && href.isNotEmpty) {
+    opens.add('<a href="${_escapeHtml(href)}">');
+    closes.insert(0, '</a>');
+  }
+  return '${opens.join()}$text${closes.join()}';
+}
+
+int _headingLevel(Object? attrs) {
+  if (attrs is Map) {
+    final level = attrs['level'];
+    if (level is num) return level.toInt().clamp(1, 6);
+  }
+  return 2;
+}
+
+/// Resolves a Wix media descriptor into a display URL: the `fullview` transform
+/// (or the largest resampled image) appended to the base URI with its token.
+String? _wixImageUrl(Map media) {
+  final base = media['baseUri'] as String?;
+  if (base == null || base.isEmpty) return null;
+  final pretty = media['prettyName'] as String? ?? '';
+  final tokens = (media['token'] as List? ?? const <Object?>[])
+      .whereType<String>()
+      .toList(growable: false);
+  final types = media['types'] as List? ?? const <Object?>[];
+
+  Map? best;
+  for (final type in types) {
+    if (type is Map && type['t'] == 'fullview') {
+      best = type;
+      break;
+    }
+  }
+  if (best == null) {
+    var bestWidth = -1;
+    for (final type in types) {
+      if (type is! Map) continue;
+      final transform = type['c'];
+      if (transform is! String || transform.isEmpty) continue;
+      final width = (type['w'] as num?)?.toInt() ?? 0;
+      if (width > bestWidth) {
+        bestWidth = width;
+        best = type;
+      }
+    }
+  }
+
+  final transform = best?['c'];
+  String url;
+  if (transform is String) {
+    final separator = transform.startsWith('/') ? '' : '/';
+    url = '$base$separator${transform.replaceAll('<prettyName>', pretty)}';
+  } else {
+    url = base;
+  }
+  final index = best?['r'];
+  final token = index is int && index >= 0 && index < tokens.length
+      ? tokens[index]
+      : (tokens.isNotEmpty ? tokens.first : null);
+  if (token != null && token.isNotEmpty) {
+    final separator = url.contains('?') ? '&' : '?';
+    return '$url${separator}token=$token';
+  }
+  return url;
+}
+
+String _escapeHtml(String text) => text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');

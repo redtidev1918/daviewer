@@ -19,7 +19,7 @@ final class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      unawaited(ref.read(authControllerProvider.notifier).initialize());
+      await ref.read(authControllerProvider.notifier).initialize();
       final web = ref.read(webSessionControllerProvider.notifier);
       await web.initialize();
       // Re-establish the embedded web session silently when a prior session is

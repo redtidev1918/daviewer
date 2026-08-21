@@ -199,3 +199,57 @@ final class DeviationInitFetcher {
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
       'AppleWebKit/537.36 Chrome/126.0 Safari/537.36';
 }
+
+/// Fetches the full rich-text body of a journal (literature) deviation from the
+/// web `dadeviation/init` endpoint (`type=journal`). The official API only
+/// exposes a truncated plain-text excerpt for journals; the embedded images and
+/// inline formatting live in a web-only tiptap document.
+final class JournalContentFetcher {
+  const JournalContentFetcher(this._dio);
+
+  final Dio _dio;
+
+  static final Uri _endpoint = Uri.parse(
+    'https://www.deviantart.com/_puppy/dadeviation/init',
+  );
+
+  Future<String?> fetchHtml({
+    required String deviationId,
+    required String username,
+    required String cookieHeader,
+    required String csrfToken,
+  }) async {
+    final response = await _dio.get<Object?>(
+      _endpoint.toString(),
+      queryParameters: <String, dynamic>{
+        'deviationid': deviationId,
+        'username': username,
+        'type': 'journal',
+        'include_session': false,
+        'csrf_token': csrfToken,
+      },
+      options: Options(
+        responseType: ResponseType.json,
+        headers: <String, dynamic>{
+          'Accept': 'application/json',
+          'Cookie': cookieHeader,
+          'User-Agent': _userAgent,
+        },
+      ),
+    );
+    final data = response.data;
+    if (data is! Map) return null;
+    final deviation = data['deviation'];
+    if (deviation is! Map) return null;
+    final textContent = deviation['textContent'];
+    final html = textContent is Map ? textContent['html'] : null;
+    final type = html is Map ? html['type'] : null;
+    final markup = html is Map ? html['markup'] as String? : null;
+    if (markup == null || markup.trim().isEmpty) return null;
+    return type == 'tiptap' ? tiptapToHtml(markup) : markup;
+  }
+
+  static const String _userAgent =
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+      'AppleWebKit/537.36 Chrome/126.0 Safari/537.36';
+}
