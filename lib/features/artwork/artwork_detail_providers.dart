@@ -47,16 +47,11 @@ final artworkUuidProvider = FutureProvider.autoDispose
     });
 
 /// Whether the signed-in user has favourited this artwork, read from the
-/// official `deviation/{uuid}` response so the heart reflects the real state.
+/// mapped [Artwork.isFavourited] (no extra provider call needed).
 final favouriteStatusProvider = FutureProvider.autoDispose
     .family<bool, String>((ref, artworkId) async {
-      final uuid = await ref.watch(artworkUuidProvider(artworkId).future);
-      final runtime = ref.watch(runtimeProvider);
-      final json = await runtime.transport!.getJson(
-        'deviation/${Uri.encodeComponent(uuid)}',
-        query: const <String, Object?>{'with_session': false},
-      );
-      return json['is_favourited'] == true;
+      final artwork = await ref.watch(artworkDetailProvider(artworkId).future);
+      return artwork.isFavourited;
     });
 
 /// Display-size assets for each additional page of a multi-image deviation
