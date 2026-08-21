@@ -1,20 +1,37 @@
 # DAViewer
 
-一个基于 [DAKit](https://github.com/redtidev1918/dakit) 的第三方 DeviantArt 客户端。
-A third-party DeviantArt client built on [DAKit](https://github.com/redtidev1918/dakit).
+> DeviantArt 官方放弃了他们的移动 App，社区没有一个像样的第三方客户端。
+> 于是有了 **DAViewer** —— 一个基于 [DAKit](https://github.com/redtidev1918/dakit) 的开源
+> DeviantArt 客户端，把官网体验原汁原味地带回桌面和手机。
+
+**DeviantArt abandoned their official app, and the community was left without a
+good third-party client — so DAViewer exists.** An open-source DeviantArt client
+built on [DAKit](https://github.com/redtidev1918/dakit), bringing the website's
+experience back to desktop and mobile.
+
+[![GitHub stars](https://img.shields.io/github/stars/redtidev1918/daviewer?style=flat&color=yellow)](https://github.com/redtidev1918/daviewer/stargazers)
+[![GitHub license](https://img.shields.io/github/license/redtidev1918/daviewer?style=flat)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/redtidev1918/daviewer?style=flat)](https://github.com/redtidev1918/daviewer/releases)
+[![Platforms](https://img.shields.io/badge/platform-Android%20%7C%20macOS%20%7C%20Windows-blue?style=flat)](#安装--install)
+[![Flutter](https://img.shields.io/badge/Flutter-3.47-blue?style=flat&logo=flutter)](https://flutter.dev)
+
+## 为什么做这个项目 / Why
+
+- DeviantArt 官方 **已下架/停止维护** 其客户端 App，第三方工具也大多停更；
+- 网页版功能齐全（个性化推荐、画廊、标签、收藏、关注、下载），但缺少桌面/移动
+  原生体验；
+- 本项目把网页版的完整能力 + 原生交互组合起来，开箱即用，无需自己注册 OAuth 应用。
 
 ## 功能特性 / Features
 
-- **登录**：OAuth 登录，内置公开 client id，普通用户开箱即用；复用首页
-  WebView 的网页登录态，网页版已登录时无需重新输入密码
-- **首页**：内嵌 DeviantArt 网页版首页，个性化推荐与网页版一致
-  （`rfy/deviations`）；原生 AppBar、加载进度条、下拉刷新、Android 返回键接管
-- **搜索**：关键词搜索 + 历史记录
-- **作品详情**：图片 / 视频（可拖动进度条）/ GIF 播放，富文本简介（网页抓取）
-- **大图查看**：全屏、双击缩放、捏合缩放
+- **登录**：一次登录同时完成网页会话 + OAuth（内置公开 client id，开箱即用，无需注册 OAuth 应用）
+- **推荐流**：首页「推荐」为网页版个性化推荐（`rfy/deviations`），与官网一致
+- **搜索**：关键词搜索 + 历史记录 + 粘贴 DeviantArt 链接直达作品/作者
+- **作品详情**：图片 / 视频（可拖进度）/ GIF 播放，多图作品左右翻页，完整富文本简介（纯文本呈现）
+- **标签**：详情页显示 `#标签`，可点击进入标签作品流，标签页带「相关标签」推荐
+- **作者**：资料、画廊、**自定义分画廊（画集）**、收藏夹、关注
+- **社交**：收藏作品（显示收藏态）、关注/取消关注作者、关注用户列表、通知（谁更新了作品）
 - **下载**：原图后台下载，受限时回退全尺寸预览；下载记录支持打开文件/文件夹
-- **社交**：收藏作品、关注/取消关注作者、关注用户列表
-- **作者**：资料、画廊、收藏夹
 - **双语**：中文 / English 切换
 - **代理**：自动检测系统代理 + 手动配置（国内访问必需）
 
@@ -179,6 +196,19 @@ App 里有两条独立的登录态：
 - App 已登录、网页未登录 → 点「登录网页版」跳转网页登录页。
 
 OAuth 授权优先在首页 WebView 内完成；WebView 不可用时自动回退系统浏览器。
+
+## 贡献 / Contributing
+
+欢迎任何形式的贡献 —— 提 Issue、修 Bug、加功能、完善文档都行：
+
+1. Fork 本仓库，从 `main` 开分支；
+2. 改动后 `flutter analyze` 通过即可提交；
+3. 发 PR 描述清楚「改了什么、为什么」。
+
+客户端依赖的 SDK 是 [DAKit](https://github.com/redtidev1918/dakit)（已发布到
+pub.dev），涉及 SDK 的改动请到那边提 PR，两边一起发布。
+
+如果觉得这个项目有用，**点个 ⭐ Star** 能让它被更多人看到。
 
 ## 说明 / Notes
 
