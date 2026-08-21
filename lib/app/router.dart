@@ -14,6 +14,7 @@ import '../features/notifications/notifications_screen.dart';
 import '../features/search/search_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/splash/splash_screen.dart';
+import '../features/tag/tag_screen.dart';
 import '../features/watching/watching_screen.dart';
 import '../features/web_login/web_login_screen.dart';
 import 'app_shell.dart';
@@ -63,6 +64,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/tag/:tag',
+        builder: (context, state) =>
+            TagScreen(tag: state.pathParameters['tag']!),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
