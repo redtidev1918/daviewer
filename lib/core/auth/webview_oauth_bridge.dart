@@ -26,8 +26,6 @@ final class WebViewOAuthBridge implements ExternalUriLauncher {
   /// OAuth callbacks captured from the home WebView.
   Stream<Uri> get callbacks => _callbackController.stream;
 
-  bool get isWebViewAvailable => _launchController.hasListener;
-
   void addCallback(Uri uri) {
     if (uri.scheme != 'dakit' || uri.host != 'oauth') return;
     _callbackController.add(uri);
