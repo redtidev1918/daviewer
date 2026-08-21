@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 /// Thrown when the personalized home feed is requested without a usable web
@@ -36,5 +38,29 @@ final class WebSession {
       // to a sign-in prompt rather than a crash.
       return '';
     }
+  }
+
+  /// The username signed in on deviantart.com, read from the long-lived
+  /// `userinfo` cookie. Returns `''` when anonymous. This is far more reliable
+  /// than scraping `__INITIAL_STATE__` from a page that may not be the home
+  /// page (login/authorize pages lack the full session state).
+  Future<String> webUsername() async {
+    try {
+      final cookies = await CookieManager.instance().getCookies(
+        url: WebUri(_home.toString()),
+      );
+      for (final cookie in cookies) {
+        if (cookie.name != 'userinfo') continue;
+        final decoded = Uri.decodeComponent(cookie.value);
+        final jsonPart = decoded.split(';').last;
+        final data = jsonDecode(jsonPart);
+        if (data is Map && data['username'] is String) {
+          return (data['username'] as String).trim();
+        }
+      }
+    } on Object {
+      // Best effort; treat as anonymous on failure.
+    }
+    return '';
   }
 }
