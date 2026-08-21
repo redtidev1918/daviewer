@@ -94,6 +94,8 @@ final class RfyFeedFetcher {
       publishedAt: DateTime.tryParse(json['publishedTime'] as String? ?? ''),
       isMature: json['isMature'] == true,
       isDownloadable: isDownloadable,
+      isFavourited: json['isFavourited'] == true,
+      isMultiMedia: json['isMultiMedia'] == true,
       downloadAvailability: isDownloadable
           ? MediaAvailability.available
           : MediaAvailability.unavailable,
