@@ -103,9 +103,10 @@ final class SettingsScreen extends ConsumerWidget {
                     : 'Sign out and authorize another account',
               ),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(s.switchingAccount)),
-                );
+                // Open the in-app WebView first so the re-authorization happens
+                // there (reusing the login flow) instead of a jarring bounce to
+                // the system browser.
+                context.push('/web-login');
                 ref.read(authControllerProvider.notifier).switchAccount();
               },
             ),
