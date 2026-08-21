@@ -15,6 +15,7 @@ import '../features/search/search_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/splash/splash_screen.dart';
 import '../features/watching/watching_screen.dart';
+import '../features/web_login/web_login_screen.dart';
 import 'app_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -28,6 +29,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/web-login',
+        builder: (context, state) => const WebLoginScreen(),
+      ),
       GoRoute(
         path: '/artwork/:id',
         builder: (context, state) =>
@@ -105,15 +110,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           (location == '/login' || location == '/splash')) {
         return '/';
       }
-      // The home tab is an embedded web page and works without an OAuth
-      // session; keep it public like the DeviantArt website.
-      if (status == AuthStatus.signedOut && location == '/splash') {
-        return '/';
-      }
+      // Home is the public landing page. Signed-out users (including right
+      // after logout) land here — where the login-sync banner guides them —
+      // instead of being dumped onto a full-screen login page.
       if (status != AuthStatus.signedIn &&
-          location != '/login' &&
-          location != '/') {
-        return '/login';
+          location != '/' &&
+          location != '/login') {
+        return '/';
       }
       return null;
     },
