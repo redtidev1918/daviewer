@@ -35,13 +35,19 @@ String htmlToPlainText(String html) {
 }
 
 /// Extracts readable plain text from a tiptap document JSON string (the
-/// `deviation/content` `original_markup` field), which DeviantArt uses for
-/// descriptions when the rendered `html` field is empty.
+/// `deviation/content` `original_markup` field, or `descriptionText.html.markup`
+/// when its type is `tiptap`), which DeviantArt uses for descriptions when the
+/// rendered `html` field is empty.
 String tiptapToPlainText(String json) {
   try {
     final decoded = jsonDecode(json);
+    // Some payloads wrap the doc as {"version":..., "document":{...}}.
+    Object? document = decoded;
+    if (decoded is Map && decoded['document'] is Map) {
+      document = decoded['document'];
+    }
     final buffer = StringBuffer();
-    _walkTiptap(decoded, buffer);
+    _walkTiptap(document, buffer);
     return buffer.toString().replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
   } on Object {
     return '';
@@ -54,6 +60,8 @@ void _walkTiptap(Object? node, StringBuffer buffer) {
     final text = node['text'];
     if (type == 'text' && text is String) {
       buffer.write(text);
+    } else if (type == 'hardBreak') {
+      buffer.write('\n');
     }
     final content = node['content'];
     if (content is List) {

@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../core/data/html_text.dart';
 import '../../core/runtime/runtime_provider.dart';
 import 'artwork_detail_providers.dart';
 
@@ -218,7 +217,7 @@ final class _ArtworkDetailScreenState
           ),
           const SizedBox(height: 8),
           SelectableText(
-            htmlToPlainText(description),
+            description,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               height: 1.5,
             ),

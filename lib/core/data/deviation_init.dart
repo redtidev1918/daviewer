@@ -1,18 +1,22 @@
 import 'package:dakit_core/dakit_core.dart';
 import 'package:dio/dio.dart';
 
+import 'html_text.dart';
+
 /// Result of the web `dadeviation/init` endpoint: the OAuth UUID for a numeric
-/// deviation id plus the full rich-text description markup and any additional
+/// deviation id plus the full description as plain text and any additional
 /// multi-image pages.
 final class DeviationInit {
   const DeviationInit({
     required this.uuid,
-    required this.descriptionHtml,
+    required this.description,
     this.additionalMedia = const <MediaAsset>[],
   });
 
   final String uuid;
-  final String? descriptionHtml;
+
+  /// The author description, already converted to plain text.
+  final String? description;
 
   /// Display-size assets for each additional page of a multi-image deviation.
   final List<MediaAsset> additionalMedia;
@@ -76,13 +80,25 @@ final class DeviationInitFetcher {
         ? extended['descriptionText']
         : null;
     final html = descriptionText is Map ? descriptionText['html'] : null;
+    final type = html is Map ? html['type'] : null;
     final markup = html is Map ? html['markup'] as String? : null;
+    // `markup` is HTML for `writer`-type descriptions and a tiptap JSON string
+    // for `tiptap`-type descriptions; normalize both to plain text here.
+    String? description;
+    if (markup != null && markup.trim().isNotEmpty) {
+      description = type == 'tiptap'
+          ? tiptapToPlainText(markup)
+          : htmlToPlainText(markup);
+      if (description.isEmpty) description = null;
+    }
 
     final rawAdditional = extended is Map ? extended['additionalMedia'] : null;
     final additional = <MediaAsset>[];
     if (rawAdditional is List) {
       for (var index = 0; index < rawAdditional.length; index++) {
-        final media = rawAdditional[index];
+        final item = rawAdditional[index];
+        // Each additional-media entry nests its Wix descriptor under `media`.
+        final media = item is Map ? item['media'] : null;
         if (media is! Map) continue;
         final asset = _displayAsset(media, '$deviationId:page:${index + 1}');
         if (asset != null) additional.add(asset);
@@ -91,7 +107,7 @@ final class DeviationInitFetcher {
 
     return DeviationInit(
       uuid: uuid,
-      descriptionHtml: _clean(markup),
+      description: description,
       additionalMedia: List<MediaAsset>.unmodifiable(additional),
     );
   }
@@ -109,7 +125,8 @@ final class DeviationInitFetcher {
     final types = media['types'] as List? ?? const <Object?>[];
     if (base == null || base.isEmpty) return null;
 
-    final isGif = filetype.toLowerCase() == 'gif';
+    final isGif =
+        filetype.toLowerCase() == 'gif' || base.toLowerCase().endsWith('.gif');
     Uri? uri;
     if (isGif) {
       uri = Uri.tryParse(_withToken(base, null, tokens));
@@ -153,12 +170,6 @@ final class DeviationInitFetcher {
     if (token.isEmpty) return url;
     final separator = url.contains('?') ? '&' : '?';
     return '$url${separator}token=$token';
-  }
-
-  static String? _clean(String? markup) {
-    if (markup == null) return null;
-    final trimmed = markup.trim();
-    return trimmed.isEmpty ? null : trimmed;
   }
 
   static const String _userAgent =
