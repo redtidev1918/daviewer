@@ -4,8 +4,9 @@ import 'dart:io';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:dio/dio.dart';
 
+import '../auth/combined_callback_source.dart';
+import '../auth/webview_oauth_bridge.dart';
 import '../diagnostics/app_logger.dart';
-import '../network/desktop_uri_launcher.dart';
 import '../network/dynamic_proxy_dio.dart';
 import '../network/proxy_controller.dart';
 
@@ -26,6 +27,7 @@ final class AppRuntime {
     required this.transfers,
     this.proxyController,
     this.dio,
+    this.webViewOAuthBridge,
   });
 
   final String clientId;
@@ -34,6 +36,7 @@ final class AppRuntime {
   final BackgroundTransferManager transfers;
   final ProxyController? proxyController;
   final Dio? dio;
+  final WebViewOAuthBridge? webViewOAuthBridge;
 
   void Function()? _proxyListener;
 
@@ -85,6 +88,7 @@ final class AppRuntime {
       );
     }
 
+    final webViewOAuthBridge = WebViewOAuthBridge();
     final oauth = DAKitOAuthClient(
       config: OAuthConfig(
         clientId: clientId,
@@ -101,7 +105,11 @@ final class AppRuntime {
       ),
       endpoint: dio == null ? null : DioOAuthEndpoint(dio: dio),
       networkProfile: dio == null ? networkProfile : null,
-      launcher: const DesktopUriLauncher(),
+      launcher: webViewOAuthBridge,
+      callbacks: CombinedCallbackUriSource(
+        AppLinksCallbackUriSource(),
+        webViewOAuthBridge.callbacks,
+      ),
       diagnostics: logger,
     );
     final transport = OfficialApiClient(
@@ -118,6 +126,7 @@ final class AppRuntime {
       transfers: transfers,
       proxyController: proxyController,
       dio: dio,
+      webViewOAuthBridge: webViewOAuthBridge,
     );
   }
 
@@ -145,6 +154,7 @@ final class AppRuntime {
       proxyController.removeListener(listener);
     }
     proxyController?.dispose();
+    unawaited(webViewOAuthBridge?.dispose() ?? Future<void>.value());
   }
 
   static NetworkProfile _environmentNetworkProfile() {

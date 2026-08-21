@@ -1,24 +1,62 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/auth/webview_oauth_bridge.dart';
+import '../../core/runtime/runtime_provider.dart';
 
 /// Home tab backed by the real DeviantArt home page.
 ///
 /// The web home page uses DeviantArt's own `rfy/deviations` recommendation
 /// engine (web-session based). Embedding the page gives the app exactly the
-/// same personalized home feed as the web version. The web session lives in
-/// this WebView, so it is owned by the app (unlike the cookies of the external
-/// system browser).
-final class HomeScreen extends StatefulWidget {
+/// same personalized home feed as the web version.
+///
+/// This same WebView also owns the deviantart.com web-session cookies. When
+/// the user starts native OAuth login, the bridge loads the OAuth authorize
+/// URL here so an already logged-in web session can complete OAuth without
+/// re-entering credentials.
+final class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-final class _HomeScreenState extends State<HomeScreen> {
+final class _HomeScreenState extends ConsumerState<HomeScreen> {
   InAppWebViewController? _controller;
+  StreamSubscription<Uri>? _launchSub;
+  Uri? _pendingAuthUri;
   bool _loading = true;
   Object? _error;
+
+  WebViewOAuthBridge? get _bridge =>
+      ref.read(runtimeProvider).webViewOAuthBridge;
+
+  @override
+  void initState() {
+    super.initState();
+    final bridge = _bridge;
+    if (bridge != null) {
+      _launchSub = bridge.launchRequests.listen(_loadAuthRequest);
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_launchSub?.cancel());
+    super.dispose();
+  }
+
+  void _loadAuthRequest(Uri uri) {
+    final controller = _controller;
+    if (controller == null) {
+      _pendingAuthUri = uri;
+      return;
+    }
+    controller.loadUrl(urlRequest: URLRequest(url: WebUri(uri.toString())));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +73,32 @@ final class _HomeScreenState extends State<HomeScreen> {
               ),
               onWebViewCreated: (controller) {
                 _controller = controller;
+                final pending = _pendingAuthUri;
+                if (pending != null) {
+                  _pendingAuthUri = null;
+                  controller.loadUrl(
+                    urlRequest: URLRequest(
+                      url: WebUri(pending.toString()),
+                    ),
+                  );
+                }
+              },
+              shouldOverrideUrlLoading: (controller, navigationAction) async {
+                final uri = navigationAction.request.url;
+                if (uri != null &&
+                    uri.scheme == 'dakit' &&
+                    uri.host == 'oauth') {
+                  _bridge?.addCallback(uri);
+                  // Return to the web home after completing/cancelling the
+                  // OAuth redirect in the WebView.
+                  controller.loadUrl(
+                    urlRequest: URLRequest(
+                      url: WebUri('https://www.deviantart.com/'),
+                    ),
+                  );
+                  return NavigationActionPolicy.CANCEL;
+                }
+                return NavigationActionPolicy.ALLOW;
               },
               onLoadStart: (controller, url) {
                 if (mounted) {
