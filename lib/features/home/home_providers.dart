@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/auth_controller.dart';
 import '../../core/data/rfy_feed.dart';
 import '../../core/data/web_session.dart';
 import '../../core/feed/artwork_feed_controller.dart';
@@ -46,6 +47,9 @@ final rfyFeedProvider =
     ) {
       final runtime = ref.watch(runtimeProvider);
       final webSession = ref.watch(webSessionProvider);
+      // Rebuild the feed whenever the web sign-in state changes (login/logout
+      // in the embedded web session), so it refreshes without a manual action.
+      ref.watch(webLoggedInProvider);
       final fetcher = RfyFeedFetcher(runtime.dio!);
       final controller = ArtworkFeedController((request) async {
         final session = await webSession.read();
@@ -70,6 +74,7 @@ final rfyFeedProvider =
 final dailyDeviationsProvider = FutureProvider.autoDispose<List<Artwork>>((
   ref,
 ) async {
+  ref.watch(authControllerProvider.select((auth) => auth.account?.id));
   final runtime = ref.watch(runtimeProvider);
   return OfficialDiscoveryRepository(runtime.transport!).dailyDeviations();
 });
@@ -80,6 +85,8 @@ final followingFeedProvider =
       ref,
     ) {
       final runtime = ref.watch(runtimeProvider);
+      // Rebuild the feed whenever the signed-in account changes.
+      ref.watch(authControllerProvider.select((auth) => auth.account?.id));
       final controller = ArtworkFeedController((request) {
         return OfficialDiscoveryRepository(runtime.transport!).watched(request);
       });

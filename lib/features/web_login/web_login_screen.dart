@@ -51,10 +51,9 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   @override
   void dispose() {
     unawaited(_launchSub?.cancel());
-    // The web session may have changed; refresh the home feed and the
-    // web-login state when this screen closes.
+    // The web session may have changed; refresh the web-login state when this
+    // screen closes. The rfy feed watches webLoggedInProvider and follows.
     ref.invalidate(webLoggedInProvider);
-    ref.invalidate(rfyFeedProvider);
     super.dispose();
   }
 
@@ -78,7 +77,11 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       if (previous?.status != AuthStatus.signedIn &&
           next.status == AuthStatus.signedIn &&
           mounted) {
-        Navigator.of(context).pop();
+        // Defer the pop until after the current frame: the auth change fires
+        // during build, and popping the navigator mid-build is not allowed.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) Navigator.of(context).pop();
+        });
       }
     });
 
