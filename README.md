@@ -1,28 +1,25 @@
 # DAViewer
 
+**语言 / Language:** 中文 · [English](README.en.md)
+
 > DeviantArt 官方放弃了他们的移动 App，社区没有一个像样的第三方客户端。
 > 于是有了 **DAViewer** —— 一个基于 [DAKit](https://github.com/redtidev1918/dakit) 的开源
 > DeviantArt 客户端，把官网体验原汁原味地带回桌面和手机。
 
-**DeviantArt abandoned their official app, and the community was left without a
-good third-party client — so DAViewer exists.** An open-source DeviantArt client
-built on [DAKit](https://github.com/redtidev1918/dakit), bringing the website's
-experience back to desktop and mobile.
-
 [![GitHub stars](https://img.shields.io/github/stars/redtidev1918/daviewer?style=flat&color=yellow)](https://github.com/redtidev1918/daviewer/stargazers)
 [![GitHub license](https://img.shields.io/github/license/redtidev1918/daviewer?style=flat)](LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/redtidev1918/daviewer?style=flat)](https://github.com/redtidev1918/daviewer/releases)
-[![Platforms](https://img.shields.io/badge/platform-Android%20%7C%20macOS%20%7C%20Windows-blue?style=flat)](#安装--install)
+[![Platforms](https://img.shields.io/badge/platform-Android%20%7C%20macOS%20%7C%20Windows-blue?style=flat)](https://github.com/redtidev1918/daviewer/releases)
 [![Flutter](https://img.shields.io/badge/Flutter-3.47-blue?style=flat&logo=flutter)](https://flutter.dev)
 
-## 为什么做这个项目 / Why
+## 为什么做这个项目
 
 - DeviantArt 官方 **已下架/停止维护** 其客户端 App，第三方工具也大多停更；
 - 网页版功能齐全（个性化推荐、画廊、标签、收藏、关注、下载），但缺少桌面/移动
   原生体验；
 - 本项目把网页版的完整能力 + 原生交互组合起来，开箱即用，无需自己注册 OAuth 应用。
 
-## 功能特性 / Features
+## 功能特性
 
 - **登录**：一次登录同时完成网页会话 + OAuth（内置公开 client id，开箱即用，无需注册 OAuth 应用）
 - **推荐流**：首页「推荐」为网页版个性化推荐（`rfy/deviations`），与官网一致
@@ -35,7 +32,7 @@ experience back to desktop and mobile.
 - **双语**：中文 / English 切换
 - **代理**：自动检测系统代理 + 手动配置（国内访问必需）
 
-## 与 DAKit 的关系 / Relationship with DAKit
+## 与 DAKit 的关系
 
 `DAViewer` 是应用，DAKit 是 SDK。客户端只依赖 DAKit，不复制 SDK 代码。
 DAKit 已发布到 pub.dev，客户端直接使用版本化依赖：
@@ -45,7 +42,7 @@ dependencies:
   dakit_flutter: ^0.1.0
 ```
 
-## 安装 / Install
+## 安装
 
 从 [Releases](https://github.com/redtidev1918/daviewer/releases) 下载对应平台的安装包：
 
@@ -74,7 +71,7 @@ flutter run -d macos --dart-define=DAKIT_CLIENT_ID=你的_PUBLIC_CLIENT_ID
 
 > 用自己的应用时，需在其白名单中精确加入 `dakit://oauth/callback`。
 
-## 运行 / Run
+## 运行
 
 ```shell
 flutter pub get
@@ -83,7 +80,7 @@ flutter run -d android   # Android
 flutter run -d windows   # Windows
 ```
 
-## 代理 / Proxy
+## 代理
 
 应用运行时会自动读取系统代理（macOS 通过 `scutil`，Windows 通过注册表）。若需手动指定，
 可在「设置 → 网络代理」中填写 `host:port`。
@@ -97,9 +94,9 @@ export no_proxy=localhost,127.0.0.1
 flutter pub get
 ```
 
-## 构建 Release / Release Build
+## 构建 Release
 
-推送到 `main` 会触发 CI 的质量检查与 Android/macOS 构建；打 `v*` 标签会自动创建
+推送到 `main` 会触发 CI 的质量检查与 Android/macOS/Windows 构建；打 `v*` 标签会自动创建
 GitHub Release 并上传构建产物（带版本号、自动生成 changelog、只保留最新 release）。
 
 Release APK 始终使用 upload keystore 签名（来自 CI 的 `KEYSTORE_B64` /
@@ -125,9 +122,10 @@ git tag v0.2.4 && git push origin v0.2.4
 ```shell
 flutter build apk --release          # Android APK（需 android/key.properties）
 flutter build macos --release        # macOS 应用
+flutter build windows --release      # Windows 应用
 ```
 
-## 构建工具链 / Toolchain
+## 构建工具链
 
 Flutter 3.47 默认使用 AGP 9.1.0，但稳定版 `flutter_inappwebview`（6.1.5）的
 Android 子包仍引用 AGP 9 已删除的 `proguard-android.txt`，而其 beta 版的 macOS
@@ -145,7 +143,7 @@ Android 子包仍引用 AGP 9 已删除的 `proguard-android.txt`，而其 beta 
 与 `pubspec.yaml`。升级插件或 Flutter 版本前，需先确认 `flutter_inappwebview`
 的 Android/macOS 子包与新的 AGP/Swift 工具链兼容。
 
-## 项目结构 / Project Structure
+## 项目结构
 
 ```text
 lib/
@@ -179,7 +177,7 @@ windows/
 test/
 ```
 
-## 首页与登录态 / Home & sign-in state
+## 首页与登录态
 
 首页是**原生界面**（推荐 / 每日推荐 / 关注 三个标签）。其中「推荐」流的数据来自
 DeviantArt 网页版的个性化接口（`rfy/deviations`），官方 OAuth API 不提供等价
@@ -194,7 +192,7 @@ App 里存在两条独立的登录态：
 两者不同步时，首页顶部会显示提示条，一键补全。OAuth 授权优先在内置 WebView 内
 完成（复用网页登录态，无需重输密码），WebView 不可用时自动回退系统浏览器。
 
-## 贡献 / Contributing
+## 贡献
 
 欢迎任何形式的贡献 —— 提 Issue、修 Bug、加功能、完善文档都行。详见
 [CONTRIBUTING.md](CONTRIBUTING.md)。安全漏洞请走 [SECURITY.md](SECURITY.md)，
@@ -209,7 +207,7 @@ pub.dev），涉及 SDK 的改动请到那边提 PR，两边一起发布。
 
 如果觉得这个项目有用，**点个 ⭐ Star** 能让它被更多人看到。
 
-## 说明 / Notes
+## 说明
 
 - `DAViewer` 是第三方客户端，与 DeviantArt 无隶属关系；
 - 客户端不保存 `client_secret`；
