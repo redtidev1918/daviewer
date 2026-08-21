@@ -5,6 +5,7 @@ import '../../core/data/data_access.dart';
 import '../../core/data/rfy_feed.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/runtime/runtime_provider.dart';
+import '../artwork/artwork_store.dart';
 
 final artistProfileProvider = FutureProvider.autoDispose
     .family<UserProfileDetails, String>((ref, username) async {
@@ -62,6 +63,9 @@ final artistJournalsProvider = FutureProvider.autoDispose
         if (url is! String || !url.contains('/journal/')) continue;
         items.add(RfyFeedFetcher.mapDeviation(raw));
       }
+      // Cache journals so tapping one opens the detail screen without an OAuth
+      // `deviation/{numericId}` 404.
+      ref.read(artworkStoreProvider.notifier).putAll(items);
       return items;
     });
 
