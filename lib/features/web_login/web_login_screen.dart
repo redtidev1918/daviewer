@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/auth_state.dart';
-import '../../core/auth/session_state.dart';
 import '../../core/auth/webview_oauth_bridge.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
@@ -51,9 +50,9 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   @override
   void dispose() {
     unawaited(_launchSub?.cancel());
-    // The web session may have changed; refresh the web-login state when this
-    // screen closes. The rfy feed watches webLoggedInProvider and follows.
-    ref.invalidate(webLoggedInProvider);
+    // The web session may have changed; refresh the web sign-in state when
+    // this screen closes so the home feed and sync banner follow.
+    ref.read(authControllerProvider.notifier).refreshWebSession();
     super.dispose();
   }
 

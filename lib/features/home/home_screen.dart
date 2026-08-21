@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_controller.dart';
-import '../../core/auth/session_state.dart';
 import '../../core/data/web_session.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_empty_state.dart';
@@ -25,9 +24,9 @@ final class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = strings(ref.watch(appLanguageProvider));
-    final session = ref.watch(sessionStateProvider);
-    final oauthSignedIn = session.oauthSignedIn;
-    final webLoggedIn = session.webLoggedIn;
+    final auth = ref.watch(authControllerProvider);
+    final oauthSignedIn = auth.oauthSignedIn;
+    final webLoggedIn = auth.webLoggedIn;
 
     Widget? syncBanner;
     if (webLoggedIn == true && !oauthSignedIn) {
@@ -56,7 +55,7 @@ final class HomeScreen extends ConsumerWidget {
             if (oauthSignedIn)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Center(child: Text(session.account?.username ?? '')),
+                child: Center(child: Text(auth.account?.username ?? '')),
               )
             else
               Padding(
@@ -170,9 +169,9 @@ final class _DailyFeed extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(sessionStateProvider);
+    final auth = ref.watch(authControllerProvider);
     final s = strings(ref.watch(appLanguageProvider));
-    if (!session.oauthSignedIn) {
+    if (!auth.oauthSignedIn) {
       return _LoginPrompt(
         s: s,
         onLogin: () {
@@ -211,9 +210,9 @@ final class _FollowingFeed extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(sessionStateProvider);
+    final auth = ref.watch(authControllerProvider);
     final s = strings(ref.watch(appLanguageProvider));
-    if (!session.oauthSignedIn) {
+    if (!auth.oauthSignedIn) {
       return _LoginPrompt(
         s: s,
         onLogin: () {
