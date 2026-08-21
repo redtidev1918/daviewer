@@ -25,7 +25,7 @@ final class FolderScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(folderName)),
       body: ArtworkFeedGrid(
         feed: feed,
-        emptyMessage: '暂无作品',
+        emptyMessage: '空画集',
         onRefresh: () => ref.read(folderContentsProvider(request).notifier).refresh(),
         onLoadMore: () => ref.read(folderContentsProvider(request).notifier).loadMore(),
       ),

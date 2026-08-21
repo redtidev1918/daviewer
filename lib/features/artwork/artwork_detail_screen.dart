@@ -192,6 +192,9 @@ final class _ArtworkDetailScreenState
     List<String> tags = const <String>[],
   }) {
     final media = artwork.media;
+    // Journals / literature posts have no media and must be rendered as text,
+    // never as an image with a bogus "original deleted" download section.
+    final isTextPost = media.isEmpty;
     // When the original download is restricted (e.g. free limit reached),
     // fall back to the full-size image in the media list so the user can
     // still save it.
@@ -202,8 +205,10 @@ final class _ArtworkDetailScreenState
     return ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
-        _MediaViewer(media: media, additionalMedia: additionalMedia),
-        const SizedBox(height: 16),
+        if (!isTextPost) ...[
+          _MediaViewer(media: media, additionalMedia: additionalMedia),
+          const SizedBox(height: 16),
+        ],
         Text(
           artwork.title,
           style: Theme.of(context).textTheme.headlineSmall,
@@ -215,7 +220,7 @@ final class _ArtworkDetailScreenState
         const Divider(),
         if (description != null && description.trim().isNotEmpty) ...[
           Text(
-            '作品描述',
+            isTextPost ? '正文' : '作品描述',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
@@ -244,17 +249,19 @@ final class _ArtworkDetailScreenState
           ),
           const SizedBox(height: 8),
         ],
-        const SizedBox(height: 8),
-        _DownloadSection(
-          original: original,
-          downloadable: downloadable,
-          transfer: transfer,
-          downloading: _downloading,
-          onDownload: () => _download(downloadable),
-          onPause: _pause,
-          onResume: _resume,
-          onCancel: _cancel,
-        ),
+        if (!isTextPost) ...[
+          const SizedBox(height: 8),
+          _DownloadSection(
+            original: original,
+            downloadable: downloadable,
+            transfer: transfer,
+            downloading: _downloading,
+            onDownload: () => _download(downloadable),
+            onPause: _pause,
+            onResume: _resume,
+            onCancel: _cancel,
+          ),
+        ],
       ],
     );
   }

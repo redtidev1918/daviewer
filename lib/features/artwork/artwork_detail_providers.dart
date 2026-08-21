@@ -101,6 +101,15 @@ final originalFileProvider = FutureProvider.autoDispose
           .where((m) => m.role == MediaRole.original)
           .firstOrNull;
       if (cachedOriginal != null) return cachedOriginal;
+      // Journals/literature have no media — don't hit the download endpoint.
+      if (cached != null && cached.media.isEmpty) {
+        return MediaAsset(
+          id: '$artworkId:original',
+          kind: MediaKind.unknown,
+          role: MediaRole.original,
+          availability: MediaAvailability.missing,
+        );
+      }
       final runtime = ref.watch(runtimeProvider);
       return dataAccessFor(runtime).originalFile(artworkId);
     });
