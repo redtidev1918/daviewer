@@ -74,6 +74,20 @@ final class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (bridge != null) {
       _launchSub = bridge.launchRequests.listen(_loadAuthRequest);
     }
+
+    // Keep the embedded web session in sync with the native OAuth session.
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      final wasSignedIn = previous?.status == AuthStatus.signedIn;
+      final isSignedIn = next.status == AuthStatus.signedIn;
+      if (wasSignedIn && !isSignedIn) {
+        // Native logout → also log out of the embedded web home.
+        unawaited(_clearWebSession());
+      } else if (!wasSignedIn && isSignedIn) {
+        // Native login → re-detect the web login state (a WebView OAuth login
+        // already owns the web session; an external-browser fallback does not).
+        unawaited(_updateWebState());
+      }
+    });
   }
 
   @override
@@ -100,6 +114,15 @@ final class _HomeScreenState extends ConsumerState<HomeScreen> {
     await launchUrl(target, mode: LaunchMode.externalApplication);
   }
 
+  Future<void> _goBack() async {
+    final controller = _controller;
+    if (controller == null) return;
+    if (await controller.canGoBack()) {
+      await controller.goBack();
+      await _updateWebState();
+    }
+  }
+
   Future<void> _reload() async {
     final controller = _controller;
     if (controller == null) return;
@@ -108,6 +131,24 @@ final class _HomeScreenState extends ConsumerState<HomeScreen> {
       _error = null;
     });
     await controller.reload();
+  }
+
+  /// Logs the embedded web home out so it stays in sync with the native OAuth
+  /// session after a native logout.
+  Future<void> _clearWebSession() async {
+    final controller = _controller;
+    if (controller == null) return;
+    try {
+      await CookieManager.instance().deleteAllCookies();
+    } on Object {
+      // Best effort; a failed cookie clear must not block logout.
+    }
+    if (mounted) {
+      setState(() => _webLoggedIn = false);
+    }
+    await controller.loadUrl(
+      urlRequest: URLRequest(url: WebUri(_homeUri.toString())),
+    );
   }
 
   Future<void> _updateWebState() async {
@@ -156,6 +197,13 @@ final class _HomeScreenState extends ConsumerState<HomeScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
+          leading: _webCanGoBack
+              ? IconButton(
+                  tooltip: s.back,
+                  onPressed: _goBack,
+                  icon: const Icon(Icons.arrow_back),
+                )
+              : null,
           title: Text(s.home),
           actions: <Widget>[
             IconButton(
