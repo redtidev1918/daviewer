@@ -329,18 +329,54 @@ final class _MediaViewerState extends State<_MediaViewer> {
 
     return Column(
       children: <Widget>[
-        AspectRatio(
-          aspectRatio: 1,
-          child: PageView.builder(
-            itemCount: pages.length,
-            onPageChanged: (index) => setState(() => _page = index),
-            itemBuilder: (context, index) => _pageWidget(pages[index]),
-          ),
+        Stack(
+          children: <Widget>[
+            AspectRatio(
+              aspectRatio: 1,
+              child: PageView.builder(
+                itemCount: pages.length,
+                onPageChanged: (index) => setState(() => _page = index),
+                itemBuilder: (context, index) => _pageWidget(pages[index]),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${_page + 1} / ${pages.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
-        Text(
-          '${_page + 1} / ${pages.length}',
-          style: Theme.of(context).textTheme.labelMedium,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            for (var i = 0; i < pages.length; i++)
+              Container(
+                width: 6,
+                height: 6,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i == _page
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.outlineVariant,
+                ),
+              ),
+          ],
         ),
       ],
     );
