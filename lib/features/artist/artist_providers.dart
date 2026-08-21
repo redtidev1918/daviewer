@@ -28,3 +28,46 @@ final artistFavouritesProvider = StateNotifierProvider.autoDispose
       });
       return controller;
     });
+
+/// The artist's custom gallery folders (sub-galleries).
+final artistFoldersProvider = FutureProvider.autoDispose
+    .family<List<ArtworkFolder>, String>((ref, username) async {
+      final runtime = ref.watch(runtimeProvider);
+      final page = await OfficialFolderRepository(
+        runtime.transport!,
+      ).galleryFolders(username: username);
+      return page.items;
+    });
+
+/// The contents of one gallery folder.
+final folderContentsProvider = StateNotifierProvider.autoDispose
+    .family<ArtworkFeedController, ArtworkFeedState, FolderRequest>((
+      ref,
+      request,
+    ) {
+      final runtime = ref.watch(runtimeProvider);
+      final controller = ArtworkFeedController((page) {
+        return OfficialFolderRepository(runtime.transport!).galleryContents(
+          request.folderId,
+          username: request.username,
+          request: page,
+        );
+      });
+      return controller;
+    });
+
+final class FolderRequest {
+  const FolderRequest({required this.username, required this.folderId});
+
+  final String username;
+  final String folderId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FolderRequest &&
+      other.username == username &&
+      other.folderId == folderId;
+
+  @override
+  int get hashCode => Object.hash(username, folderId);
+}
