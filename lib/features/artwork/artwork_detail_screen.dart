@@ -122,6 +122,9 @@ final class _ArtworkDetailScreenState
     final artwork = ref.watch(artworkDetailProvider(widget.artworkId));
     final original = ref.watch(originalFileProvider(widget.artworkId));
     final description = ref.watch(artworkDescriptionProvider(widget.artworkId));
+    final descriptionHtml = ref.watch(
+      artworkDescriptionHtmlProvider(widget.artworkId),
+    );
     final journalHtml = ref.watch(journalHtmlProvider(widget.artworkId));
     final additionalMedia = ref.watch(
       additionalMediaProvider(widget.artworkId),
@@ -174,6 +177,7 @@ final class _ArtworkDetailScreenState
             original,
             transfer,
             description: description.valueOrNull,
+            descriptionHtml: descriptionHtml.valueOrNull,
             journalHtml: journalHtml.valueOrNull,
             additionalMedia:
                 additionalMedia.valueOrNull ?? const <MediaAsset>[],
@@ -189,6 +193,7 @@ final class _ArtworkDetailScreenState
     MediaAsset original,
     TransferSnapshot? transfer, {
     String? description,
+    String? descriptionHtml,
     String? journalHtml,
     List<MediaAsset> additionalMedia = const <MediaAsset>[],
     List<String> tags = const <String>[],
@@ -227,6 +232,16 @@ final class _ArtworkDetailScreenState
           ),
           const SizedBox(height: 8),
           Html(data: journalHtml),
+          const SizedBox(height: 16),
+        ] else if (!isJournal &&
+            descriptionHtml != null &&
+            descriptionHtml.trim().isNotEmpty) ...[
+          Text(
+            s.description,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Html(data: descriptionHtml),
           const SizedBox(height: 16),
         ] else if (description != null &&
             description.trim().isNotEmpty) ...[

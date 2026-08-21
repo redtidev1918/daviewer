@@ -190,3 +190,36 @@ final artworkDescriptionProvider = FutureProvider.autoDispose
       }
       return artwork.description;
     });
+
+/// The full author description as an HTML fragment (rich text, preserving
+/// links and inline formatting). Mirrors [artworkDescriptionProvider] but keeps
+/// the renderable markup instead of collapsing it to plain text.
+final artworkDescriptionHtmlProvider = FutureProvider.autoDispose
+    .family<String?, String>((ref, artworkId) async {
+      if (isNumericDeviationId(artworkId)) {
+        try {
+          final init = await ref.watch(deviationInitProvider(artworkId).future);
+          final html = init?.descriptionHtml;
+          if (html != null && html.trim().isNotEmpty) return html;
+        } on Object {
+          // Fall through to null; plain text remains available.
+        }
+        return null;
+      }
+      final runtime = ref.watch(runtimeProvider);
+      try {
+        final content = await OfficialArtworkContentRepository(
+          runtime.transport!,
+        ).get(artworkId);
+        final html = content.html;
+        if (html != null && html.trim().isNotEmpty) return html;
+        final markup = content.originalMarkup;
+        if (markup != null && markup.trim().isNotEmpty) {
+          final converted = tiptapToHtml(markup);
+          return converted.isNotEmpty ? converted : markup;
+        }
+      } on Object {
+        // Fall through to null.
+      }
+      return null;
+    });

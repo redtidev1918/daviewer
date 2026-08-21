@@ -114,7 +114,10 @@ jobs:
 
   build-windows:
     name: Build Windows app
-    runs-on: windows-latest
+    # windows-2022 (VS 2022) is required: the pinned flutter_inappwebview
+    # 6.1.5 still uses the deprecated /await + <experimental/coroutine>, which
+    # the newer windows-latest (VS 2026 / MSVC 14.51) rejects as an error.
+    runs-on: windows-2022
     timeout-minutes: 40
     steps:
       - name: Check out source

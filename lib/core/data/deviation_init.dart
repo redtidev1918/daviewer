@@ -10,6 +10,7 @@ final class DeviationInit {
   const DeviationInit({
     required this.uuid,
     required this.description,
+    this.descriptionHtml,
     this.additionalMedia = const <MediaAsset>[],
     this.tags = const <String>[],
   });
@@ -18,6 +19,10 @@ final class DeviationInit {
 
   /// The author description, already converted to plain text.
   final String? description;
+
+  /// The author description as an HTML fragment (preserving links/formatting),
+  /// when the provider supplied a renderable markup.
+  final String? descriptionHtml;
 
   /// Display-size assets for each additional page of a multi-image deviation.
   final List<MediaAsset> additionalMedia;
@@ -87,13 +92,18 @@ final class DeviationInitFetcher {
     final type = html is Map ? html['type'] : null;
     final markup = html is Map ? html['markup'] as String? : null;
     // `markup` is HTML for `writer`-type descriptions and a tiptap JSON string
-    // for `tiptap`-type descriptions; normalize both to plain text here.
+    // for `tiptap`-type descriptions; keep both a plain-text and an HTML form.
     String? description;
+    String? descriptionHtml;
     if (markup != null && markup.trim().isNotEmpty) {
       description = type == 'tiptap'
           ? tiptapToPlainText(markup)
           : htmlToPlainText(markup);
       if (description.isEmpty) description = null;
+      descriptionHtml = type == 'tiptap' ? tiptapToHtml(markup) : markup;
+      if (descriptionHtml.trim().isEmpty) {
+        descriptionHtml = null;
+      }
     }
 
     final rawAdditional = extended is Map ? extended['additionalMedia'] : null;
@@ -123,6 +133,7 @@ final class DeviationInitFetcher {
     return DeviationInit(
       uuid: uuid,
       description: description,
+      descriptionHtml: descriptionHtml,
       additionalMedia: List<MediaAsset>.unmodifiable(additional),
       tags: List<String>.unmodifiable(tags),
     );
