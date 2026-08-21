@@ -27,9 +27,9 @@ experience back to desktop and mobile.
 - **登录**：一次登录同时完成网页会话 + OAuth（内置公开 client id，开箱即用，无需注册 OAuth 应用）
 - **推荐流**：首页「推荐」为网页版个性化推荐（`rfy/deviations`），与官网一致
 - **搜索**：关键词搜索 + 历史记录 + 粘贴 DeviantArt 链接直达作品/作者
-- **作品详情**：图片 / 视频（可拖进度）/ GIF 播放，多图作品左右翻页，完整富文本简介（纯文本呈现）
+- **作品详情**：图片 / 视频（可拖进度）/ GIF 播放，多图作品左右翻页，完整富文本简介（链接 / 加粗 / 表情 / 内嵌图片）
 - **标签**：详情页显示 `#标签`，可点击进入标签作品流，标签页带「相关标签」推荐
-- **作者**：资料、画廊、**自定义分画廊（画集）**、收藏夹、关注
+- **作者**：资料（含作者简介）、画廊、**自定义分画廊（画集）**、收藏夹、关注
 - **社交**：收藏作品（显示收藏态）、关注/取消关注作者、关注用户列表、通知（谁更新了作品）
 - **下载**：原图后台下载，受限时回退全尺寸预览；下载记录支持打开文件/文件夹
 - **双语**：中文 / English 切换
@@ -51,6 +51,7 @@ dependencies:
 
 - **Android**：`DAViewer-<版本>.apk`
 - **macOS**：`DAViewer-<版本>-macos.zip`（解压后拖入「应用程序」）
+- **Windows**：`DAViewer-<版本>-windows.zip`（解压后运行 `DAViewer.exe`）
 
 > 注意：macOS 未签名，首次打开需右键「打开」或到「系统设置 → 隐私与安全性」允许。
 
@@ -161,7 +162,7 @@ lib/
     search/                    搜索历史持久化
   features/
     login/                     登录页
-    home/                      内嵌网页首页（WebView）
+    home/                      首页（原生三标签：推荐 / 每日推荐 / 关注）
     search/                    搜索
     artwork/                   作品详情、媒体播放、下载、收藏
     artist/                    作者资料、画廊、收藏夹、关注
@@ -180,26 +181,24 @@ test/
 
 ## 首页与登录态 / Home & sign-in state
 
-首页内嵌的是 DeviantArt 网页版首页。它的个性化推荐（`rfy/deviations`）由
-**网页登录态（Cookie + CSRF）** 驱动，官方 OAuth API 不提供等价接口——这是首页
-采用 WebView 的原因。
+首页是**原生界面**（推荐 / 每日推荐 / 关注 三个标签）。其中「推荐」流的数据来自
+DeviantArt 网页版的个性化接口（`rfy/deviations`），官方 OAuth API 不提供等价
+接口，因此它需要**网页登录态（Cookie + CSRF）**。
 
-App 里有两条独立的登录态：
+App 里存在两条独立的登录态：
 
-- **网页登录态**：存在首页 WebView 的 Cookie 里，决定首页推荐是否个性化；
+- **网页登录态**：由内置 WebView 建立（Cookie + CSRF），决定首页「推荐」是否个性化；
+  冷启动时会静默刷新，无需每次手动登录。
 - **App OAuth 登录态**：决定收藏 / 关注 / 下载是否可用。
 
-两者不同步时，首页顶部会显示提示条：
-
-- 网页已登录、App 未登录 → 点「登录」直接在 WebView 内完成 OAuth 授权（复用网页
-  登录态，无需重输密码）；
-- App 已登录、网页未登录 → 点「登录网页版」跳转网页登录页。
-
-OAuth 授权优先在首页 WebView 内完成；WebView 不可用时自动回退系统浏览器。
+两者不同步时，首页顶部会显示提示条，一键补全。OAuth 授权优先在内置 WebView 内
+完成（复用网页登录态，无需重输密码），WebView 不可用时自动回退系统浏览器。
 
 ## 贡献 / Contributing
 
-欢迎任何形式的贡献 —— 提 Issue、修 Bug、加功能、完善文档都行：
+欢迎任何形式的贡献 —— 提 Issue、修 Bug、加功能、完善文档都行。详见
+[CONTRIBUTING.md](CONTRIBUTING.md)。安全漏洞请走 [SECURITY.md](SECURITY.md)，
+社区准则见 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。
 
 1. Fork 本仓库，从 `main` 开分支；
 2. 改动后 `flutter analyze` 通过即可提交；
