@@ -45,10 +45,18 @@ android {
 
     buildTypes {
         release {
+            // Release APKs must always use the upload key. Falling back to
+            // the debug key would produce an APK that cannot be installed
+            // as an update over previous releases signed with the upload key.
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
-                signingConfigs.getByName("debug")
+                error(
+                    "Release signing is not configured. " +
+                    "Create android/key.properties and " +
+                    "android/app/upload-keystore.p12 before building a release APK. " +
+                    "See README.md / CI signing secrets."
+                )
             }
         }
     }
