@@ -92,7 +92,12 @@ final class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _openInBrowser() async {
-    await launchUrl(_currentUri, mode: LaunchMode.externalApplication);
+    // Only hand http(s) pages to the external browser; a transient non-web
+    // URI (e.g. the OAuth callback) has no meaningful browser target.
+    final target = _currentUri.isScheme('http') || _currentUri.isScheme('https')
+        ? _currentUri
+        : _homeUri;
+    await launchUrl(target, mode: LaunchMode.externalApplication);
   }
 
   Future<void> _reload() async {
