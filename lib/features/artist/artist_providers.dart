@@ -2,7 +2,6 @@ import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/data/data_access.dart';
-import '../../core/data/rfy_feed.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../artwork/artwork_store.dart';
@@ -35,8 +34,12 @@ final artistFavouritesProvider = StateNotifierProvider.autoDispose
 final artistFoldersProvider = FutureProvider.autoDispose
     .family<List<ArtworkFolder>, String>((ref, username) async {
       final runtime = ref.watch(runtimeProvider);
-      final page = await OfficialFolderRepository(runtime.transport!)
-          .galleryFolders(username: username);
+      final page = await OfficialFolderRepository(
+        runtime.transport!,
+      ).galleryFolders(
+        username: username,
+        options: const FolderQueryOptions(calculateSize: true),
+      );
       return page.items;
     });
 
@@ -55,12 +58,22 @@ final artistJournalsProvider = FutureProvider.autoDispose
       );
       final rawResults = json['results'];
       if (rawResults is! List) return const <Artwork>[];
+      const mapper = DeviationMapper();
       final items = <Artwork>[];
       for (final raw in rawResults) {
         if (raw is! Map) continue;
         final url = raw['url'];
         if (url is! String || !url.contains('/journal/')) continue;
-        items.add(RfyFeedFetcher.mapDeviation(raw));
+        // Journals use the official deviation shape (UUID + text_content), not
+        // the web rfy shape — map them with the official mapper.
+        final item = raw.map<String, Object?>(
+          (key, value) => MapEntry(key.toString(), value),
+        );
+        try {
+          items.add(mapper.artwork(item));
+        } on Object {
+          // Skip malformed journal entries.
+        }
       }
       // Cache journals so tapping one opens the detail screen without an OAuth
       // `deviation/{numericId}` 404.

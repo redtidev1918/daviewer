@@ -5,6 +5,7 @@ import 'package:chewie/chewie.dart';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
@@ -121,6 +122,7 @@ final class _ArtworkDetailScreenState
     final artwork = ref.watch(artworkDetailProvider(widget.artworkId));
     final original = ref.watch(originalFileProvider(widget.artworkId));
     final description = ref.watch(artworkDescriptionProvider(widget.artworkId));
+    final journalHtml = ref.watch(journalHtmlProvider(widget.artworkId));
     final additionalMedia = ref.watch(
       additionalMediaProvider(widget.artworkId),
     );
@@ -172,6 +174,7 @@ final class _ArtworkDetailScreenState
             original,
             transfer,
             description: description.valueOrNull,
+            journalHtml: journalHtml.valueOrNull,
             additionalMedia:
                 additionalMedia.valueOrNull ?? const <MediaAsset>[],
             tags: tags.valueOrNull ?? const <String>[],
@@ -186,14 +189,15 @@ final class _ArtworkDetailScreenState
     MediaAsset original,
     TransferSnapshot? transfer, {
     String? description,
+    String? journalHtml,
     List<MediaAsset> additionalMedia = const <MediaAsset>[],
     List<String> tags = const <String>[],
   }) {
     final s = strings(ref.read(appLanguageProvider));
     final media = artwork.media;
-    // Journals / literature posts have no media and must be rendered as text,
-    // never as an image with a bogus "original deleted" download section.
-    final isTextPost = media.isEmpty;
+    // Journals/literature are rendered as text (with any embedded thumbs shown
+    // above), never as an image with a bogus "original deleted" download row.
+    final isJournal = artwork.pageUri.path.contains('/journal/');
     // When the original download is restricted (e.g. free limit reached),
     // fall back to the full-size image in the media list so the user can
     // still save it.
@@ -204,7 +208,7 @@ final class _ArtworkDetailScreenState
     return ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
-        if (!isTextPost) ...[
+        if (media.isNotEmpty) ...[
           _MediaViewer(media: media, additionalMedia: additionalMedia),
           const SizedBox(height: 16),
         ],
@@ -214,9 +218,20 @@ final class _ArtworkDetailScreenState
           child: Text('by ${artwork.author.username}'),
         ),
         const Divider(),
-        if (description != null && description.trim().isNotEmpty) ...[
+        if (isJournal &&
+            journalHtml != null &&
+            journalHtml.trim().isNotEmpty) ...[
           Text(
-            isTextPost ? s.bodyText : s.description,
+            s.bodyText,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Html(data: journalHtml),
+          const SizedBox(height: 16),
+        ] else if (description != null &&
+            description.trim().isNotEmpty) ...[
+          Text(
+            isJournal ? s.bodyText : s.description,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
@@ -244,7 +259,7 @@ final class _ArtworkDetailScreenState
           ),
           const SizedBox(height: 8),
         ],
-        if (!isTextPost) ...[
+        if (!isJournal && media.isNotEmpty) ...[
           const SizedBox(height: 8),
           _DownloadSection(
             s: s,

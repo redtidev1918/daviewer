@@ -293,6 +293,9 @@ final class AppStrings {
   String get emptyFolderBadge => _lang == AppLanguage.zh ? '空画集' : 'Empty';
   String folderArtworkCount(int count) =>
       _lang == AppLanguage.zh ? '$count 作品' : '$count artworks';
+  String artistStats(int deviations, int favourites) => _lang == AppLanguage.zh
+      ? '$deviations 作品 · $favourites 收藏'
+      : '$deviations deviations · $favourites favourites';
 
   // --- search ---
   String get searchHint => _lang == AppLanguage.zh

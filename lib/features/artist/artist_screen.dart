@@ -158,43 +158,69 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
   }
 }
 
-final class _ArtistHeader extends StatelessWidget {
+final class _ArtistHeader extends ConsumerWidget {
   const _ArtistHeader({required this.profile});
 
   final UserProfileDetails profile;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = strings(ref.watch(appLanguageProvider));
     final avatar = profile.user.avatarUri;
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: const Color(0xffe9ecef),
-            foregroundImage: avatar == null
-                ? null
-                : CachedNetworkImageProvider(avatar.toString()),
+          Row(
+            children: <Widget>[
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: const Color(0xffe9ecef),
+                foregroundImage: avatar == null
+                    ? null
+                    : CachedNetworkImageProvider(avatar.toString()),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      profile.user.displayName ?? profile.user.username,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    if (profile.realName case final realName?) Text(realName),
+                    Text(
+                      s.artistStats(
+                        profile.stats.deviations,
+                        profile.stats.favourites,
+                      ),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  profile.user.displayName ?? profile.user.username,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                if (profile.realName case final realName?) Text(realName),
-                Text(
-                  '${profile.stats.deviations} deviations · '
-                  '${profile.stats.favourites} favourites',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
+          if (profile.tagline case final tagline?) ...[
+            const SizedBox(height: 8),
+            Text(
+              tagline,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
+          ],
+          if (profile.bio case final bio?) ...[
+            const SizedBox(height: 4),
+            Text(
+              bio,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
         ],
       ),
     );
