@@ -1,252 +1,107 @@
-import 'package:dakit_core/dakit_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-import '../../core/auth/auth_controller.dart';
-import '../../core/auth/auth_state.dart';
-import '../../core/l10n/app_strings.dart';
-import '../../core/runtime/runtime_provider.dart';
-import '../../shared/widgets/app_empty_state.dart';
-import '../../shared/widgets/app_error_state.dart';
-import '../../shared/widgets/artwork_feed_grid.dart';
-import '../../shared/widgets/artwork_card.dart';
-import 'home_providers.dart';
-
-final class HomeScreen extends ConsumerStatefulWidget {
+/// Home tab backed by the real DeviantArt home page.
+///
+/// The web home page uses DeviantArt's own `rfy/deviations` recommendation
+/// engine (web-session based). Embedding the page gives the app exactly the
+/// same personalized home feed as the web version. The web session lives in
+/// this WebView, so it is owned by the app (unlike the cookies of the external
+/// system browser).
+final class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-final class _HomeScreenState extends ConsumerState<HomeScreen> {
-  void _refreshFeeds() {
-    // Explicit refresh so the feeds reload regardless of input device
-    // (pull-to-refresh is unreliable with a mouse/trackpad on desktop).
-    ref.read(homeFeedProvider.notifier).refresh();
-    ref.read(followingFeedProvider.notifier).refresh();
-    ref.invalidate(dailyDeviationsProvider);
-  }
+final class _HomeScreenState extends State<HomeScreen> {
+  InAppWebViewController? _controller;
+  bool _loading = true;
+  Object? _error;
 
   @override
   Widget build(BuildContext context) {
-    final auth = ref.watch(authControllerProvider);
-    final s = strings(ref.watch(appLanguageProvider));
-    final hasTransport =
-        auth.status == AuthStatus.signedIn ||
-        ref.watch(runtimeProvider).isConfigured;
-
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(s.appTitle),
-              if (auth.account != null)
-                Text(
-                  auth.account!.username,
-                  style: Theme.of(context).textTheme.bodySmall,
+    return Scaffold(
+      body: SafeArea(
+        child: Stack(
+          children: <Widget>[
+            InAppWebView(
+              initialUrlRequest: URLRequest(
+                url: WebUri('https://www.deviantart.com/'),
+              ),
+              initialSettings: InAppWebViewSettings(
+                javaScriptEnabled: true,
+              ),
+              onWebViewCreated: (controller) {
+                _controller = controller;
+              },
+              onLoadStart: (controller, url) {
+                if (mounted) {
+                  setState(() {
+                    _loading = true;
+                    _error = null;
+                  });
+                }
+              },
+              onLoadStop: (controller, url) {
+                if (mounted) {
+                  setState(() {
+                    _loading = false;
+                    _error = null;
+                  });
+                }
+              },
+              onReceivedError: (controller, request, error) {
+                if (mounted) {
+                  setState(() {
+                    _error = error.description;
+                    _loading = false;
+                  });
+                }
+              },
+            ),
+            if (_loading)
+              const Positioned.fill(
+                child: ColoredBox(
+                  color: Color(0xfff7f9fc),
+                  child: Center(child: CircularProgressIndicator()),
                 ),
-            ],
-          ),
-          actions: <Widget>[
-            IconButton(
-              tooltip: s.refresh,
-              onPressed: _refreshFeeds,
-              icon: const Icon(Icons.refresh),
-            ),
-            IconButton(
-              tooltip: s.settings,
-              onPressed: () => context.push('/settings'),
-              icon: const Icon(Icons.settings_outlined),
-            ),
+              ),
+            if (_error != null)
+              Positioned.fill(
+                child: ColoredBox(
+                  color: const Color(0xfff7f9fc),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        const Icon(Icons.error_outline, size: 48),
+                        const SizedBox(height: 12),
+                        Text('$_error', textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        FilledButton.tonal(
+                          onPressed: _reload,
+                          child: const Text('重试 / Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
           ],
-          bottom: TabBar(
-            tabs: <Widget>[
-              Tab(text: s.home),
-              Tab(text: s.daily),
-              Tab(text: s.following),
-            ],
-          ),
-        ),
-        body: !hasTransport
-            ? Center(child: Text(s.loginFirst))
-            : const TabBarView(
-                children: <Widget>[_HomeFeed(), _DailyFeed(), _FollowingFeed()],
-              ),
-      ),
-    );
-  }
-}
-
-final class _HomeFeed extends ConsumerWidget {
-  const _HomeFeed();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final feed = ref.watch(homeFeedProvider);
-    final s = strings(ref.watch(appLanguageProvider));
-    return ArtworkFeedGrid(
-      feed: feed,
-      emptyMessage: s.noArtworks,
-      onRefresh: () => ref.read(homeFeedProvider.notifier).refresh(),
-      onLoadMore: () => ref.read(homeFeedProvider.notifier).loadMore(),
-    );
-  }
-}
-
-final class _DailyFeed extends ConsumerWidget {
-  const _DailyFeed();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final daily = ref.watch(dailyDeviationsProvider);
-    final s = strings(ref.watch(appLanguageProvider));
-    return daily.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => RefreshIndicator(
-        onRefresh: () => ref.refresh(dailyDeviationsProvider.future),
-        child: _ScrollableFill(
-          child: AppErrorState(
-            message: '$error',
-            onRetry: () => ref.invalidate(dailyDeviationsProvider),
-          ),
-        ),
-      ),
-      data: (items) => RefreshIndicator(
-        onRefresh: () => ref.refresh(dailyDeviationsProvider.future),
-        child: _ArtworkGrid(
-          items: items,
-          isLoading: false,
-          error: null,
-          emptyMessage: s.noDaily,
         ),
       ),
     );
   }
-}
 
-final class _FollowingFeed extends ConsumerWidget {
-  const _FollowingFeed();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authControllerProvider);
-    final s = strings(ref.watch(appLanguageProvider));
-    if (auth.status != AuthStatus.signedIn) {
-      return Center(
-        child: FilledButton(
-          onPressed: () => context.push('/login'),
-          child: Text(s.login),
-        ),
-      );
-    }
-    final feed = ref.watch(followingFeedProvider);
-    return Column(
-      children: <Widget>[
-        // Entry to the followed-users list, kept adjacent to the followed
-        // artwork feed so it is discoverable without digging into Settings.
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-          child: Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: TextButton.icon(
-              onPressed: () => context.push('/watching'),
-              icon: const Icon(Icons.people_outline, size: 18),
-              label: Text(
-                ref.watch(appLanguageProvider) == AppLanguage.zh
-                    ? '关注用户'
-                    : 'Watching',
-              ),
-            ),
-          ),
-        ),
-        Expanded(
-          child: ArtworkFeedGrid(
-            feed: feed,
-            emptyMessage: s.noWatched,
-            onRefresh: () =>
-                ref.read(followingFeedProvider.notifier).refresh(),
-            onLoadMore: () =>
-                ref.read(followingFeedProvider.notifier).loadMore(),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Wraps a non-scrollable child in a scroll view so pull-to-refresh works
-/// even for empty/error states.
-final class _ScrollableFill extends StatelessWidget {
-  const _ScrollableFill({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: SizedBox(
-          height: constraints.maxHeight,
-          width: constraints.maxWidth,
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-final class _ArtworkGrid extends StatelessWidget {
-  const _ArtworkGrid({
-    required this.items,
-    required this.isLoading,
-    required this.error,
-    required this.emptyMessage,
-  });
-
-  final List<Artwork> items;
-  final bool isLoading;
-  final Object? error;
-  final String emptyMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    if (error != null && items.isEmpty) {
-      return _ScrollableFill(child: AppErrorState(message: '$error'));
-    }
-    if (items.isEmpty && isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (items.isEmpty) {
-      return _ScrollableFill(child: AppEmptyState(message: emptyMessage));
-    }
-
-    return GridView.builder(
-      padding: const EdgeInsets.all(12),
-      physics: const AlwaysScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 240,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 0.68,
-      ),
-      itemCount: items.length + (isLoading ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index >= items.length) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final artwork = items[index];
-        return ArtworkCard(
-          artwork: artwork,
-          onTap: () => context.push('/artwork/${artwork.id}'),
-        );
-      },
-    );
+  Future<void> _reload() async {
+    final controller = _controller;
+    if (controller == null) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    await controller.reload();
   }
 }
