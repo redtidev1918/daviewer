@@ -2,8 +2,8 @@ import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/auth/auth_controller.dart';
 import '../../core/auth/session_state.dart';
+import '../../core/auth/web_session_controller.dart';
 import '../../core/data/data_access.dart';
 import '../../core/data/deviation_init.dart';
 import '../../core/data/html_text.dart';
@@ -21,8 +21,9 @@ bool isNumericDeviationId(String id) => RegExp(r'^\d+$').hasMatch(id);
 final deviationInitProvider = FutureProvider.autoDispose
     .family<DeviationInit?, String>((ref, artworkId) async {
       if (!isNumericDeviationId(artworkId)) return null;
-      final auth = ref.watch(authControllerProvider);
-      final csrf = auth.webCsrf;
+      final csrf = ref.watch(
+        webSessionControllerProvider.select((web) => web.csrf),
+      );
       if (csrf.isEmpty) throw const WebLoginRequired();
       final webSession = ref.watch(webSessionProvider);
       final cookieHeader = await webSession.cookieHeader();

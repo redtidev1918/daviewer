@@ -7,18 +7,18 @@ import '../diagnostics/app_logger.dart';
 import '../runtime/app_runtime.dart';
 import '../runtime/runtime_provider.dart';
 import 'auth_state.dart';
-import 'web_session_store.dart';
+import 'web_session_controller.dart';
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
   (ref) => AuthController(ref),
 );
 
+/// Owns the OAuth sign-in lifecycle only. The embedded DeviantArt web session
+/// is managed by the separate [WebSessionController].
 final class AuthController extends StateNotifier<AuthState> {
-  AuthController(this._ref)
-    : super(const AuthState(status: AuthStatus.unknown));
+  AuthController(this._ref) : super(const AuthState(status: AuthStatus.unknown));
 
   final Ref _ref;
-  final WebSessionStore _webStore = const WebSessionStore();
   bool _initializing = false;
   bool _loggingIn = false;
 
@@ -28,22 +28,6 @@ final class AuthController extends StateNotifier<AuthState> {
   Future<void> initialize() async {
     if (_initializing || state.status != AuthStatus.unknown) return;
     _initializing = true;
-
-    // Restore the web-session snapshot so the home feed stays personalized
-    // across restarts (the OAuth token alone is not enough for `rfy`).
-    final web = await _webStore.read();
-    final webCsrf = web['csrf'] as String? ?? '';
-    final webLoggedIn = web['isLoggedIn'] as bool?;
-    final webUsername = web['username'] as String? ?? '';
-
-    // Seed the state with the web snapshot so `_loadAccount` (which preserves
-    // web fields) keeps them on every path below.
-    state = AuthState(
-      status: AuthStatus.unknown,
-      webLoggedIn: webLoggedIn,
-      webCsrf: webCsrf,
-      webUsername: webUsername,
-    );
 
     final runtime = _runtime;
     if (runtime.isConfigured && runtime.oauth != null) {
@@ -61,9 +45,7 @@ final class AuthController extends StateNotifier<AuthState> {
           return;
         }
 
-        // 2. Restore a session persisted by a previous run. validTokens()
-        //    reads the secure token store and refreshes an expired token when
-        //    possible; it throws oauth.session.missing when nothing is stored.
+        // 2. Restore a session persisted by a previous run.
         final tokens = await runtime.oauth!.validTokens(forceRefresh: false);
         _log.info(
           'auth',
@@ -80,12 +62,7 @@ final class AuthController extends StateNotifier<AuthState> {
       }
     }
 
-    state = AuthState(
-      status: AuthStatus.signedOut,
-      webLoggedIn: webLoggedIn,
-      webCsrf: webCsrf,
-      webUsername: webUsername,
-    );
+    state = const AuthState(status: AuthStatus.signedOut);
     _initializing = false;
   }
 
@@ -103,17 +80,9 @@ final class AuthController extends StateNotifier<AuthState> {
     if (state.status == AuthStatus.signedIn || _loggingIn) return;
 
     _loggingIn = true;
-    // Mark the authorization as in-flight and treat the web session as
-    // unknown (rather than preserving a stale `false` from a previous logout),
-    // so the login-sync banner does not flash during the normal login flow.
-    // The WebView re-reads its page after the OAuth callback and reports the
-    // fresh web session via updateWebSessionInfo.
     state = AuthState(
       status: state.status,
       account: state.account,
-      webLoggedIn: null,
-      webCsrf: state.webCsrf,
-      webUsername: state.webUsername,
       isLoggingIn: true,
     );
     try {
@@ -122,34 +91,18 @@ final class AuthController extends StateNotifier<AuthState> {
       await runtime.oauth!.authorize();
       _log.info('auth', 'login: authorize returned, loading account');
       await _loadAccount(runtime);
-      // The embedded WebView re-reads its own page after the OAuth callback and
-      // reports the web session (CSRF + account) via updateWebSessionInfo.
     } on DAKitException catch (error) {
       _log.error('auth', 'OAuth login failed: ${error.code}', error);
-      state = AuthState(
-        status: AuthStatus.signedOut,
-        error: error,
-        webLoggedIn: state.webLoggedIn,
-        webCsrf: state.webCsrf,
-        webUsername: state.webUsername,
-      );
+      state = AuthState(status: AuthStatus.signedOut, error: error);
     } catch (error, stack) {
       _log.error('auth', 'OAuth login failed (unexpected)', error, stack);
-      state = AuthState(
-        status: AuthStatus.signedOut,
-        error: error,
-        webLoggedIn: state.webLoggedIn,
-        webCsrf: state.webCsrf,
-        webUsername: state.webUsername,
-      );
+      state = AuthState(status: AuthStatus.signedOut, error: error);
     } finally {
       _loggingIn = false;
     }
   }
 
-  /// Verifies the configured client id is accepted by DeviantArt by hitting
-  /// the authorize endpoint and observing where it redirects. An invalid id
-  /// redirects to `redirect_error?error=unauthorized_client`.
+  /// Verifies the configured client id is accepted by DeviantArt.
   Future<void> _preflightClientId(AppRuntime runtime) async {
     final dio = runtime.dio;
     if (dio == null) return;
@@ -206,10 +159,7 @@ final class AuthController extends StateNotifier<AuthState> {
         await runtime.oauth!.logout(revoke: true);
       } on Object catch (error, stack) {
         _log.warning('auth', 'logout: revocation failed', error, stack);
-        // DAKit's logout can abort at the pending-authorization clear step when
-        // the macOS keychain is inaccessible, which would leave the token store
-        // intact and stop a re-login from requesting fresh scopes. Clear the
-        // session directly so the next authorize starts clean.
+        // Clear the session directly so the next authorize starts clean.
         try {
           await runtime.oauth!.session.logout(revoke: false);
         } on Object catch (error2, stack2) {
@@ -217,25 +167,16 @@ final class AuthController extends StateNotifier<AuthState> {
         }
       }
     }
-    // Clear the embedded web session too so the two sign-in states (OAuth and
-    // the DeviantArt web home) stay in sync instead of confusing the user.
+    // Clear the embedded web session too (cookies + snapshot + state).
     try {
       await CookieManager.instance().deleteAllCookies();
     } on Object catch (error, stack) {
-      _log.warning('auth', 'logout: web session clear failed', error, stack);
+      _log.warning('auth', 'logout: web cookie clear failed', error, stack);
     }
-    await _webStore.clear();
-    state = const AuthState(
-      status: AuthStatus.signedOut,
-      webLoggedIn: false,
-    );
+    await _ref.read(webSessionControllerProvider.notifier).clear();
+    state = const AuthState(status: AuthStatus.signedOut);
   }
 
-  /// Signs out of the current account and immediately starts a fresh OAuth
-  /// authorization, so the user can authenticate as a different account.
-  ///
-  /// This is a combined "switch account": it clears the current session and
-  /// re-runs the browser flow in one step instead of logout + login.
   Future<void> switchAccount() async {
     if (_loggingIn) return;
     _log.info('auth', 'switch account: logout then re-authorize');
@@ -248,63 +189,6 @@ final class AuthController extends StateNotifier<AuthState> {
     final account = await OfficialAccountRepository(runtime.transport!)
         .currentUser();
     _log.info('auth', 'account loaded: ${account.username}');
-    state = AuthState(
-      status: AuthStatus.signedIn,
-      account: account,
-      webLoggedIn: state.webLoggedIn,
-      webCsrf: state.webCsrf,
-      webUsername: state.webUsername,
-    );
-  }
-
-  /// Records the web session state read from the embedded WebView page.
-  ///
-  /// Reconciles the two sign-in identities: if the web session belongs to a
-  /// *different* account than the OAuth session, the web session is cleared so
-  /// the app never shows two accounts at once.
-  Future<void> updateWebSessionInfo({
-    required String csrf,
-    required bool isLoggedIn,
-    required String username,
-  }) async {
-    var resolvedLoggedIn = isLoggedIn;
-    var resolvedCsrf = csrf;
-
-    final oauthUsername = state.account?.username;
-    if (resolvedLoggedIn &&
-        oauthUsername != null &&
-        oauthUsername.isNotEmpty &&
-        username.isNotEmpty &&
-        username.toLowerCase() != oauthUsername.toLowerCase()) {
-      _log.warning(
-        'auth',
-        'web session is a different account '
-        '(web=$username, oauth=$oauthUsername); logging the web out',
-      );
-      try {
-        await CookieManager.instance().deleteAllCookies();
-      } on Object catch (error, stack) {
-        _log.warning('auth', 'failed to clear mismatched web session', error, stack);
-      }
-      resolvedLoggedIn = false;
-      resolvedCsrf = '';
-    }
-
-    state = AuthState(
-      status: state.status,
-      account: state.account,
-      error: state.error,
-      webLoggedIn: resolvedLoggedIn,
-      webCsrf: resolvedCsrf,
-      webUsername: isLoggedIn ? username : '',
-      isLoggingIn: state.isLoggingIn,
-    );
-
-    // Persist the web-session snapshot so the next cold start restores it.
-    await _webStore.write(
-      csrf: resolvedCsrf,
-      isLoggedIn: resolvedLoggedIn,
-      username: isLoggedIn ? username : '',
-    );
+    state = AuthState(status: AuthStatus.signedIn, account: account);
   }
 }
