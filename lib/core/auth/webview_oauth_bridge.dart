@@ -24,7 +24,8 @@ final class WebViewOAuthBridge implements ExternalUriLauncher {
   Stream<Uri> get launchRequests => _launchController.stream;
 
   /// OAuth callbacks captured from the home WebView.
-  Stream<Uri> get callbacks => _callbackController.stream;
+  CallbackUriSource get callbacks =>
+      _StreamCallbackSource(_callbackController.stream);
 
   void addCallback(Uri uri) {
     if (uri.scheme != 'dakit' || uri.host != 'oauth') return;
@@ -44,4 +45,13 @@ final class WebViewOAuthBridge implements ExternalUriLauncher {
     await _launchController.close();
     await _callbackController.close();
   }
+}
+
+final class _StreamCallbackSource implements CallbackUriSource {
+  const _StreamCallbackSource(this._stream);
+
+  final Stream<Uri> _stream;
+
+  @override
+  Stream<Uri> get uris => _stream;
 }
