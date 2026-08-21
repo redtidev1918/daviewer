@@ -9,6 +9,7 @@ import '../../core/auth/auth_state.dart';
 import '../../core/auth/webview_oauth_bridge.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
+import '../home/home_providers.dart';
 
 /// Hosts the embedded DeviantArt WebView.
 ///
@@ -50,6 +51,10 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   @override
   void dispose() {
     unawaited(_launchSub?.cancel());
+    // The web session may have changed; refresh the home feed and the
+    // web-login state when this screen closes.
+    ref.invalidate(webLoggedInProvider);
+    ref.invalidate(rfyFeedProvider);
     super.dispose();
   }
 

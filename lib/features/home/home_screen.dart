@@ -25,6 +25,27 @@ final class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = strings(ref.watch(appLanguageProvider));
+    final auth = ref.watch(authControllerProvider);
+    final webLoggedIn = ref.watch(webLoggedInProvider);
+    final oauthSignedIn = auth.status == AuthStatus.signedIn;
+
+    Widget? syncBanner;
+    if (webLoggedIn == true && !oauthSignedIn) {
+      syncBanner = _LoginSyncBanner(
+        message: s.webLoggedInOAuthMissing,
+        actionLabel: s.login,
+        onAction: () {
+          context.push('/web-login');
+          ref.read(authControllerProvider.notifier).login();
+        },
+      );
+    } else if (webLoggedIn == false && oauthSignedIn) {
+      syncBanner = _LoginSyncBanner(
+        message: s.webLoggedOutOAuthActive,
+        actionLabel: s.webLogin,
+        onAction: () => context.push('/web-login'),
+      );
+    }
 
     return DefaultTabController(
       length: 3,
@@ -51,8 +72,52 @@ final class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
-        body: const TabBarView(
-          children: <Widget>[_RfyFeed(), _DailyFeed(), _FollowingFeed()],
+        body: Column(
+          children: <Widget>[
+            ?syncBanner,
+            const Expanded(
+              child: TabBarView(
+                children: <Widget>[_RfyFeed(), _DailyFeed(), _FollowingFeed()],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _LoginSyncBanner extends StatelessWidget {
+  const _LoginSyncBanner({
+    required this.message,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  final String message;
+  final String actionLabel;
+  final VoidCallback onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                message,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSecondaryContainer,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            TextButton(onPressed: onAction, child: Text(actionLabel)),
+          ],
         ),
       ),
     );
