@@ -65,7 +65,9 @@ jobs:
             echo "$KEYSTORE_PROPERTIES" > android/key.properties
             echo "Release signing enabled."
           else
-            echo "No signing secrets; falling back to debug signing."
+            echo "::error::KEYSTORE_B64 / KEYSTORE_PROPERTIES secrets are required for release builds."
+            echo "Refusing to publish a debug-signed release APK because it would not install over previous upload-signed releases."
+            exit 1
           fi
       - name: Build release APK
         run: flutter build apk --release
