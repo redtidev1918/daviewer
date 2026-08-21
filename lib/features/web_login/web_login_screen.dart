@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/auth_controller.dart';
+import '../../core/auth/auth_state.dart';
 import '../../core/auth/webview_oauth_bridge.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
@@ -43,6 +45,15 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     if (bridge != null) {
       _launchSub = bridge.launchRequests.listen(_loadAuthRequest);
     }
+    // When an OAuth login finishes, close this screen so the user lands back
+    // on the (now signed-in) native home instead of manually tapping "done".
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      if (previous?.status != AuthStatus.signedIn &&
+          next.status == AuthStatus.signedIn &&
+          mounted) {
+        Navigator.of(context).pop();
+      }
+    });
   }
 
   @override

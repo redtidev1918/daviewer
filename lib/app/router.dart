@@ -115,7 +115,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       // instead of being dumped onto a full-screen login page.
       if (status != AuthStatus.signedIn &&
           location != '/' &&
-          location != '/login') {
+          location != '/login' &&
+          location != '/web-login') {
         return '/';
       }
       return null;
