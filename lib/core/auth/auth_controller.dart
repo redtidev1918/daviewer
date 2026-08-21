@@ -7,6 +7,7 @@ import '../diagnostics/app_logger.dart';
 import '../runtime/app_runtime.dart';
 import '../runtime/runtime_provider.dart';
 import 'auth_state.dart';
+import 'session_state.dart';
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
   (ref) => AuthController(ref),
@@ -39,6 +40,7 @@ final class AuthController extends StateNotifier<AuthState> {
         if (restored != null) {
           _log.info('auth', 'initialize: resumed pending OAuth login');
           await _loadAccount(runtime);
+          await refreshWebSession();
           _initializing = false;
           return;
         }
@@ -53,6 +55,7 @@ final class AuthController extends StateNotifier<AuthState> {
           '(expires ${tokens.expiresAt.toUtc().toIso8601String()})',
         );
         await _loadAccount(runtime);
+        await refreshWebSession();
         _initializing = false;
         return;
       } on DAKitException catch (error) {
@@ -63,6 +66,7 @@ final class AuthController extends StateNotifier<AuthState> {
     }
 
     state = const AuthState(status: AuthStatus.signedOut);
+    await refreshWebSession();
     _initializing = false;
   }
 
@@ -87,6 +91,9 @@ final class AuthController extends StateNotifier<AuthState> {
       await runtime.oauth!.authorize();
       _log.info('auth', 'login: authorize returned, loading account');
       await _loadAccount(runtime);
+      // A WebView OAuth login also establishes the web session; refresh it so
+      // the personalized home feed and sync banner follow immediately.
+      await refreshWebSession();
     } on DAKitException catch (error) {
       _log.error('auth', 'OAuth login failed: ${error.code}', error);
       state = AuthState(status: AuthStatus.signedOut, error: error);
@@ -166,7 +173,10 @@ final class AuthController extends StateNotifier<AuthState> {
     } on Object catch (error, stack) {
       _log.warning('auth', 'logout: web session clear failed', error, stack);
     }
-    state = const AuthState(status: AuthStatus.signedOut);
+    state = const AuthState(
+      status: AuthStatus.signedOut,
+      webLoggedIn: false,
+    );
   }
 
   /// Signs out of the current account and immediately starts a fresh OAuth
@@ -189,6 +199,23 @@ final class AuthController extends StateNotifier<AuthState> {
     state = AuthState(
       status: AuthStatus.signedIn,
       account: account,
+      webLoggedIn: state.webLoggedIn,
     );
+  }
+
+  /// Re-reads the embedded DeviantArt web session and updates only the
+  /// [AuthState.webLoggedIn] field, leaving the OAuth account untouched.
+  Future<void> refreshWebSession() async {
+    try {
+      final info = await _ref.read(webSessionProvider).read();
+      state = AuthState(
+        status: state.status,
+        account: state.account,
+        error: state.error,
+        webLoggedIn: info.isLoggedIn,
+      );
+    } on Object catch (error, stack) {
+      _log.warning('auth', 'refresh web session failed', error, stack);
+    }
   }
 }
