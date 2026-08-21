@@ -1,0 +1,59 @@
+name: Bug report
+description: Report a bug or unexpected behavior
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out as much as
+        you can — it makes triage much faster.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Which DAViewer version are you using? (Settings → About)
+      placeholder: e.g. 0.2.15
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: [Android, macOS, Windows]
+    validations:
+      required: true
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: A clear, concise description of the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact steps that trigger the bug.
+      placeholder: |
+        1. Open ...
+        2. Tap ...
+        3. See error ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen instead.
+  - type: textarea
+    id: link
+    attributes:
+      label: DeviantArt link (if relevant)
+      description: The artwork / journal / gallery URL that triggered the issue.
+      placeholder: https://www.deviantart.com/...
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste any relevant output from Settings → Diagnostics.
+      render: shell
