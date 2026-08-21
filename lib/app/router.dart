@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth_controller.dart';
 import '../core/auth/auth_state.dart';
+import '../core/l10n/app_strings.dart';
 import '../features/artist/artist_screen.dart';
 import '../features/artist/folder_screen.dart';
 import '../features/artwork/artwork_detail_screen.dart';
@@ -46,11 +47,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/artist/:username/folder/:folderId',
-        builder: (context, state) => FolderScreen(
-          username: state.pathParameters['username']!,
-          folderId: state.pathParameters['folderId']!,
-          folderName: state.uri.queryParameters['name'] ?? '画集',
-        ),
+        builder: (context, state) {
+          final s = strings(
+            ProviderScope.containerOf(
+              context,
+              listen: false,
+            ).read(appLanguageProvider),
+          );
+          return FolderScreen(
+            username: state.pathParameters['username']!,
+            folderId: state.pathParameters['folderId']!,
+            folderName: state.uri.queryParameters['name'] ?? s.folder,
+          );
+        },
       ),
       GoRoute(
         path: '/settings',

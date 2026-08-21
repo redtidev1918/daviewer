@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 import 'artwork_detail_providers.dart';
 
@@ -66,9 +67,10 @@ final class _ArtworkDetailScreenState
   Future<void> _copyLink(String url) async {
     await Clipboard.setData(ClipboardData(text: url));
     if (!mounted) return;
+    final s = strings(ref.read(appLanguageProvider));
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('链接已复制')));
+    ).showSnackBar(SnackBar(content: Text(s.linkCopied)));
   }
 
   Future<void> _download(MediaAsset original) async {
@@ -119,6 +121,7 @@ final class _ArtworkDetailScreenState
 
   @override
   Widget build(BuildContext context) {
+    final s = strings(ref.watch(appLanguageProvider));
     final artwork = ref.watch(artworkDetailProvider(widget.artworkId));
     final original = ref.watch(originalFileProvider(widget.artworkId));
     final description = ref.watch(
@@ -144,10 +147,10 @@ final class _ArtworkDetailScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(artwork.valueOrNull?.title ?? '作品详情'),
+        title: Text(artwork.valueOrNull?.title ?? s.artworkDetail),
         actions: <Widget>[
           IconButton(
-            tooltip: '分享',
+            tooltip: s.share,
             onPressed: () {
               final url = artwork.valueOrNull?.pageUri.toString();
               if (url != null) _copyLink(url);
@@ -155,7 +158,7 @@ final class _ArtworkDetailScreenState
             icon: const Icon(Icons.share_outlined),
           ),
           IconButton(
-            tooltip: _favourite ? '取消收藏' : '收藏',
+            tooltip: _favourite ? s.unfavourite : s.favourite,
             onPressed: _toggleFavourite,
             icon: Icon(
               _favourite ? Icons.favorite : Icons.favorite_border,
@@ -191,6 +194,7 @@ final class _ArtworkDetailScreenState
     List<MediaAsset> additionalMedia = const <MediaAsset>[],
     List<String> tags = const <String>[],
   }) {
+    final s = strings(ref.read(appLanguageProvider));
     final media = artwork.media;
     // Journals / literature posts have no media and must be rendered as text,
     // never as an image with a bogus "original deleted" download section.
@@ -220,7 +224,7 @@ final class _ArtworkDetailScreenState
         const Divider(),
         if (description != null && description.trim().isNotEmpty) ...[
           Text(
-            isTextPost ? '正文' : '作品描述',
+            isTextPost ? s.bodyText : s.description,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
@@ -252,6 +256,7 @@ final class _ArtworkDetailScreenState
         if (!isTextPost) ...[
           const SizedBox(height: 8),
           _DownloadSection(
+            s: s,
             original: original,
             downloadable: downloadable,
             transfer: transfer,
@@ -538,6 +543,7 @@ final class _VideoPlayerState extends State<_VideoPlayer> {
 
 final class _DownloadSection extends StatelessWidget {
   const _DownloadSection({
+    required this.s,
     required this.original,
     required this.downloadable,
     required this.transfer,
@@ -548,6 +554,7 @@ final class _DownloadSection extends StatelessWidget {
     required this.onCancel,
   });
 
+  final AppStrings s;
   final MediaAsset original;
   final MediaAsset downloadable;
   final TransferSnapshot? transfer;
@@ -561,6 +568,7 @@ final class _DownloadSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (transfer != null) {
       return _TransferControls(
+        s: s,
         transfer: transfer!,
         onPause: onPause,
         onResume: onResume,
@@ -575,14 +583,14 @@ final class _DownloadSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text('原图：${_availabilityLabel(availability)}'),
+        Text('${s.originalStatusPrefix}${_availabilityLabel(availability)}'),
         if (original.mimeType != null) Text('MIME: ${original.mimeType}'),
         if (original.byteLength != null)
-          Text('大小: ${_formatBytes(original.byteLength!)}'),
+          Text('${s.sizeLabel}${_formatBytes(original.byteLength!)}'),
         if (usingFallback) ...[
           const SizedBox(height: 4),
           Text(
-            '原图下载受限，将下载全尺寸预览图。',
+            s.fallbackDownloadNotice,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -600,10 +608,10 @@ final class _DownloadSection extends StatelessWidget {
               : const Icon(Icons.download),
           label: Text(
             downloading
-                ? '正在下载…'
+                ? s.downloading
                 : usingFallback
-                ? '下载图片'
-                : '下载原图',
+                ? s.downloadImage
+                : s.downloadOriginal,
           ),
         ),
         if (!canDownload) ...[
@@ -622,30 +630,30 @@ final class _DownloadSection extends StatelessWidget {
   String _availabilityLabel(MediaAvailability availability) {
     switch (availability) {
       case MediaAvailability.available:
-        return '可下载';
+        return s.availabilityAvailable;
       case MediaAvailability.loginRequired:
-        return '需要登录';
+        return s.availabilityLoginRequired;
       case MediaAvailability.purchaseRequired:
-        return '需要购买';
+        return s.availabilityPurchaseRequired;
       case MediaAvailability.restricted:
-        return '受限';
+        return s.availabilityRestricted;
       case MediaAvailability.unavailable:
-        return '不可下载';
+        return s.availabilityUnavailable;
       case MediaAvailability.missing:
-        return '已删除或不存在';
+        return s.availabilityMissing;
     }
   }
 
   String _availabilityHint(MediaAvailability availability) {
     switch (availability) {
       case MediaAvailability.loginRequired:
-        return '该作品需要登录后才能下载原图。';
+        return s.hintLoginRequired;
       case MediaAvailability.purchaseRequired:
-        return '该作品需要付费订阅才能下载原图。';
+        return s.hintPurchaseRequired;
       case MediaAvailability.restricted:
-        return '该作品的原图下载受限。';
+        return s.hintRestricted;
       case MediaAvailability.unavailable:
-        return '该作品不提供原图下载。';
+        return s.hintUnavailable;
       default:
         return '';
     }
@@ -660,12 +668,14 @@ final class _DownloadSection extends StatelessWidget {
 
 final class _TransferControls extends StatelessWidget {
   const _TransferControls({
+    required this.s,
     required this.transfer,
     required this.onPause,
     required this.onResume,
     required this.onCancel,
   });
 
+  final AppStrings s;
   final TransferSnapshot transfer;
   final VoidCallback onPause;
   final VoidCallback onResume;
@@ -681,7 +691,7 @@ final class _TransferControls extends StatelessWidget {
         Text('${(transfer.progress * 100).toStringAsFixed(0)}%'),
         if (transfer.localPath != null) ...[
           const SizedBox(height: 4),
-          Text('已保存到 ${transfer.localPath}'),
+          Text('${s.savedToPrefix}${transfer.localPath}'),
         ],
         const SizedBox(height: 8),
         Wrap(
@@ -691,19 +701,19 @@ final class _TransferControls extends StatelessWidget {
               onPressed: transfer.state == TransferState.running
                   ? onPause
                   : null,
-              child: const Text('暂停'),
+              child: Text(s.pause),
             ),
             OutlinedButton(
               onPressed: transfer.state == TransferState.paused
                   ? onResume
                   : null,
-              child: const Text('继续'),
+              child: Text(s.resume),
             ),
             OutlinedButton(
               onPressed: transfer.state == TransferState.completed
                   ? null
                   : onCancel,
-              child: const Text('取消'),
+              child: Text(s.cancel),
             ),
           ],
         ),
@@ -712,16 +722,16 @@ final class _TransferControls extends StatelessWidget {
   }
 }
 
-final class _FullScreenImage extends StatefulWidget {
+final class _FullScreenImage extends ConsumerStatefulWidget {
   const _FullScreenImage({required this.url});
 
   final String url;
 
   @override
-  State<_FullScreenImage> createState() => _FullScreenImageState();
+  ConsumerState<_FullScreenImage> createState() => _FullScreenImageState();
 }
 
-final class _FullScreenImageState extends State<_FullScreenImage> {
+final class _FullScreenImageState extends ConsumerState<_FullScreenImage> {
   final TransformationController _transformation = TransformationController();
   bool _zoomed = false;
 
@@ -744,6 +754,7 @@ final class _FullScreenImageState extends State<_FullScreenImage> {
 
   @override
   Widget build(BuildContext context) {
+    final s = strings(ref.watch(appLanguageProvider));
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -751,7 +762,7 @@ final class _FullScreenImageState extends State<_FullScreenImage> {
         foregroundColor: Colors.white,
         actions: <Widget>[
           IconButton(
-            tooltip: _zoomed ? '重置缩放' : '放大',
+            tooltip: _zoomed ? s.zoomReset : s.zoomIn,
             onPressed: _toggleZoom,
             icon: Icon(_zoomed ? Icons.zoom_out_map : Icons.zoom_in),
           ),

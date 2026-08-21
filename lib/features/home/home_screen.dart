@@ -39,12 +39,14 @@ final class HomeScreen extends ConsumerWidget {
       syncBanner = _LoginSyncBanner(
         message: s.webLoggedInOAuthMissing,
         actionLabel: s.login,
+        closeLabel: s.close,
         onAction: () => context.push('/web-login'),
       );
     } else if (!auth.isLoggingIn && webLoggedIn == false && oauthSignedIn) {
       syncBanner = _LoginSyncBanner(
         message: s.webLoggedOutOAuthActive,
         actionLabel: s.webLogin,
+        closeLabel: s.close,
         onAction: () => context.push('/web-login'),
       );
     }
@@ -71,8 +73,8 @@ final class HomeScreen extends ConsumerWidget {
                 ),
               ),
             IconButton(
-              tooltip: '打开链接',
-              onPressed: () => _showOpenLinkDialog(context),
+              tooltip: s.openLinkTooltip,
+              onPressed: () => _showOpenLinkDialog(context, s),
               icon: const Icon(Icons.link),
             ),
             IconButton(
@@ -109,31 +111,31 @@ final class HomeScreen extends ConsumerWidget {
   }
 }
 
-Future<void> _showOpenLinkDialog(BuildContext context) async {
+Future<void> _showOpenLinkDialog(BuildContext context, AppStrings s) async {
   final controller = TextEditingController();
   final route = await showDialog<String>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('打开 DeviantArt 链接'),
+      title: Text(s.openLinkTitle),
       content: TextField(
         controller: controller,
         autofocus: true,
-        decoration: const InputDecoration(
-          hintText: '粘贴作品或作者链接，例如\nhttps://www.deviantart.com/xxx/art/xxx-123456789',
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          hintText: s.openLinkHint,
+          border: const OutlineInputBorder(),
         ),
       ),
       actions: <Widget>[
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
+          child: Text(s.cancel),
         ),
         FilledButton(
           onPressed: () {
             final link = parseDeviantArtUrl(controller.text);
             Navigator.of(context).pop(link?.route);
           },
-          child: const Text('打开'),
+          child: Text(s.open),
         ),
       ],
     ),
@@ -147,11 +149,13 @@ final class _LoginSyncBanner extends StatefulWidget {
   const _LoginSyncBanner({
     required this.message,
     required this.actionLabel,
+    required this.closeLabel,
     required this.onAction,
   });
 
   final String message;
   final String actionLabel;
+  final String closeLabel;
   final VoidCallback onAction;
 
   @override
@@ -185,7 +189,7 @@ final class _LoginSyncBannerState extends State<_LoginSyncBanner> {
               child: Text(widget.actionLabel),
             ),
             IconButton(
-              tooltip: '关闭',
+              tooltip: widget.closeLabel,
               visualDensity: VisualDensity.compact,
               onPressed: () => setState(() => _dismissed = true),
               icon: const Icon(Icons.close, size: 18),

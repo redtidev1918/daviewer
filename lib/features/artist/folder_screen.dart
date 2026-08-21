@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
 import 'artist_providers.dart';
 
@@ -19,13 +20,14 @@ final class FolderScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = strings(ref.watch(appLanguageProvider));
     final request = FolderRequest(username: username, folderId: folderId);
     final feed = ref.watch(folderContentsProvider(request));
     return Scaffold(
       appBar: AppBar(title: Text(folderName)),
       body: ArtworkFeedGrid(
         feed: feed,
-        emptyMessage: '空画集',
+        emptyMessage: s.emptyFolder,
         onRefresh: () => ref.read(folderContentsProvider(request).notifier).refresh(),
         onLoadMore: () => ref.read(folderContentsProvider(request).notifier).loadMore(),
       ),

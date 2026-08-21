@@ -66,7 +66,9 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
           SnackBar(
             content: Text(
               isForbidden
-                  ? '权限不足，请退出登录后重新登录以获取关注权限。'
+                  ? strings(
+                      ref.read(appLanguageProvider),
+                    ).permissionDeniedWatch
                   : message,
             ),
           ),
