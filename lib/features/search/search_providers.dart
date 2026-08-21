@@ -1,3 +1,4 @@
+import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/data/data_access.dart';
@@ -11,4 +12,11 @@ final searchFeedProvider = StateNotifierProvider.autoDispose
         return dataAccessFor(runtime).search(query, request);
       });
       return controller;
+    });
+
+/// Searches users by name (official `user/friends/search` endpoint).
+final userSearchProvider = FutureProvider.autoDispose
+    .family<List<UserProfile>, String>((ref, query) async {
+      final runtime = ref.watch(runtimeProvider);
+      return OfficialUserRepository(runtime.transport!).searchFriends(query);
     });
