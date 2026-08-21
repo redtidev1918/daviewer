@@ -59,6 +59,19 @@ final favouriteStatusProvider = FutureProvider.autoDispose
       return json['is_favourited'] == true;
     });
 
+/// Display-size assets for each additional page of a multi-image deviation
+/// (web-feed items only; the official API no longer exposes these pages).
+final additionalMediaProvider = FutureProvider.autoDispose
+    .family<List<MediaAsset>, String>((ref, artworkId) async {
+      if (!isNumericDeviationId(artworkId)) return const <MediaAsset>[];
+      try {
+        final init = await ref.watch(deviationInitProvider(artworkId).future);
+        return init?.additionalMedia ?? const <MediaAsset>[];
+      } on Object {
+        return const <MediaAsset>[];
+      }
+    });
+
 /// Resolves an artwork by id, preferring the in-memory [artworkStoreProvider]
 /// cache so web-feed items (which use a numeric id the OAuth API cannot
 /// resolve) render without a failing `deviation/{id}` round-trip.

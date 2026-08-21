@@ -125,6 +125,9 @@ final class _ArtworkDetailScreenState
     final description = ref.watch(
       artworkDescriptionProvider(widget.artworkId),
     );
+    final additionalMedia = ref.watch(
+      additionalMediaProvider(widget.artworkId),
+    );
     final transfer = _transfer;
 
     // Reflect the real favourite state once it loads (the heart must show as
@@ -172,6 +175,7 @@ final class _ArtworkDetailScreenState
             original,
             transfer,
             description: description.valueOrNull,
+            additionalMedia: additionalMedia.valueOrNull ?? const <MediaAsset>[],
           ),
         ),
       ),
@@ -183,6 +187,7 @@ final class _ArtworkDetailScreenState
     MediaAsset original,
     TransferSnapshot? transfer, {
     String? description,
+    List<MediaAsset> additionalMedia = const <MediaAsset>[],
   }) {
     final media = artwork.media;
     // When the original download is restricted (e.g. free limit reached),
@@ -195,7 +200,7 @@ final class _ArtworkDetailScreenState
     return ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
-        _MediaViewer(media: media),
+        _MediaViewer(media: media, additionalMedia: additionalMedia),
         const SizedBox(height: 16),
         Text(
           artwork.title,
@@ -236,15 +241,53 @@ final class _ArtworkDetailScreenState
   }
 }
 
-/// Renders the artwork's media: static images, animated GIFs, and videos.
-final class _MediaViewer extends StatelessWidget {
-  const _MediaViewer({required this.media});
+/// Renders the artwork's media: static images, animated GIFs, videos, and
+/// multi-image pages.
+final class _MediaViewer extends StatefulWidget {
+  const _MediaViewer({
+    required this.media,
+    this.additionalMedia = const <MediaAsset>[],
+  });
 
   final List<MediaAsset> media;
+  final List<MediaAsset> additionalMedia;
+
+  @override
+  State<_MediaViewer> createState() => _MediaViewerState();
+}
+
+final class _MediaViewerState extends State<_MediaViewer> {
+  int _page = 0;
+
+  List<MediaAsset> get _pages => <MediaAsset>[
+    ?_displayAsset(widget.media),
+    ...widget.additionalMedia,
+  ];
+
+  static MediaAsset? _displayAsset(List<MediaAsset> media) {
+    if (media.isEmpty) return null;
+    final video = media.where((m) => m.kind == MediaKind.video).firstOrNull;
+    if (video != null && video.uri != null) return video;
+    final animation = media
+        .where((m) => m.kind == MediaKind.animation)
+        .firstOrNull;
+    if (animation != null && animation.uri != null) return animation;
+    // Inline display: prefer the largest resampled preview so we never force
+    // the (potentially huge) original onto the image cache for inline use.
+    return media
+            .where((m) => m.kind == MediaKind.image && m.role == MediaRole.preview)
+            .fold<MediaAsset?>(
+              null,
+              (best, m) =>
+                  best == null || (m.width ?? 0) > (best.width ?? 0) ? m : best,
+            ) ??
+        media.where((m) => m.kind == MediaKind.image).firstOrNull;
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (media.isEmpty) {
+    final pages = _pages;
+    if (pages.isEmpty) {
       return const AspectRatio(
         aspectRatio: 1,
         child: ColoredBox(
@@ -254,38 +297,45 @@ final class _MediaViewer extends StatelessWidget {
       );
     }
 
-    final video = media.where((m) => m.kind == MediaKind.video).firstOrNull;
-    // Inline display: prefer the largest resampled preview so we never force
-    // the (potentially huge) original onto the image cache for inline use.
-    final image =
-        media
-            .where((m) => m.kind == MediaKind.image && m.role == MediaRole.preview)
-            .fold<MediaAsset?>(
-              null,
-              (best, m) =>
-                  best == null || (m.width ?? 0) > (best.width ?? 0) ? m : best,
-            ) ??
-        media.where((m) => m.kind == MediaKind.image).firstOrNull;
-    final animation = media
-        .where((m) => m.kind == MediaKind.animation)
-        .firstOrNull;
+    if (pages.length == 1) {
+      return _pageWidget(pages.first);
+    }
 
-    if (video != null && video.uri != null) {
-      return _VideoPlayer(url: video.uri.toString());
+    return Column(
+      children: <Widget>[
+        AspectRatio(
+          aspectRatio: 1,
+          child: PageView.builder(
+            itemCount: pages.length,
+            onPageChanged: (index) => setState(() => _page = index),
+            itemBuilder: (context, index) => _pageWidget(pages[index]),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${_page + 1} / ${pages.length}',
+          style: Theme.of(context).textTheme.labelMedium,
+        ),
+      ],
+    );
+  }
+
+  Widget _pageWidget(MediaAsset asset) {
+    final url = asset.uri?.toString();
+    if (url == null) {
+      return const ColoredBox(
+        color: Color(0xffe9ecef),
+        child: Icon(Icons.image, size: 48),
+      );
     }
-    if (animation != null && animation.uri != null) {
-      return _AnimatedImage(url: animation.uri.toString());
+    if (asset.kind == MediaKind.video) {
+      return _VideoPlayer(url: url);
     }
-    if (image != null && image.uri != null) {
-      // Animated GIFs render through Image.network so they actually animate
-      // (the static resampled posters are .jpg, but the display asset points at
-      // the animated .gif baseUri for GIF deviations).
-      if (image.mimeType == 'image/gif') {
-        return _AnimatedImage(url: image.uri.toString());
-      }
-      return _TappableImage(url: image.uri.toString());
+    // Animated GIFs render through Image.network so they actually animate.
+    if (asset.mimeType == 'image/gif') {
+      return _AnimatedImage(url: url);
     }
-    return _TappableImage(url: media.first.uri.toString());
+    return _TappableImage(url: url);
   }
 }
 
