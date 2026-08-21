@@ -151,6 +151,10 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
             final uri = navigationAction.request.url;
             if (uri != null && uri.scheme == 'dakit' && uri.host == 'oauth') {
               _bridge?.addCallback(uri);
+              // Extract the CSRF/session from the current deviantart page now,
+              // before this screen is auto-closed after the OAuth login and the
+              // WebView is disposed (which would lose the chance to report it).
+              await _reportWebSession();
               controller.loadUrl(
                 urlRequest: URLRequest(url: WebUri(_homeUri.toString())),
               );
