@@ -181,10 +181,10 @@ packages:
     dependency: "direct main"
     description:
       name: dakit_api
-      sha256: d86e199838f1e8951fbf1a21e073c3329ee05070448be249044382a22b792c3c
+      sha256: "4e64bb46d617b97d4c32f96e8e816ea0875851ca2be35e2a6772069188e2ff8c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.5"
+    version: "0.1.6"
   dakit_core:
     dependency: "direct main"
     description:
