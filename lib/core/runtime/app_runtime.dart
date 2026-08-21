@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:dio/dio.dart';
 
-import '../auth/combined_callback_source.dart';
 import '../auth/webview_oauth_bridge.dart';
 import '../diagnostics/app_logger.dart';
 import '../network/dynamic_proxy_dio.dart';
@@ -106,9 +105,9 @@ final class AppRuntime {
       endpoint: dio == null ? null : DioOAuthEndpoint(dio: dio),
       networkProfile: dio == null ? networkProfile : null,
       launcher: webViewOAuthBridge,
-      callbacks: CombinedCallbackUriSource(
-        AppLinksCallbackUriSource(),
-        webViewOAuthBridge.callbacks,
+      callbacks: MergedCallbackUriSource(
+        initial: AppLinksCallbackUriSource(),
+        others: <CallbackUriSource>[webViewOAuthBridge.callbacks],
       ),
       diagnostics: logger,
     );
