@@ -34,6 +34,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   Uri? _pendingAuthUri;
   bool _loading = true;
   double _progress = 0;
+  late final AuthController _authController;
 
   WebViewOAuthBridge? get _bridge =>
       ref.read(runtimeProvider).webViewOAuthBridge;
@@ -41,6 +42,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   @override
   void initState() {
     super.initState();
+    _authController = ref.read(authControllerProvider.notifier);
     final bridge = _bridge;
     if (bridge != null) {
       _launchSub = bridge.launchRequests.listen(_loadAuthRequest);
@@ -51,8 +53,9 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   void dispose() {
     unawaited(_launchSub?.cancel());
     // The web session may have changed; refresh the web sign-in state when
-    // this screen closes so the home feed and sync banner follow.
-    ref.read(authControllerProvider.notifier).refreshWebSession();
+    // this screen closes so the home feed and sync banner follow. The
+    // controller was captured in initState because `ref` is unusable here.
+    unawaited(_authController.refreshWebSession());
     super.dispose();
   }
 
