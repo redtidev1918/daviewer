@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,6 +15,28 @@ final webSessionProvider = Provider<WebSession>((ref) {
   if (dio == null) throw StateError('runtime.dio is not configured');
   return WebSession(dio);
 });
+
+/// Whether the DeviantArt web session is signed in (`null` while unknown).
+final class WebLoginController extends StateNotifier<bool?> {
+  WebLoginController(this._session) : super(null) {
+    unawaited(refresh());
+  }
+
+  final WebSession _session;
+
+  Future<void> refresh() async {
+    try {
+      final info = await _session.read();
+      state = info.isLoggedIn;
+    } on Object {
+      // Keep the previous value on transient network errors.
+    }
+  }
+}
+
+final webLoggedInProvider = StateNotifierProvider<WebLoginController, bool?>((
+  ref,
+) => WebLoginController(ref.watch(webSessionProvider)));
 
 /// The personalized home feed (`rfy/deviations`) rendered natively. It is
 /// keyed by the signed-in account so switching accounts rebuilds the feed.
