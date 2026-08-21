@@ -94,17 +94,17 @@ final originalFileProvider = FutureProvider.autoDispose
       return dataAccessFor(runtime).originalFile(artworkId);
     });
 
-/// The full author description as HTML/plain text. For web-feed items it comes
-/// from `dadeviation/init`; for OAuth items from `deviation/content`. Falls
-/// back to the artwork's short excerpt when the full description is empty.
+/// The full author description as plain text. For web-feed items it comes from
+/// `dadeviation/init`; for OAuth items from `deviation/content`. Falls back to
+/// the artwork's short excerpt when the full description is empty.
 final artworkDescriptionProvider = FutureProvider.autoDispose
     .family<String?, String>((ref, artworkId) async {
       final cached = ref.read(artworkStoreProvider)[artworkId];
       if (isNumericDeviationId(artworkId)) {
         try {
           final init = await ref.watch(deviationInitProvider(artworkId).future);
-          final html = init?.descriptionHtml;
-          if (html != null && html.trim().isNotEmpty) return html;
+          final text = init?.description;
+          if (text != null && text.trim().isNotEmpty) return text;
         } on Object catch (error) {
           debugPrint('[desc] init fetch failed: $error');
         }
@@ -118,7 +118,9 @@ final artworkDescriptionProvider = FutureProvider.autoDispose
         ).get(artworkId);
         final html = content.html;
         debugPrint('[desc] content html len=${html?.length ?? 0}');
-        if (html != null && html.trim().isNotEmpty) return html;
+        if (html != null && html.trim().isNotEmpty) {
+          return htmlToPlainText(html);
+        }
         // The rendered `html` is empty for some deviations; the description
         // then lives in the tiptap `original_markup` document.
         final markup = content.originalMarkup;
