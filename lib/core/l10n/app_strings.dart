@@ -44,8 +44,17 @@ final class AppStrings {
   String get switchAccount =>
       _lang == AppLanguage.zh ? '切换账号' : 'Switch account';
   String get login => _lang == AppLanguage.zh ? '登录' : 'Login';
+  String get webLogin => _lang == AppLanguage.zh ? '登录网页版' : 'Web login';
   String get notLoggedIn => _lang == AppLanguage.zh ? '未登录' : 'Not signed in';
   String get loginFirst => _lang == AppLanguage.zh ? '请先登录。' : 'Please sign in.';
+  String get webLoggedInOAuthMissing =>
+      _lang == AppLanguage.zh
+          ? '网页版已登录，补全 App 登录后可使用收藏 / 关注 / 下载。'
+          : 'Web session is signed in. Complete app login for favourites, watching and downloads.';
+  String get webLoggedOutOAuthActive =>
+      _lang == AppLanguage.zh
+          ? 'App 已登录，但网页版尚未登录，首页推荐可能不是个性化内容。'
+          : 'App is signed in, but the web home is not. Home recommendations may not be personalized.';
   String get noArtworks => _lang == AppLanguage.zh ? '暂无作品' : 'No artworks found.';
   String get noDaily => _lang == AppLanguage.zh ? '暂无每日推荐' : 'No daily deviations.';
   String get noWatched => _lang == AppLanguage.zh ? '暂无关注动态' : 'No watched artwork.';
