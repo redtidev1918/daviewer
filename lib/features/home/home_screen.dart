@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/auth/web_session_controller.dart';
 import '../../core/data/da_uri.dart';
 import '../../core/data/web_session.dart';
 import '../../core/l10n/app_strings.dart';
@@ -26,8 +27,9 @@ final class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = strings(ref.watch(appLanguageProvider));
     final auth = ref.watch(authControllerProvider);
+    final web = ref.watch(webSessionControllerProvider);
     final oauthSignedIn = auth.oauthSignedIn;
-    final webLoggedIn = auth.webLoggedIn;
+    final webLoggedIn = web.isLoggedIn;
 
     Widget? syncBanner;
     // Skip the sync banner while an OAuth authorization is in flight, so the

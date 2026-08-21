@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/session_state.dart';
+import '../../core/auth/web_session_controller.dart';
 import '../../core/data/rfy_feed.dart';
 import '../../core/data/web_session.dart';
 import '../../core/feed/artwork_feed_controller.dart';
@@ -18,15 +19,15 @@ final rfyFeedProvider =
     ) {
       final runtime = ref.watch(runtimeProvider);
       final webSession = ref.watch(webSessionProvider);
-      ref.watch(authControllerProvider.select((auth) => auth.webCsrf));
+      ref.watch(webSessionControllerProvider.select((web) => web.csrf));
       final fetcher = RfyFeedFetcher(runtime.dio!);
       final controller = ArtworkFeedController((request) async {
-        final auth = ref.read(authControllerProvider);
-        final csrf = auth.webCsrf;
+        final web = ref.read(webSessionControllerProvider);
+        final csrf = web.csrf;
         // The home feed is personalized; only fetch when the web session is
         // actually signed in, otherwise prompt for login instead of showing
         // anonymous recommendations.
-        if (csrf.isEmpty || auth.webLoggedIn != true) {
+        if (csrf.isEmpty || !web.signedIn) {
           throw const WebLoginRequired();
         }
         final cookieHeader = await webSession.cookieHeader();

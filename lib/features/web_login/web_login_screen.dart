@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/auth_state.dart';
+import '../../core/auth/web_session_controller.dart';
 import '../../core/auth/webview_oauth_bridge.dart';
 import '../../core/data/web_session.dart';
 import '../../core/l10n/app_strings.dart';
@@ -106,11 +107,9 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
         '[web-session] csrf=${csrf.length} isLoggedIn=$isLoggedIn '
         'username=$username',
       );
-      await _authController.updateWebSessionInfo(
-        csrf: csrf,
-        isLoggedIn: isLoggedIn,
-        username: username,
-      );
+      await ref
+          .read(webSessionControllerProvider.notifier)
+          .report(csrf: csrf, username: username);
       _maybeClose();
     } on Object {
       // Best effort; the page may not expose the state during navigation.
