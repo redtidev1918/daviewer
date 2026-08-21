@@ -21,8 +21,12 @@ final rfyFeedProvider =
       ref.watch(authControllerProvider.select((auth) => auth.webCsrf));
       final fetcher = RfyFeedFetcher(runtime.dio!);
       final controller = ArtworkFeedController((request) async {
-        final csrf = ref.read(authControllerProvider).webCsrf;
-        if (csrf.isEmpty) {
+        final auth = ref.read(authControllerProvider);
+        final csrf = auth.webCsrf;
+        // The home feed is personalized; only fetch when the web session is
+        // actually signed in, otherwise prompt for login instead of showing
+        // anonymous recommendations.
+        if (csrf.isEmpty || auth.webLoggedIn != true) {
           throw const WebLoginRequired();
         }
         final cookieHeader = await webSession.cookieHeader();

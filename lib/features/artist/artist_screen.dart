@@ -273,7 +273,18 @@ final class _FoldersView extends ConsumerWidget {
           itemCount: items.length,
           itemBuilder: (context, index) {
             final folder = items[index];
-            final thumbUri = folder.thumbnail?.media.firstOrNull?.uri;
+            // Pick the smallest image (the thumbnail) — `media.first` is the
+            // full-size `content` and would make the grid painfully slow.
+            final thumbUri = folder.thumbnail?.media
+                    .where((m) => m.kind == MediaKind.image)
+                    .fold<MediaAsset?>(
+                      null,
+                      (best, m) =>
+                          best == null || (m.width ?? 0) < (best.width ?? 0)
+                          ? m
+                          : best,
+                    )
+                    ?.uri;
             return InkWell(
               onTap: () => context.push(
                 '/artist/$username/folder/${folder.id}?name=${Uri.encodeComponent(folder.name)}',

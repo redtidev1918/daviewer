@@ -35,7 +35,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   StreamSubscription<Uri>? _launchSub;
   Uri? _pendingAuthUri;
   bool _loading = true;
-  bool _closeScheduled = false;
+  bool _closeAfterReport = false;
   double _progress = 0;
   late final AuthController _authController;
 
@@ -102,9 +102,18 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
         isLoggedIn: (data['isLoggedIn'] as bool?) ?? false,
         username: (data['username'] as String?) ?? '',
       );
+      _maybeClose();
     } on Object {
       // Best effort; the page may not expose the state during navigation.
     }
+  }
+
+  void _maybeClose() {
+    if (!_closeAfterReport || !mounted) return;
+    _closeAfterReport = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
   }
 
   @override
@@ -112,22 +121,24 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     final s = strings(ref.watch(appLanguageProvider));
     final theme = Theme.of(context);
 
-    // When an OAuth login finishes, close this screen so the user lands back
-    // on the (now signed-in) native home. The close is delayed so the WebView
-    // has time to load the deviantart home page and report the web session
-    // (CSRF + login state) via onLoadStop — popping immediately would read the
-    // session from the `dakit://oauth/callback` page, which has no
-    // `__INITIAL_STATE__` and would wrongly record the web session as logged
-    // out.
+    // When OAuth finishes, close only after the deviantart home page reports
+    // the real web session (onLoadStop + _reportWebSession). Closing on a fixed
+    // timer could pop before the home page loads and leave the web session
+    // recorded as signed-out.
     ref.listen<AuthState>(authControllerProvider, (previous, next) {
       if (previous?.status != AuthStatus.signedIn &&
           next.status == AuthStatus.signedIn &&
           mounted &&
-          !_closeScheduled) {
-        _closeScheduled = true;
+          !_closeAfterReport) {
+        _closeAfterReport = true;
+        // Fallback: if the home page never reports (navigation stalls), close
+        // after a generous timeout so the user isn't stuck.
         final navigator = Navigator.of(context);
-        Future<void>.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) navigator.pop();
+        Future<void>.delayed(const Duration(seconds: 8), () {
+          if (mounted && _closeAfterReport) {
+            _closeAfterReport = false;
+            navigator.pop();
+          }
         });
       }
     });
@@ -189,7 +200,15 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
           },
           onLoadStop: (controller, url) {
             if (mounted) setState(() => _loading = false);
-            unawaited(_reportWebSession());
+            // Only report from the deviantart home page, where the session
+            // state is complete. The login/authorize pages would report a
+            // stale anonymous state.
+            final uri = url;
+            if (uri != null &&
+                uri.host == 'www.deviantart.com' &&
+                (uri.path == '/' || uri.path.isEmpty)) {
+              unawaited(_reportWebSession());
+            }
           },
           onProgressChanged: (controller, progress) {
             if (mounted) setState(() => _progress = progress / 100);
