@@ -73,7 +73,16 @@ final class RfyFeedFetcher {
   }
 
   static Artwork mapDeviation(Map<Object?, Object?> json) {
-    final id = '${json['deviationId']}';
+    var id = '${json['deviationId']}';
+    // Some feeds (user/profile/posts journals) don't carry `deviationId`;
+    // fall back to the numeric id in the URL slug.
+    if (id.isEmpty || id == 'null') {
+      final url = json['url'];
+      if (url is String) {
+        final match = RegExp(r'-(\d+)/?$').firstMatch(url);
+        if (match != null) id = match.group(1)!;
+      }
+    }
     final author = json['author'] as Map? ?? const <Object?, Object?>{};
     final username = author['username'] as String? ?? '';
     final media = json['media'] as Map? ?? const <Object?, Object?>{};
