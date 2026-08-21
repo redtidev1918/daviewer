@@ -84,12 +84,48 @@ flutter pub get
 推送到 `main` 会触发 CI 的质量检查与 Android/macOS 构建；打 `v*` 标签会自动创建
 GitHub Release 并上传构建产物（带版本号、自动生成 changelog、只保留最新 release）。
 
+Release APK 始终使用 upload keystore 签名（来自 CI 的 `KEYSTORE_B64` /
+`KEYSTORE_PROPERTIES` secret）；本地无 `android/key.properties` 时 release 构建会
+直接报错，避免误用 debug 签名导致「无法覆盖安装」的签名不一致问题。
+
+### 一键发布（推荐）
+
+Actions → **Release** → Run workflow → 选 `patch` / `minor` / `major`（或填具体
+版本号）→ 运行。它会自动改版本号、提交、推 tag，随后 CI 构建并发布。
+
+### 手动发布
+
+```shell
+# 1. 改 pubspec.yaml 的 version 与 lib/features/settings/settings_screen.dart 的 versionLabel
+# 2. 提交并推送
+# 3. 打 tag 触发发布
+git tag v0.2.4 && git push origin v0.2.4
+```
+
 本地构建：
 
 ```shell
-flutter build apk --release          # Android APK
+flutter build apk --release          # Android APK（需 android/key.properties）
 flutter build macos --release        # macOS 应用
 ```
+
+## 构建工具链 / Toolchain
+
+Flutter 3.47 默认使用 AGP 9.1.0，但稳定版 `flutter_inappwebview`（6.1.5）的
+Android 子包仍引用 AGP 9 已删除的 `proguard-android.txt`，而其 beta 版的 macOS
+子包在 Swift 6 下编译不过。因此本项目**固定使用**以下工具链（偏离 Flutter 默认，
+但满足 Flutter 3.47 的 Gradle ≥ 8.14 / Kotlin ≥ 2.2.20 下限）：
+
+| 组件 | 版本 | 说明 |
+| --- | --- | --- |
+| Android Gradle Plugin | `8.13.2` | 8.x 仍保留 `proguard-android.txt`，且支持 compileSdk 36 |
+| Gradle | `8.14.2` | Flutter 3.47 最低要求 8.14 |
+| Kotlin | `2.2.20` | Flutter 3.47 最低要求 2.2.20 |
+| flutter_inappwebview | `6.1.5`（精确锁定） | 稳定版；不要升到 `6.2.0-beta`（macOS 会编译失败） |
+
+这些值位于 `android/settings.gradle.kts`、`android/gradle/wrapper/gradle-wrapper.properties`
+与 `pubspec.yaml`。升级插件或 Flutter 版本前，需先确认 `flutter_inappwebview`
+的 Android/macOS 子包与新的 AGP/Swift 工具链兼容。
 
 ## 项目结构 / Project Structure
 
