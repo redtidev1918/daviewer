@@ -24,7 +24,7 @@ final class FavouritesScreen extends ConsumerWidget {
         ),
         body: Center(
           child: FilledButton(
-            onPressed: () => context.push('/login'),
+            onPressed: () => context.push('/web-login'),
             child: Text(s.login),
           ),
         ),

@@ -10,7 +10,6 @@ import '../features/diagnostics/diagnostics_screen.dart';
 import '../features/downloads/downloads_screen.dart';
 import '../features/favourites/favourites_screen.dart';
 import '../features/home/home_screen.dart';
-import '../features/login/login_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../features/search/search_screen.dart';
 import '../features/settings/settings_screen.dart';
@@ -29,7 +28,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/web-login',
         builder: (context, state) => const WebLoginScreen(),
@@ -110,17 +108,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       final status = auth.status;
       final location = state.matchedLocation;
       if (status == AuthStatus.unknown) return '/splash';
-      // Once signed in, always leave the splash or login pages for home.
-      if (status == AuthStatus.signedIn &&
-          (location == '/login' || location == '/splash')) {
+      // Once signed in, always leave the splash for home.
+      if (status == AuthStatus.signedIn && location == '/splash') {
         return '/';
       }
       // Home is the public landing page. Signed-out users (including right
-      // after logout) land here — where the login-sync banner guides them —
+      // after logout) land here — where the login buttons guide them —
       // instead of being dumped onto a full-screen login page.
       if (status != AuthStatus.signedIn &&
           location != '/' &&
-          location != '/login' &&
           location != '/web-login') {
         return '/';
       }

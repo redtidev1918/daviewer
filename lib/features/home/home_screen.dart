@@ -36,10 +36,7 @@ final class HomeScreen extends ConsumerWidget {
       syncBanner = _LoginSyncBanner(
         message: s.webLoggedInOAuthMissing,
         actionLabel: s.login,
-        onAction: () {
-          context.push('/web-login');
-          ref.read(authControllerProvider.notifier).login();
-        },
+        onAction: () => context.push('/web-login'),
       );
     } else if (!auth.isLoggingIn && webLoggedIn == false && oauthSignedIn) {
       syncBanner = _LoginSyncBanner(
@@ -65,10 +62,7 @@ final class HomeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(right: 8),
                 child: Center(
                   child: FilledButton.tonal(
-                    onPressed: () {
-                      context.push('/web-login');
-                      ref.read(authControllerProvider.notifier).login();
-                    },
+                    onPressed: () => context.push('/web-login'),
                     child: Text(s.login),
                   ),
                 ),
@@ -163,12 +157,7 @@ final class _RfyFeed extends ConsumerWidget {
       return _LoginPrompt(
         s: s,
         message: oauthSignedIn ? s.webSessionExpired : null,
-        onLogin: () {
-          context.push('/web-login');
-          if (!oauthSignedIn) {
-            ref.read(authControllerProvider.notifier).login();
-          }
-        },
+        onLogin: () => context.push('/web-login'),
       );
     }
 
@@ -191,10 +180,7 @@ final class _DailyFeed extends ConsumerWidget {
     if (!auth.oauthSignedIn) {
       return _LoginPrompt(
         s: s,
-        onLogin: () {
-          context.push('/web-login');
-          ref.read(authControllerProvider.notifier).login();
-        },
+        onLogin: () => context.push('/web-login'),
       );
     }
     final daily = ref.watch(dailyDeviationsProvider);
@@ -232,10 +218,7 @@ final class _FollowingFeed extends ConsumerWidget {
     if (!auth.oauthSignedIn) {
       return _LoginPrompt(
         s: s,
-        onLogin: () {
-          context.push('/web-login');
-          ref.read(authControllerProvider.notifier).login();
-        },
+        onLogin: () => context.push('/web-login'),
       );
     }
     final feed = ref.watch(followingFeedProvider);

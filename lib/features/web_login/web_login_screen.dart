@@ -34,6 +34,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   StreamSubscription<Uri>? _launchSub;
   Uri? _pendingAuthUri;
   bool _loading = true;
+  bool _closeScheduled = false;
   double _progress = 0;
   late final AuthController _authController;
 
@@ -48,6 +49,16 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     if (bridge != null) {
       _launchSub = bridge.launchRequests.listen(_loadAuthRequest);
     }
+    // Single unified login: this screen hosts the WebView that establishes BOTH
+    // the DeviantArt web session and the OAuth authorization. Any "login"
+    // button just opens this screen; once the WebView is subscribed here, we
+    // auto-start the OAuth authorize so it completes in this same WebView.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = ref.read(authControllerProvider);
+      if (!auth.oauthSignedIn && !auth.isLoggingIn && mounted) {
+        _authController.login();
+      }
+    });
   }
 
   @override
@@ -96,15 +107,21 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     final theme = Theme.of(context);
 
     // When an OAuth login finishes, close this screen so the user lands back
-    // on the (now signed-in) native home instead of manually tapping "done".
+    // on the (now signed-in) native home. The close is delayed so the WebView
+    // has time to load the deviantart home page and report the web session
+    // (CSRF + login state) via onLoadStop — popping immediately would read the
+    // session from the `dakit://oauth/callback` page, which has no
+    // `__INITIAL_STATE__` and would wrongly record the web session as logged
+    // out.
     ref.listen<AuthState>(authControllerProvider, (previous, next) {
       if (previous?.status != AuthStatus.signedIn &&
           next.status == AuthStatus.signedIn &&
-          mounted) {
-        // Defer the pop until after the current frame: the auth change fires
-        // during build, and popping the navigator mid-build is not allowed.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) Navigator.of(context).pop();
+          mounted &&
+          !_closeScheduled) {
+        _closeScheduled = true;
+        final navigator = Navigator.of(context);
+        Future<void>.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) navigator.pop();
         });
       }
     });
@@ -151,10 +168,9 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
             final uri = navigationAction.request.url;
             if (uri != null && uri.scheme == 'dakit' && uri.host == 'oauth') {
               _bridge?.addCallback(uri);
-              // Extract the CSRF/session from the current deviantart page now,
-              // before this screen is auto-closed after the OAuth login and the
-              // WebView is disposed (which would lose the chance to report it).
-              await _reportWebSession();
+              // Navigate back to the deviantart home page; its onLoadStop then
+              // reports the real web session (CSRF + login state). Do NOT read
+              // the session here — the callback page has no __INITIAL_STATE__.
               controller.loadUrl(
                 urlRequest: URLRequest(url: WebUri(_homeUri.toString())),
               );

@@ -6,6 +6,7 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/auth/session_state.dart';
 import '../../core/data/data_access.dart';
 import '../../core/data/deviation_init.dart';
+import '../../core/data/html_text.dart';
 import '../../core/data/web_session.dart';
 import '../../core/runtime/runtime_provider.dart';
 import 'artwork_store.dart';
@@ -45,6 +46,19 @@ final artworkUuidProvider = FutureProvider.autoDispose
       return init!.uuid;
     });
 
+/// Whether the signed-in user has favourited this artwork, read from the
+/// official `deviation/{uuid}` response so the heart reflects the real state.
+final favouriteStatusProvider = FutureProvider.autoDispose
+    .family<bool, String>((ref, artworkId) async {
+      final uuid = await ref.watch(artworkUuidProvider(artworkId).future);
+      final runtime = ref.watch(runtimeProvider);
+      final json = await runtime.transport!.getJson(
+        'deviation/${Uri.encodeComponent(uuid)}',
+        query: const <String, Object?>{'with_session': false},
+      );
+      return json['is_favourited'] == true;
+    });
+
 /// Resolves an artwork by id, preferring the in-memory [artworkStoreProvider]
 /// cache so web-feed items (which use a numeric id the OAuth API cannot
 /// resolve) render without a failing `deviation/{id}` round-trip.
@@ -67,22 +81,41 @@ final originalFileProvider = FutureProvider.autoDispose
       return dataAccessFor(runtime).originalFile(artworkId);
     });
 
-/// The full author description as rich-text HTML. For web-feed items it comes
-/// from `dadeviation/init`; for OAuth items from `deviation/content`.
+/// The full author description as HTML/plain text. For web-feed items it comes
+/// from `dadeviation/init`; for OAuth items from `deviation/content`. Falls
+/// back to the artwork's short excerpt when the full description is empty.
 final artworkDescriptionProvider = FutureProvider.autoDispose
     .family<String?, String>((ref, artworkId) async {
+      final cached = ref.read(artworkStoreProvider)[artworkId];
       if (isNumericDeviationId(artworkId)) {
-        final init = await ref.watch(deviationInitProvider(artworkId).future);
-        return init?.descriptionHtml;
+        try {
+          final init = await ref.watch(deviationInitProvider(artworkId).future);
+          final html = init?.descriptionHtml;
+          if (html != null && html.trim().isNotEmpty) return html;
+        } on Object catch (error) {
+          debugPrint('[desc] init fetch failed: $error');
+        }
+        return cached?.description;
       }
       final runtime = ref.watch(runtimeProvider);
+      final artwork = await ref.watch(artworkDetailProvider(artworkId).future);
       try {
         final content = await OfficialArtworkContentRepository(
           runtime.transport!,
         ).get(artworkId);
-        return content.html;
+        final html = content.html;
+        debugPrint('[desc] content html len=${html?.length ?? 0}');
+        if (html != null && html.trim().isNotEmpty) return html;
+        // The rendered `html` is empty for some deviations; the description
+        // then lives in the tiptap `original_markup` document.
+        final markup = content.originalMarkup;
+        if (markup != null && markup.trim().isNotEmpty) {
+          final text = tiptapToPlainText(markup);
+          debugPrint('[desc] tiptap len=${text.length}');
+          if (text.isNotEmpty) return text;
+        }
       } on Object catch (error) {
         debugPrint('[desc] content fetch failed: $error');
-        return null;
       }
+      return artwork.description;
     });

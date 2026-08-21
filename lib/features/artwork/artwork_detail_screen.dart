@@ -127,6 +127,18 @@ final class _ArtworkDetailScreenState
     );
     final transfer = _transfer;
 
+    // Reflect the real favourite state once it loads (the heart must show as
+    // filled when re-opening an already-favourited artwork).
+    ref.listen<AsyncValue<bool>>(
+      favouriteStatusProvider(widget.artworkId),
+      (previous, next) {
+        final value = next.valueOrNull;
+        if (value != null && mounted) {
+          setState(() => _favourite = value);
+        }
+      },
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(artwork.valueOrNull?.title ?? '作品详情'),
