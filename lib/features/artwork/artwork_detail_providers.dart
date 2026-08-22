@@ -91,29 +91,31 @@ final artworkTagsProvider = FutureProvider.autoDispose
 /// `dadeviation/init` endpoint (`type=journal`) using the embedded web session.
 /// The official API only exposes a truncated excerpt for journals; the complete
 /// tiptap document (inline formatting + embedded images) lives here.
-final journalHtmlProvider = FutureProvider.autoDispose
-    .family<String?, String>((ref, artworkId) async {
-      final cached = ref.read(artworkStoreProvider)[artworkId];
-      if (cached == null || !cached.pageUri.path.contains('/journal/')) {
-        return null;
-      }
-      final match = RegExp(r'-(\d+)/?$').firstMatch(cached.pageUri.path);
-      final numericId = match?.group(1);
-      if (numericId == null) return null;
-      final csrf = ref.watch(
-        webSessionControllerProvider.select((web) => web.csrf),
-      );
-      if (csrf.isEmpty) return null;
-      final webSession = ref.watch(webSessionProvider);
-      final cookieHeader = await webSession.cookieHeader();
-      final runtime = ref.watch(runtimeProvider);
-      return JournalContentFetcher(runtime.dio!).fetchHtml(
-        deviationId: numericId,
-        username: cached.author.username,
-        cookieHeader: cookieHeader,
-        csrfToken: csrf,
-      );
-    });
+final journalHtmlProvider = FutureProvider.autoDispose.family<String?, String>((
+  ref,
+  artworkId,
+) async {
+  final cached = ref.read(artworkStoreProvider)[artworkId];
+  if (cached == null || !cached.pageUri.path.contains('/journal/')) {
+    return null;
+  }
+  final match = RegExp(r'-(\d+)/?$').firstMatch(cached.pageUri.path);
+  final numericId = match?.group(1);
+  if (numericId == null) return null;
+  final csrf = ref.watch(
+    webSessionControllerProvider.select((web) => web.csrf),
+  );
+  if (csrf.isEmpty) return null;
+  final webSession = ref.watch(webSessionProvider);
+  final cookieHeader = await webSession.cookieHeader();
+  final runtime = ref.watch(runtimeProvider);
+  return JournalContentFetcher(runtime.dio!).fetchHtml(
+    deviationId: numericId,
+    username: cached.author.username,
+    cookieHeader: cookieHeader,
+    csrfToken: csrf,
+  );
+});
 
 /// Resolves an artwork by id, preferring the in-memory [artworkStoreProvider]
 /// cache so web-feed items (which use a numeric id the OAuth API cannot
