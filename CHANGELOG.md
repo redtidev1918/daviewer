@@ -3,6 +3,13 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.84（新应用图标 · 文案调整）
+
+### Changed
+
+- 更新应用启动图标与项目 Logo（Android / macOS / Windows 各平台 + README）
+- 调整 README 简介文案，改为更中性的表述
+
 ## 0.2.83（详情页收藏集区块）
 
 ### Added
