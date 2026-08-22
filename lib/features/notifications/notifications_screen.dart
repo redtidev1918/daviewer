@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme/app_theme.dart';
+import '../../core/auth/auth_controller.dart';
+import '../../core/auth/auth_state.dart';
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_empty_state.dart';
@@ -23,6 +25,18 @@ final class NotificationsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = strings(ref.watch(appLanguageProvider));
+    final auth = ref.watch(authControllerProvider);
+    if (auth.status != AuthStatus.signedIn) {
+      return Scaffold(
+        appBar: AppBar(title: Text(s.notifications)),
+        body: Center(
+          child: FilledButton(
+            onPressed: () => context.push('/web-login'),
+            child: Text(s.login),
+          ),
+        ),
+      );
+    }
     final messages = ref.watch(notificationsProvider);
 
     return Scaffold(

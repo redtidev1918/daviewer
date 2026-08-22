@@ -111,8 +111,10 @@ final class AppStrings {
   String get about => _lang == AppLanguage.zh ? '关于' : 'About';
   String get githubRepository =>
       _lang == AppLanguage.zh ? 'GitHub 仓库' : 'GitHub repository';
+  String get releases => _lang == AppLanguage.zh ? '版本发布' : 'Releases';
   String get close => _lang == AppLanguage.zh ? '关闭' : 'Close';
   String get open => _lang == AppLanguage.zh ? '打开' : 'Open';
+  String get openFolder => _lang == AppLanguage.zh ? '打开文件夹' : 'Open folder';
 
   // --- artwork detail ---
   String get artworkDetail =>
