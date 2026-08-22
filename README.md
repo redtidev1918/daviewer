@@ -10,7 +10,7 @@
 [![GitHub license](https://img.shields.io/github/license/redtidev1918/daviewer?style=flat)](LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/redtidev1918/daviewer?style=flat)](https://github.com/redtidev1918/daviewer/releases)
 [![Platforms](https://img.shields.io/badge/platform-Android%20%7C%20macOS%20%7C%20Windows-blue?style=flat)](https://github.com/redtidev1918/daviewer/releases)
-[![Flutter](https://img.shields.io/badge/Flutter-3.47-blue?style=flat&logo=flutter)](https://flutter.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.47.1-blue?style=flat&logo=flutter)](https://flutter.dev)
 
 ## 为什么做这个项目
 
@@ -114,7 +114,7 @@ Actions → **Release** → Run workflow → 选 `patch` / `minor` / `major`（�
 # 1. 改 pubspec.yaml 的 version 与 lib/features/settings/settings_screen.dart 的 versionLabel
 # 2. 提交并推送
 # 3. 打 tag 触发发布
-git tag v0.2.4 && git push origin v0.2.4
+git tag v0.2.42 && git push origin v0.2.42   # 替换为实际版本号
 ```
 
 本地构建：
