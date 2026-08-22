@@ -14,20 +14,17 @@ void main() {
 
   test('loads and appends pages from cursor', () async {
     var calls = 0;
-    final controller = ArtworkFeedController(
-      (request) async {
-        calls += 1;
-        if (request.cursor == null) {
-          return Page<Artwork>(
-            items: <Artwork>[artwork(1), artwork(2)],
-            hasMore: true,
-            nextCursor: 'next',
-          );
-        }
-        return Page<Artwork>(items: <Artwork>[artwork(3)], hasMore: false);
-      },
-      autoLoad: false,
-    );
+    final controller = ArtworkFeedController((request) async {
+      calls += 1;
+      if (request.cursor == null) {
+        return Page<Artwork>(
+          items: <Artwork>[artwork(1), artwork(2)],
+          hasMore: true,
+          nextCursor: 'next',
+        );
+      }
+      return Page<Artwork>(items: <Artwork>[artwork(3)], hasMore: false);
+    }, autoLoad: false);
 
     await controller.refresh();
     expect(controller.state.items, hasLength(2));
@@ -43,10 +40,7 @@ void main() {
     var calls = 0;
     final controller = ArtworkFeedController((request) async {
       calls += 1;
-      return Page<Artwork>(
-        items: <Artwork>[artwork(1)],
-        hasMore: false,
-      );
+      return Page<Artwork>(items: <Artwork>[artwork(1)], hasMore: false);
     });
 
     // Wait a microtask for the scheduled refresh to complete.
@@ -76,8 +70,10 @@ void main() {
 
   test('refreshSilently replaces items on success', () async {
     final controller = ArtworkFeedController(
-      (request) async =>
-          Page<Artwork>(items: <Artwork>[artwork(2), artwork(3)], hasMore: false),
+      (request) async => Page<Artwork>(
+        items: <Artwork>[artwork(2), artwork(3)],
+        hasMore: false,
+      ),
       autoLoad: false,
     );
 

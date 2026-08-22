@@ -10,7 +10,10 @@ void main() {
   });
 
   test('parses a fav.me shortcode', () {
-    expect(parseDeviantArtUrl('https://fav.me/abc123')?.route, '/artwork/abc123');
+    expect(
+      parseDeviantArtUrl('https://fav.me/abc123')?.route,
+      '/artwork/abc123',
+    );
   });
 
   test('parses a bare username to an artist route', () {
