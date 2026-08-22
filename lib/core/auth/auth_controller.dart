@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -42,7 +44,10 @@ final class AuthController extends StateNotifier<AuthState> {
         );
         if (restored != null) {
           _log.info('auth', 'initialize: resumed pending OAuth login');
-          await _loadAccount(runtime);
+          // Sign in immediately; the account profile loads in the background
+          // so the splash can hand off to Home without waiting on /user/whoami.
+          state = const AuthState(status: AuthStatus.signedIn);
+          unawaited(_loadAccount(runtime));
           _initializing = false;
           return;
         }
@@ -58,7 +63,8 @@ final class AuthController extends StateNotifier<AuthState> {
           'initialize: restored persisted session '
               '(expires ${tokens.expiresAt.toUtc().toIso8601String()})',
         );
-        await _loadAccount(runtime);
+        state = const AuthState(status: AuthStatus.signedIn);
+        unawaited(_loadAccount(runtime));
         _initializing = false;
         return;
       } on DAKitException catch (error) {
@@ -188,10 +194,17 @@ final class AuthController extends StateNotifier<AuthState> {
 
   Future<void> _loadAccount(AppRuntime runtime) async {
     _log.info('auth', 'loading account');
-    final account = await OfficialAccountRepository(runtime.transport!)
-        .currentUser()
-        .timeout(const Duration(seconds: 15));
-    _log.info('auth', 'account loaded: ${account.username}');
-    state = AuthState(status: AuthStatus.signedIn, account: account);
+    try {
+      final account = await OfficialAccountRepository(runtime.transport!)
+          .currentUser()
+          .timeout(const Duration(seconds: 15));
+      _log.info('auth', 'account loaded: ${account.username}');
+      state = AuthState(status: AuthStatus.signedIn, account: account);
+    } on Object catch (error, stack) {
+      _log.error('auth', 'account load failed', error, stack);
+      // Tokens are still valid even if the profile fetch failed; stay signed
+      // in with an unknown profile instead of forcing a logout.
+      state = const AuthState(status: AuthStatus.signedIn);
+    }
   }
 }
