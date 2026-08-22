@@ -1,9 +1,9 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_html/flutter_html.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
+import 'rich_html.dart';
 
 /// The artwork title and author link.
 final class ArtworkHeader extends StatelessWidget {
@@ -60,10 +60,7 @@ final class ArtworkDescriptionSection extends StatelessWidget {
         children: <Widget>[
           Text(s.bodyText, style: titleStyle),
           const SizedBox(height: 8),
-          Html(
-            data: journalHtml!,
-            onLinkTap: (url, attributes, element) => onOpenLink(url),
-          ),
+          RichHtml(data: journalHtml!, strings: s, onLinkTap: onOpenLink),
           const SizedBox(height: 16),
         ],
       );
@@ -77,10 +74,7 @@ final class ArtworkDescriptionSection extends StatelessWidget {
         children: <Widget>[
           Text(s.description, style: titleStyle),
           const SizedBox(height: 8),
-          Html(
-            data: descriptionHtml!,
-            onLinkTap: (url, attributes, element) => onOpenLink(url),
-          ),
+          RichHtml(data: descriptionHtml!, strings: s, onLinkTap: onOpenLink),
           const SizedBox(height: 16),
         ],
       );

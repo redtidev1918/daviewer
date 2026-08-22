@@ -33,11 +33,11 @@
   (`rfy/deviations`), matching the website
 - **Search**: keyword search + history + paste a DeviantArt link to jump straight
   to an artwork or artist
-- **Artwork detail**: images / video (seekable) / GIF playback, swipe through
-  multi-image galleries, full rich-text description (links / bold / emotes /
-  embedded images)
-- **Related content**: a native "More like this" waterfall with an explicit
-  retry state at the bottom of the detail page
+- **Artwork detail**: one double-tap/pinch zoom experience for images; highest-
+  quality video selection with seeking and retry; cached GIFs with progress;
+  multi-image paging; cached rich-text images with placeholders and retry
+- **Related content**: a native "More like this" waterfall that hydrates sparse
+  previews and keeps explicit empty, failure and retry states visible
 - **Tags**: `#tags` on the detail page, tap through to the tag feed, plus
   "related tags" on the tag page
 - **Artist**: profile (including the artist's bio), gallery, **custom
@@ -60,20 +60,23 @@ dependencies:
 ```yaml
 dependencies:
   dakit_core: ^0.1.11
-  dakit_api: ^0.1.15
+  dakit_api: ^0.1.16
   dakit_flutter: ^0.1.8
 ```
 
 Numeric artwork ids from the personalized web feed must first be resolved to
 the UUID accepted by the official API. If the CSRF session rotates, "More like
 this" shows a native retry action; retry waits for the headless web-session
-refresh to actually finish before resolving the id again instead of silently
-hiding the section.
+refresh to actually finish before resolving the id again. If the official
+preview only includes ids, DAKit hydrates those details with bounded
+concurrency. Genuine empty results remain visible with an explanation and retry.
 
 A fresh installation opens the unified sign-in screen directly. Personalized
 recommendations are not requested until both the web identity and CSRF session
-are ready, so signed-out state is never rendered as a feed error. OAuth errors
-remain on the sign-in screen with their cause and a retry action.
+are ready, so signed-out state is never rendered as a feed error. First sign-in
+commits the web Cookie/CSRF before OAuth starts, preventing the two navigations
+from racing. OAuth errors remain on the sign-in screen with their cause and a
+retry action.
 
 ## Install
 
@@ -257,7 +260,7 @@ WebView is unavailable.
 - **You don't need a Google email to register**: DeviantArt accepts any email, and the login page also offers one-click Google / Apple sign-in.
 - **Forgot your password?** Use the "Forgot Password" link on the login page, or tap "?" → "Forgot password" in the app's login screen to open the reset page in your browser.
 - **Register an account**: tap "?" → "Register a DeviantArt account" in the app's login screen to open the sign-up page in your browser.
-- **macOS "Keychain" prompt**: on first sign-in macOS may show "DAViewer wants to use confidential information stored in your keychain". This is the standard confirmation macOS shows for *any* app that keeps its own login credentials in Keychain. DAViewer stores only the OAuth token it received after you signed in to DeviantArt — it never reads or stores other secrets (browser passwords, Wi-Fi, etc.). The item is named "DAViewer" and the sandboxed app declares its keychain access, so you shouldn't see repeated prompts.
+- **macOS "Keychain" prompt**: on first sign-in macOS may show a Keychain confirmation. DAViewer stores only the DeviantArt OAuth token in the app's default private Keychain group; it declares no shared Keychain group and never reads or stores browser passwords, Wi-Fi passwords, or other secrets. The item is named "DAViewer".
 
 ## Contributing
 

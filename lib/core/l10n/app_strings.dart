@@ -89,6 +89,8 @@ final class AppStrings {
   String get noImage => _lang == AppLanguage.zh ? '暂无图片' : 'No image';
   String get imageLoadFailed =>
       _lang == AppLanguage.zh ? '图片加载失败' : 'Failed to load';
+  String get videoLoadFailed =>
+      _lang == AppLanguage.zh ? '视频加载失败' : 'Video failed to load';
   String get byPrefix => _lang == AppLanguage.zh ? '作者：' : 'by ';
   String get recommendedTags =>
       _lang == AppLanguage.zh ? '为你推荐' : 'Recommended for you';
@@ -367,6 +369,8 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '更多类似作品' : 'More like this';
   String get moreLikeThisLoadFailed =>
       _lang == AppLanguage.zh ? '更多类似作品加载失败' : 'Could not load similar artwork';
+  String get noMoreLikeThis =>
+      _lang == AppLanguage.zh ? '暂时没有找到类似作品' : 'No similar artwork found';
 
   // --- OAuth configuration errors (developer-facing) ---
   String get oauthClientIdMissing => _lang == AppLanguage.zh

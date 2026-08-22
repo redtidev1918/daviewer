@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/web_session_controller.dart';
 import '../../core/auth/web_session_refresher.dart';
+import '../../core/diagnostics/app_logger.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/artwork_card.dart';
 import 'artwork_detail_providers.dart';
@@ -31,6 +32,12 @@ final class MoreLikeThisSection extends ConsumerWidget {
       ),
       error: (error, stackTrace) {
         debugPrint('[moreLikeThis] $artworkId failed: $error');
+        AppLogger.instance.error(
+          'moreLikeThis',
+          'failed for $artworkId',
+          error,
+          stackTrace,
+        );
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -54,7 +61,34 @@ final class MoreLikeThisSection extends ConsumerWidget {
       },
       data: (result) {
         final items = result.artworks;
-        if (items.isEmpty) return const SizedBox.shrink();
+        if (items.isEmpty) {
+          AppLogger.instance.warning(
+            'moreLikeThis',
+            'empty related result for $artworkId',
+          );
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                s.moreLikeThis,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: <Widget>[
+                  const Icon(Icons.auto_awesome_outlined),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(s.noMoreLikeThis)),
+                  TextButton.icon(
+                    onPressed: () => _retry(context, ref),
+                    icon: const Icon(Icons.refresh),
+                    label: Text(s.retry),
+                  ),
+                ],
+              ),
+            ],
+          );
+        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[

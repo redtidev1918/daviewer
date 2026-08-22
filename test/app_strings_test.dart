@@ -73,5 +73,7 @@ void main() {
     );
     expect(zh.deleteFinishedDownloadsFailed('无权限'), '删除失败：无权限');
     expect(en.moreLikeThisLoadFailed, 'Could not load similar artwork');
+    expect(zh.noMoreLikeThis, '暂时没有找到类似作品');
+    expect(en.videoLoadFailed, 'Video failed to load');
   });
 }
