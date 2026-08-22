@@ -45,10 +45,6 @@ final class AppStrings {
   String get settings => _lang == AppLanguage.zh ? '设置' : 'Settings';
   String get logout => _lang == AppLanguage.zh ? '退出登录' : 'Logout';
   String get signedOut => _lang == AppLanguage.zh ? '已登出' : 'Signed out';
-  String get switchAccount =>
-      _lang == AppLanguage.zh ? '切换账号' : 'Switch account';
-  String get switchingAccount =>
-      _lang == AppLanguage.zh ? '正在切换账号…' : 'Switching account…';
   String get login => _lang == AppLanguage.zh ? '登录' : 'Login';
   String get webLogin => _lang == AppLanguage.zh ? '登录网页版' : 'Web login';
   String get notLoggedIn => _lang == AppLanguage.zh ? '未登录' : 'Not signed in';
@@ -76,7 +72,6 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '无搜索结果' : 'No results found.';
   String get retry => _lang == AppLanguage.zh ? '重试' : 'Retry';
   String get refresh => _lang == AppLanguage.zh ? '刷新' : 'Refresh';
-  String get back => _lang == AppLanguage.zh ? '返回' : 'Back';
   String get done => _lang == AppLanguage.zh ? '完成' : 'Done';
   String get pause => _lang == AppLanguage.zh ? '暂停' : 'Pause';
   String get resume => _lang == AppLanguage.zh ? '继续' : 'Resume';
@@ -90,12 +85,9 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '下载原图' : 'Download original';
   String get original => _lang == AppLanguage.zh ? '原图' : 'Original';
   String get description => _lang == AppLanguage.zh ? '作品描述' : 'Description';
-  String get artworkText => _lang == AppLanguage.zh ? '作品文字' : 'Artwork text';
   String get about => _lang == AppLanguage.zh ? '关于' : 'About';
   String get githubRepository =>
       _lang == AppLanguage.zh ? 'GitHub 仓库' : 'GitHub repository';
-  String get openInBrowser =>
-      _lang == AppLanguage.zh ? '在浏览器中打开' : 'Open in browser';
   String get close => _lang == AppLanguage.zh ? '关闭' : 'Close';
   String get open => _lang == AppLanguage.zh ? '打开' : 'Open';
 
@@ -194,7 +186,6 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '已应用代理 $hostPort' : 'Applied proxy $hostPort';
 
   // --- diagnostics ---
-  String get noLogYet => _lang == AppLanguage.zh ? '（暂无日志）' : '(No logs yet)';
   String get noLogFile =>
       _lang == AppLanguage.zh ? '（暂无日志文件）' : '(No log file yet)';
   String logReadFailed(Object error) =>
@@ -266,7 +257,6 @@ final class AppStrings {
   }
 
   // --- transfers / downloads ---
-  String get openFolderLabel => _lang == AppLanguage.zh ? '文件夹' : 'Folder';
   String get viewDetail =>
       _lang == AppLanguage.zh ? '查看详情' : 'View details';
   String get transferDone => _lang == AppLanguage.zh ? '已完成' : 'Done';
