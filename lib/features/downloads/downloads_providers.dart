@@ -36,8 +36,8 @@ final class DownloadsController extends StateNotifier<DownloadsState> {
 
   Future<void> refresh() => _reload();
 
-  /// Removes all finished transfers (completed/failed/cancelled) from the
-  /// persisted records. The downloaded files are left in place.
+  /// Removes all finished transfers (completed/failed/cancelled), including
+  /// their downloaded local files when present.
   Future<void> clearCompleted() async {
     final manager = _ref.read(runtimeProvider).transfers;
     final records = await manager.records();

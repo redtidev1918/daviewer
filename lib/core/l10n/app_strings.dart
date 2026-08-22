@@ -97,8 +97,17 @@ final class AppStrings {
   String get noFavourites =>
       _lang == AppLanguage.zh ? '暂无收藏' : 'No favourites.';
   String get noDownloads => _lang == AppLanguage.zh ? '暂无下载' : 'No downloads.';
-  String get clearCompleted =>
-      _lang == AppLanguage.zh ? '清除已完成' : 'Clear completed';
+  String get deleteFinishedDownloads =>
+      _lang == AppLanguage.zh ? '删除已结束下载' : 'Delete finished downloads';
+  String get deleteFinishedDownloadsTitle => _lang == AppLanguage.zh
+      ? '删除已结束的下载？'
+      : 'Delete finished downloads?';
+  String deleteFinishedDownloadsMessage(int count) => _lang == AppLanguage.zh
+      ? '将删除 $count 条已结束的下载记录及其本地文件（如有）。此操作无法撤销。'
+      : 'This will permanently delete $count finished download '
+            'record${count == 1 ? '' : 's'} and any local files. This cannot '
+            'be undone.';
+  String get deleteAction => _lang == AppLanguage.zh ? '删除' : 'Delete';
   String get noResults =>
       _lang == AppLanguage.zh ? '无搜索结果' : 'No results found.';
   String get retry => _lang == AppLanguage.zh ? '重试' : 'Retry';

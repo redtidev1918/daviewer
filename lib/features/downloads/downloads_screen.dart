@@ -15,6 +15,7 @@ import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/app_refresh_indicator.dart';
 import '../../shared/widgets/settings_action.dart';
 import '../../shared/widgets/skeleton.dart';
+import 'delete_downloads_dialog.dart';
 import 'download_helpers.dart';
 import 'downloads_providers.dart';
 
@@ -32,9 +33,19 @@ final class DownloadsScreen extends ConsumerWidget {
         actions: <Widget>[
           if (hasFinished)
             IconButton(
-              tooltip: s.clearCompleted,
-              onPressed: () =>
-                  ref.read(downloadsProvider.notifier).clearCompleted(),
+              tooltip: s.deleteFinishedDownloads,
+              onPressed: () async {
+                final count = state.items
+                    .where((snapshot) => snapshot.isFinal)
+                    .length;
+                final confirmed = await confirmDeleteFinishedDownloads(
+                  context,
+                  strings: s,
+                  count: count,
+                );
+                if (!confirmed || !context.mounted) return;
+                await ref.read(downloadsProvider.notifier).clearCompleted();
+              },
               icon: const Icon(Icons.delete_sweep_outlined),
             ),
           const SettingsAction(),
