@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dakit_flutter/dakit_flutter.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/l10n/app_strings.dart';
@@ -136,15 +137,14 @@ final class _DownloadTile extends ConsumerWidget {
                   OutlinedButton.icon(
                     icon: const Icon(Icons.open_in_new, size: 18),
                     label: Text(s.open),
-                    onPressed: () => _openFile(snapshot.localPath!),
+                    onPressed: () =>
+                        _openImage(context, snapshot.localPath!),
                   ),
-                  // There is no file explorer on mobile; the file is already in
-                  // the public Downloads folder there.
-                  if (!_isMobile)
+                  if (_artworkIdFromTransfer(snapshot.id) case final id?)
                     OutlinedButton.icon(
-                      icon: const Icon(Icons.folder_open, size: 18),
-                      label: Text(s.openFolderLabel),
-                      onPressed: () => _openFolder(snapshot.localPath!),
+                      icon: const Icon(Icons.art_track, size: 18),
+                      label: Text(s.viewDetail),
+                      onPressed: () => context.push('/artwork/$id'),
                     ),
                 ],
               ),
@@ -208,19 +208,65 @@ final class _DownloadTile extends ConsumerWidget {
     };
   }
 
-  static Future<void> _openFile(String path) async {
-    if (!await launchUrl(Uri.file(path))) {
-      throw Exception('Could not open $path');
+  void _openImage(BuildContext context, String path) {
+    if (_isImage(path)) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => _LocalImageViewer(path: path),
+        ),
+      );
+    } else {
+      // Videos and other files open with the platform's default handler.
+      unawaited(launchUrl(Uri.file(path)));
     }
   }
 
-  static Future<void> _openFolder(String filePath) async {
-    final dir = File(filePath).parent.path;
-    if (!await launchUrl(Uri.directory(dir))) {
-      throw Exception('Could not open folder $dir');
+  /// Recovers the artwork id from a transfer id of the form
+  /// `artwork-<id>-original`.
+  static String? _artworkIdFromTransfer(String transferId) {
+    const prefix = 'artwork-';
+    const suffix = '-original';
+    if (!transferId.startsWith(prefix) || !transferId.endsWith(suffix)) {
+      return null;
     }
+    final id = transferId.substring(
+      prefix.length,
+      transferId.length - suffix.length,
+    );
+    return id.isEmpty ? null : id;
   }
 
-  static bool get _isMobile =>
-      !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+  static bool _isImage(String path) {
+    final lower = path.toLowerCase();
+    return lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png') ||
+        lower.endsWith('.gif') ||
+        lower.endsWith('.webp');
+  }
+}
+
+/// A simple full-screen viewer for a locally downloaded image.
+final class _LocalImageViewer extends StatelessWidget {
+  const _LocalImageViewer({required this.path});
+
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 8,
+          child: Image.file(File(path), fit: BoxFit.contain),
+        ),
+      ),
+    );
+  }
 }
