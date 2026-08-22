@@ -36,8 +36,8 @@
 - **Artwork detail**: images / video (seekable) / GIF playback, swipe through
   multi-image galleries, full rich-text description (links / bold / emotes /
   embedded images)
-- **Related content**: "More like this" waterfall plus "Featured in / Suggested
-  collections" card rails at the bottom of the detail page
+- **Related content**: a native "More like this" waterfall with an explicit
+  retry state at the bottom of the detail page
 - **Tags**: `#tags` on the detail page, tap through to the tag feed, plus
   "related tags" on the tag page
 - **Artist**: profile (including the artist's bio), gallery, **custom
@@ -45,7 +45,8 @@
 - **Social**: favourite artworks (with favourite state), watch/unwatch artists,
   watched-user list, notifications (who posted new work)
 - **Download**: original-file background download with full-size preview
-  fallback when restricted; download list with open file/folder
+  fallback when restricted; open file/folder; destructive confirmation and
+  retained records when file deletion fails so the user can retry
 - **Bilingual**: Chinese / English toggle
 - **Proxy**: auto-detect the system proxy + manual configuration (required in
   mainland China)
@@ -58,8 +59,16 @@ dependencies:
 
 ```yaml
 dependencies:
-  dakit_flutter: ^0.1.0
+  dakit_core: ^0.1.11
+  dakit_api: ^0.1.15
+  dakit_flutter: ^0.1.8
 ```
+
+Numeric artwork ids from the personalized web feed must first be resolved to
+the UUID accepted by the official API. If the CSRF session rotates, "More like
+this" shows a native retry action; retry waits for the headless web-session
+refresh to actually finish before resolving the id again instead of silently
+hiding the section.
 
 ## Install
 

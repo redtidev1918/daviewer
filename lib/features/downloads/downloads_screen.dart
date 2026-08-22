@@ -34,7 +34,9 @@ final class DownloadsScreen extends ConsumerWidget {
           if (hasFinished)
             IconButton(
               tooltip: s.deleteFinishedDownloads,
-              onPressed: () async {
+              onPressed: state.isDeleting
+                  ? null
+                  : () async {
                 final count = state.items
                     .where((snapshot) => snapshot.isFinal)
                     .length;
@@ -44,9 +46,29 @@ final class DownloadsScreen extends ConsumerWidget {
                   count: count,
                 );
                 if (!confirmed || !context.mounted) return;
-                await ref.read(downloadsProvider.notifier).clearCompleted();
+                try {
+                  await ref
+                      .read(downloadsProvider.notifier)
+                      .deleteFinished();
+                } on Object catch (error) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        s.deleteFinishedDownloadsFailed(
+                          friendlyErrorMessage(error),
+                        ),
+                      ),
+                    ),
+                  );
+                }
               },
-              icon: const Icon(Icons.delete_sweep_outlined),
+              icon: state.isDeleting
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_sweep_outlined),
             ),
           const SettingsAction(),
         ],
