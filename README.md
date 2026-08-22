@@ -160,7 +160,8 @@ lib/
     search/                    搜索历史持久化
   features/
     login/                     登录页
-    home/                      首页（原生三标签：推荐 / 每日推荐 / 关注）
+    home/                      首页（原生两标签：推荐 / 每日推荐）
+    watched/                   关注动态（B站「动态」式一级标签 + 头像排）
     search/                    搜索
     artwork/                   作品详情、媒体播放、下载、收藏
     artist/                    作者资料、画廊、收藏夹、关注
@@ -179,9 +180,11 @@ test/
 
 ## 首页与登录态
 
-首页是**原生界面**（推荐 / 每日推荐 / 关注 三个标签）。其中「推荐」流的数据来自
-DeviantArt 网页版的个性化接口（`rfy/deviations`），官方 OAuth API 不提供等价
-接口，因此它需要**网页登录态（Cookie + CSRF）**。
+首页是**原生界面**（推荐 / 每日推荐 两个标签），底部另有**「关注动态」一级标签**
+（即 DeviantArt 的 `/watch/deviations`，关注画师的最新作品，顶部带按更新时间排序的
+头像排）。其中「推荐」流的数据来自 DeviantArt 网页版的个性化接口
+（`rfy/deviations`），官方 OAuth API 不提供等价接口，因此它需要**网页登录态
+（Cookie + CSRF）**。
 
 App 里存在两条独立的登录态：
 
