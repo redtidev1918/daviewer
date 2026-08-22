@@ -189,18 +189,18 @@ packages:
     dependency: "direct main"
     description:
       name: dakit_core
-      sha256: "274b9910628862841b6770a2d1ad47c67f65764297e66d8b9f26c10b43f6f108"
+      sha256: a5106a4995e66a801105538caba3b4cc6c5ee84e77037626b31f3ec7bbaba545
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.4"
+    version: "0.1.5"
   dakit_flutter:
     dependency: "direct main"
     description:
       name: dakit_flutter
-      sha256: "4f579408643fa04c672f193f97934eb1b097d7c6c9d621cded147feebf920c5d"
+      sha256: "211908db7e3a7dc1aa7be827590872be0c95e95371eb687f6b7f7385acbbd9a0"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.1"
+    version: "0.1.2"
   dbus:
     dependency: transitive
     description:
@@ -432,14 +432,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  gal:
-    dependency: "direct main"
-    description:
-      name: gal
-      sha256: f71e79840fe023a21f2f949771375444b6efcd34b9e625d5f4f5504971380a77
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.3.3"
   go_router:
     dependency: "direct main"
     description:

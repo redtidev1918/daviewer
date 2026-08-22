@@ -4,7 +4,6 @@ import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gal/gal.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/l10n/app_strings.dart';
@@ -139,15 +138,9 @@ final class _DownloadTile extends ConsumerWidget {
                     label: Text(s.open),
                     onPressed: () => _openFile(snapshot.localPath!),
                   ),
-                  // On mobile there is no file explorer; the image is copied
-                  // into the photo gallery, so open the gallery instead.
-                  if (_isMobile)
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.photo_library_outlined, size: 18),
-                      label: Text(s.openInGallery),
-                      onPressed: () => _openGallery(),
-                    )
-                  else
+                  // There is no file explorer on mobile; the file is already in
+                  // the public Downloads folder there.
+                  if (!_isMobile)
                     OutlinedButton.icon(
                       icon: const Icon(Icons.folder_open, size: 18),
                       label: Text(s.openFolderLabel),
@@ -226,10 +219,6 @@ final class _DownloadTile extends ConsumerWidget {
     if (!await launchUrl(Uri.directory(dir))) {
       throw Exception('Could not open folder $dir');
     }
-  }
-
-  static Future<void> _openGallery() async {
-    await Gal.open();
   }
 
   static bool get _isMobile =>
