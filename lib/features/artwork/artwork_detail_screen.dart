@@ -12,6 +12,7 @@ import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../../shared/widgets/app_error_state.dart';
+import '../../shared/widgets/skeleton.dart';
 import 'artwork_detail_providers.dart';
 import 'download_section.dart';
 import 'media_viewer.dart';
@@ -176,14 +177,14 @@ final class _ArtworkDetailScreenState
         ],
       ),
       body: artwork.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const SkeletonDetail(),
         error: (error, stackTrace) => AppErrorState(
           message: friendlyErrorMessage(error),
           onRetry: () =>
               ref.invalidate(artworkDetailProvider(widget.artworkId)),
         ),
         data: (artwork) => original.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const SkeletonDetail(),
           error: (error, stackTrace) =>
               AppErrorState(message: friendlyErrorMessage(error)),
           data: (original) => _buildBody(
