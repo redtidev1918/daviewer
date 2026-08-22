@@ -3,6 +3,16 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.79（macOS 钥匙串体验）
+
+### Fixed
+
+- **macOS「钥匙串」弹窗**：登录后 macOS 可能弹出「DAViewer 想要使用钥匙串中的机密信息」。
+  现在钥匙串条目命名为「DAViewer」（不再显示 `flutter_secure_storage_service` 这种
+  让人误以为在读取任意机密的实现细节），并为沙盒应用补齐 `keychain-access-groups`
+  授权（`dakit_flutter` 0.1.7 新增 `clientSecureStorage(serviceName:)`）。应用依旧只在
+  钥匙串保存自己登录 DeviantArt 后获得的 OAuth 令牌，不碰其它机密。
+
 ## 0.2.67 – 0.2.74（瀑布流 · 付费内容 · 个性化搜索 · 细节打磨）
 
 ### Added
