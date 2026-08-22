@@ -79,6 +79,9 @@ final class AppStrings {
   String get registerAccount => _lang == AppLanguage.zh
       ? '注册 DeviantArt 账号'
       : 'Register a DeviantArt account';
+  String get webLoginSuccess =>
+      _lang == AppLanguage.zh ? '网页登录成功' : 'Web sign-in succeeded';
+  String get loginSuccess => _lang == AppLanguage.zh ? '登录成功' : 'Signed in';
   String get noArtworks =>
       _lang == AppLanguage.zh ? '暂无作品' : 'No artworks found.';
   String get noDaily =>

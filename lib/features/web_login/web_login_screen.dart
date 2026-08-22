@@ -43,6 +43,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   Uri? _pendingAuthUri;
   bool _loading = true;
   bool _closeAfterReport = false;
+  bool _announcedWebLogin = false;
   int _reportSeq = 0;
   double _progress = 0;
   late final AuthController _authController;
@@ -115,6 +116,12 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       await ref
           .read(webSessionControllerProvider.notifier)
           .report(csrf: csrf, username: username);
+      if (isLoggedIn && !_announcedWebLogin && mounted) {
+        _announcedWebLogin = true;
+        final s = strings(ref.read(appLanguageProvider));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(s.webLoginSuccess)));
+      }
       _maybeClose();
     } on Object {
       // Best effort; the page may not expose the state during navigation.
@@ -193,6 +200,9 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
           mounted &&
           !_closeAfterReport) {
         _closeAfterReport = true;
+        final s = strings(ref.read(appLanguageProvider));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(s.loginSuccess)));
         // Fallback: if the home page never reports (navigation stalls), close
         // after a generous timeout so the user isn't stuck.
         final navigator = Navigator.of(context);

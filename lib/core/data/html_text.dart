@@ -120,11 +120,75 @@ void _walkTiptapHtml(Object? node, StringBuffer buffer) {
     if (type == 'da-deviation') {
       final attrs = node['attrs'];
       final deviation = attrs is Map ? attrs['deviation'] : null;
-      final media = deviation is Map ? deviation['media'] : null;
-      final url = media is Map ? _wixImageUrl(media) : null;
-      if (url != null) {
-        buffer.write('<img src="$url" style="max-width:100%;height:auto;" />');
+      if (deviation is! Map) return;
+      final media = deviation['media'];
+      final imageUrl = media is Map ? _wixImageUrl(media) : null;
+      final devUrl = deviation['url'];
+      final title = deviation['title'] as String? ?? '';
+      if (imageUrl != null) {
+        if (devUrl is String && devUrl.isNotEmpty) {
+          buffer.write('<a href="${_escapeHtml(devUrl)}">');
+        }
+        buffer.write(
+          '<img src="${_escapeHtml(imageUrl)}" '
+          'style="max-width:100%;height:auto;" />',
+        );
+        if (devUrl is String && devUrl.isNotEmpty) {
+          buffer.write('</a>');
+        }
+      } else if (devUrl is String && devUrl.isNotEmpty) {
+        // A literature/other embed without resampled media: keep it as a link.
+        buffer.write(
+          '<a href="${_escapeHtml(devUrl)}">📖 ${_escapeHtml(title)}</a>',
+        );
       }
+      return;
+    }
+    if (type == 'da-gif') {
+      final attrs = node['attrs'];
+      final url = attrs is Map ? attrs['url'] as String? : null;
+      if (url != null && url.isNotEmpty) {
+        buffer.write(
+          '<img src="${_escapeHtml(url)}" '
+          'style="max-width:100%;height:auto;" />',
+        );
+      }
+      return;
+    }
+    if (type == 'da-video') {
+      final attrs = node['attrs'];
+      final src = attrs is Map ? attrs['src'] as String? : null;
+      if (src != null && src.isNotEmpty) {
+        buffer.write('<a href="${_escapeHtml(src)}">▶</a>');
+      }
+      return;
+    }
+    if (type == 'da-mention') {
+      final attrs = node['attrs'];
+      final user = attrs is Map ? attrs['user'] : null;
+      final username = user is Map ? user['username'] as String? : null;
+      if (username != null && username.isNotEmpty) {
+        buffer.write(
+          '<a href="https://www.deviantart.com/'
+          '${Uri.encodeComponent(username.toLowerCase())}">'
+          '@${_escapeHtml(username)}</a>',
+        );
+      }
+      return;
+    }
+    if (type == 'image') {
+      final attrs = node['attrs'];
+      final src = attrs is Map ? attrs['src'] as String? : null;
+      if (src != null && src.isNotEmpty) {
+        buffer.write(
+          '<img src="${_escapeHtml(src)}" '
+          'style="max-width:100%;height:auto;" />',
+        );
+      }
+      return;
+    }
+    if (type == 'horizontalRule') {
+      buffer.write('<hr>');
       return;
     }
     final tag = switch (type) {
