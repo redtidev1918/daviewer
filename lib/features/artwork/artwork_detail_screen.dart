@@ -229,7 +229,11 @@ final class _ArtworkDetailScreenState
       padding: const EdgeInsets.all(16),
       children: <Widget>[
         if (media.isNotEmpty) ...[
-          MediaViewer(media: media, additionalMedia: additionalMedia),
+          MediaViewer(
+            media: media,
+            additionalMedia: additionalMedia,
+            heroTag: 'artwork-${artwork.id}',
+          ),
           const SizedBox(height: 16),
         ],
         Text(artwork.title, style: Theme.of(context).textTheme.headlineSmall),

@@ -39,10 +39,15 @@ final class MediaViewer extends StatefulWidget {
     super.key,
     required this.media,
     this.additionalMedia = const <MediaAsset>[],
+    this.heroTag,
   });
 
   final List<MediaAsset> media;
   final List<MediaAsset> additionalMedia;
+
+  /// Hero tag for the first page's image, used to animate the grid → detail
+  /// transition (matching [ArtworkCard]'s tag).
+  final String? heroTag;
 
   @override
   State<MediaViewer> createState() => MediaViewerState();
@@ -70,7 +75,7 @@ final class MediaViewerState extends State<MediaViewer> {
     }
 
     if (pages.length == 1) {
-      return _pageWidget(pages.first);
+      return _pageWidget(pages.first, heroTag: widget.heroTag);
     }
 
     return Column(
@@ -82,7 +87,10 @@ final class MediaViewerState extends State<MediaViewer> {
               child: PageView.builder(
                 itemCount: pages.length,
                 onPageChanged: (index) => setState(() => _page = index),
-                itemBuilder: (context, index) => _pageWidget(pages[index]),
+                itemBuilder: (context, index) => _pageWidget(
+                  pages[index],
+                  heroTag: index == 0 ? widget.heroTag : null,
+                ),
               ),
             ),
             Positioned(
@@ -131,7 +139,7 @@ final class MediaViewerState extends State<MediaViewer> {
     );
   }
 
-  Widget _pageWidget(MediaAsset asset) {
+  Widget _pageWidget(MediaAsset asset, {String? heroTag}) {
     final url = asset.uri?.toString();
     if (url == null) {
       return const ColoredBox(
@@ -139,14 +147,19 @@ final class MediaViewerState extends State<MediaViewer> {
         child: Icon(Icons.image, size: 48),
       );
     }
+    final Widget child;
     if (asset.kind == MediaKind.video) {
-      return _VideoPlayer(url: url);
+      child = _VideoPlayer(url: url);
+    } else if (asset.mimeType == 'image/gif') {
+      // Animated GIFs render through Image.network so they actually animate.
+      child = _AnimatedImage(url: url);
+    } else {
+      child = _TappableImage(url: url);
     }
-    // Animated GIFs render through Image.network so they actually animate.
-    if (asset.mimeType == 'image/gif') {
-      return _AnimatedImage(url: url);
+    if (heroTag != null && asset.kind != MediaKind.video) {
+      return Hero(tag: heroTag, child: child);
     }
-    return _TappableImage(url: url);
+    return child;
   }
 }
 

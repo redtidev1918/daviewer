@@ -91,14 +91,25 @@ final class _SkeletonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    // Matches the full-bleed artwork card (image with overlaid caption).
+    return const Stack(
+      fit: StackFit.expand,
       children: <Widget>[
-        const Expanded(child: Skeleton(radius: 12)),
-        const SizedBox(height: 10),
-        const Skeleton(width: double.infinity, height: 14),
-        const SizedBox(height: 6),
-        Skeleton(width: 72, height: 12, radius: 6),
+        Skeleton(radius: 12),
+        Positioned(
+          left: 10,
+          right: 10,
+          bottom: 10,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Skeleton(width: double.infinity, height: 13, radius: 4),
+              SizedBox(height: 6),
+              Skeleton(width: 72, height: 11, radius: 4),
+            ],
+          ),
+        ),
       ],
     );
   }
