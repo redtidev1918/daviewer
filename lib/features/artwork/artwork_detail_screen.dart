@@ -13,6 +13,7 @@ import 'package:video_player/video_player.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 import 'artwork_detail_providers.dart';
+import 'download_section.dart';
 
 final class ArtworkDetailScreen extends ConsumerStatefulWidget {
   const ArtworkDetailScreen({required this.artworkId, super.key});
@@ -226,25 +227,18 @@ final class _ArtworkDetailScreenState
         if (isJournal &&
             journalHtml != null &&
             journalHtml.trim().isNotEmpty) ...[
-          Text(
-            s.bodyText,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text(s.bodyText, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Html(data: journalHtml),
           const SizedBox(height: 16),
         ] else if (!isJournal &&
             descriptionHtml != null &&
             descriptionHtml.trim().isNotEmpty) ...[
-          Text(
-            s.description,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text(s.description, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Html(data: descriptionHtml),
           const SizedBox(height: 16),
-        ] else if (description != null &&
-            description.trim().isNotEmpty) ...[
+        ] else if (description != null && description.trim().isNotEmpty) ...[
           Text(
             isJournal ? s.bodyText : s.description,
             style: Theme.of(context).textTheme.titleMedium,
@@ -276,7 +270,7 @@ final class _ArtworkDetailScreenState
         ],
         if (!isJournal && media.isNotEmpty) ...[
           const SizedBox(height: 8),
-          _DownloadSection(
+          DownloadSection(
             s: s,
             original: original,
             downloadable: downloadable,
@@ -563,187 +557,6 @@ final class _VideoPlayerState extends State<_VideoPlayer> {
     return AspectRatio(
       aspectRatio: _controller.value.aspectRatio,
       child: Chewie(controller: _chewie),
-    );
-  }
-}
-
-final class _DownloadSection extends StatelessWidget {
-  const _DownloadSection({
-    required this.s,
-    required this.original,
-    required this.downloadable,
-    required this.transfer,
-    required this.downloading,
-    required this.onDownload,
-    required this.onPause,
-    required this.onResume,
-    required this.onCancel,
-  });
-
-  final AppStrings s;
-  final MediaAsset original;
-  final MediaAsset downloadable;
-  final TransferSnapshot? transfer;
-  final bool downloading;
-  final VoidCallback onDownload;
-  final VoidCallback onPause;
-  final VoidCallback onResume;
-  final VoidCallback onCancel;
-
-  @override
-  Widget build(BuildContext context) {
-    if (transfer != null) {
-      return _TransferControls(
-        s: s,
-        transfer: transfer!,
-        onPause: onPause,
-        onResume: onResume,
-        onCancel: onCancel,
-      );
-    }
-
-    final availability = original.availability;
-    final canDownload = downloadable.canTransfer;
-    final usingFallback = !original.canTransfer && downloadable.canTransfer;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text('${s.originalStatusPrefix}${_availabilityLabel(availability)}'),
-        if (original.mimeType != null) Text('MIME: ${original.mimeType}'),
-        if (original.byteLength != null)
-          Text('${s.sizeLabel}${_formatBytes(original.byteLength!)}'),
-        if (usingFallback) ...[
-          const SizedBox(height: 4),
-          Text(
-            s.fallbackDownloadNotice,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-        const SizedBox(height: 12),
-        FilledButton.icon(
-          onPressed: canDownload && !downloading ? onDownload : null,
-          icon: downloading
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.download),
-          label: Text(
-            downloading
-                ? s.downloading
-                : usingFallback
-                ? s.downloadImage
-                : s.downloadOriginal,
-          ),
-        ),
-        if (!canDownload) ...[
-          const SizedBox(height: 8),
-          Text(
-            _availabilityHint(availability),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  String _availabilityLabel(MediaAvailability availability) {
-    switch (availability) {
-      case MediaAvailability.available:
-        return s.availabilityAvailable;
-      case MediaAvailability.loginRequired:
-        return s.availabilityLoginRequired;
-      case MediaAvailability.purchaseRequired:
-        return s.availabilityPurchaseRequired;
-      case MediaAvailability.restricted:
-        return s.availabilityRestricted;
-      case MediaAvailability.unavailable:
-        return s.availabilityUnavailable;
-      case MediaAvailability.missing:
-        return s.availabilityMissing;
-    }
-  }
-
-  String _availabilityHint(MediaAvailability availability) {
-    switch (availability) {
-      case MediaAvailability.loginRequired:
-        return s.hintLoginRequired;
-      case MediaAvailability.purchaseRequired:
-        return s.hintPurchaseRequired;
-      case MediaAvailability.restricted:
-        return s.hintRestricted;
-      case MediaAvailability.unavailable:
-        return s.hintUnavailable;
-      default:
-        return '';
-    }
-  }
-
-  String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
-  }
-}
-
-final class _TransferControls extends StatelessWidget {
-  const _TransferControls({
-    required this.s,
-    required this.transfer,
-    required this.onPause,
-    required this.onResume,
-    required this.onCancel,
-  });
-
-  final AppStrings s;
-  final TransferSnapshot transfer;
-  final VoidCallback onPause;
-  final VoidCallback onResume;
-  final VoidCallback onCancel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        LinearProgressIndicator(value: transfer.progress),
-        const SizedBox(height: 8),
-        Text('${(transfer.progress * 100).toStringAsFixed(0)}%'),
-        if (transfer.localPath != null) ...[
-          const SizedBox(height: 4),
-          Text('${s.savedToPrefix}${transfer.localPath}'),
-        ],
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          children: <Widget>[
-            OutlinedButton(
-              onPressed: transfer.state == TransferState.running
-                  ? onPause
-                  : null,
-              child: Text(s.pause),
-            ),
-            OutlinedButton(
-              onPressed: transfer.state == TransferState.paused
-                  ? onResume
-                  : null,
-              child: Text(s.resume),
-            ),
-            OutlinedButton(
-              onPressed: transfer.state == TransferState.completed
-                  ? null
-                  : onCancel,
-              child: Text(s.cancel),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }
