@@ -17,6 +17,7 @@ import 'artwork_detail_providers.dart';
 import 'download_section.dart';
 import 'favourite_actions.dart';
 import 'media_viewer.dart';
+import 'more_like_this.dart';
 
 final class ArtworkDetailScreen extends ConsumerStatefulWidget {
   const ArtworkDetailScreen({required this.artworkId, super.key});
@@ -342,6 +343,8 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
             onCancel: _cancel,
           ),
         ],
+        const Divider(),
+        MoreLikeThisSection(artworkId: widget.artworkId),
       ],
     );
   }

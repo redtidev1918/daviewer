@@ -348,6 +348,8 @@ final class AppStrings {
 
   // --- tag ---
   String get relatedTags => _lang == AppLanguage.zh ? '相关标签' : 'Related tags';
+  String get moreLikeThis =>
+      _lang == AppLanguage.zh ? '更多类似作品' : 'More like this';
 
   // --- OAuth configuration errors (developer-facing) ---
   String get oauthClientIdMissing => _lang == AppLanguage.zh
