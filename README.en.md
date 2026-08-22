@@ -185,7 +185,8 @@ lib/
     search/                    Search history persistence
   features/
     login/                     Login page
-    home/                      Home (native three tabs: For you / Daily / Following)
+    home/                      Home (native two tabs: For you / Daily)
+    watched/                   Watched feed (first-class "following" tab + avatar strip)
     search/                    Search
     artwork/                   Artwork detail, media playback, download, favourite
     artist/                    Artist profile, gallery, favourites, watch
@@ -204,10 +205,11 @@ test/
 
 ## Home & sign-in state
 
-Home is a **native UI** (For you / Daily / Following tabs). The "For you" feed is
-powered by DeviantArt's website personalized endpoint (`rfy/deviations`); the
-official OAuth API has no equivalent, so it needs the **web session
-(Cookie + CSRF)**.
+Home is a **native UI** (For you / Daily tabs), plus a first-class **Watched**
+bottom tab (DeviantArt's `/watch/deviations` — new artwork from watched artists,
+with a recency-sorted avatar strip). The "For you" feed is powered by
+DeviantArt's website personalized endpoint (`rfy/deviations`); the official
+OAuth API has no equivalent, so it needs the **web session (Cookie + CSRF)**.
 
 The app has two independent sign-in states:
 
