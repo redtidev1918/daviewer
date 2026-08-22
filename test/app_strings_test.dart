@@ -55,6 +55,8 @@ void main() {
     expect(en.registerAccount, 'Register a DeviantArt account');
     expect(zh.loginHelpBody, contains('任意邮箱'));
     expect(en.loginHelpBody, contains('DeviantArt account'));
+    expect(zh.loginFailed('网络错误'), '登录失败：网络错误');
+    expect(en.loginFailed('Network error'), 'Sign-in failed: Network error');
   });
 
   test('download deletion warning states that local files are removed', () {

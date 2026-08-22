@@ -82,6 +82,8 @@ final class AppStrings {
   String get webLoginSuccess =>
       _lang == AppLanguage.zh ? '网页登录成功' : 'Web sign-in succeeded';
   String get loginSuccess => _lang == AppLanguage.zh ? '登录成功' : 'Signed in';
+  String loginFailed(String detail) =>
+      _lang == AppLanguage.zh ? '登录失败：$detail' : 'Sign-in failed: $detail';
   String get noArtworks =>
       _lang == AppLanguage.zh ? '暂无作品' : 'No artworks found.';
   String get noImage => _lang == AppLanguage.zh ? '暂无图片' : 'No image';

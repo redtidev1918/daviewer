@@ -20,6 +20,11 @@ final class WebSessionState {
   final String username;
 
   bool get signedIn => isLoggedIn == true;
+
+  /// A personalized feed request is valid only after both identity and CSRF
+  /// restoration have completed. Signed-out/unknown state is normal UI state,
+  /// not a request failure.
+  bool get canLoadPersonalizedFeed => signedIn && csrf.isNotEmpty;
 }
 
 final webSessionControllerProvider =

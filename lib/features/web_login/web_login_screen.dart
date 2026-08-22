@@ -12,6 +12,7 @@ import '../../core/auth/auth_state.dart';
 import '../../core/auth/web_session_controller.dart';
 import '../../core/auth/webview_oauth_bridge.dart';
 import '../../core/data/web_session.dart';
+import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 
@@ -132,8 +133,17 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     if (!_closeAfterReport || !mounted) return;
     _closeAfterReport = false;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) _leaveLogin();
     });
+  }
+
+  void _leaveLogin() {
+    if (!mounted) return;
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/');
+    }
   }
 
   /// Shows sign-in help: the account model, that any email can register, and
@@ -189,6 +199,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   Widget build(BuildContext context) {
     final s = strings(ref.watch(appLanguageProvider));
     final theme = Theme.of(context);
+    final auth = ref.watch(authControllerProvider);
 
     // When OAuth finishes, close only after the deviantart home page reports
     // the real web session (onLoadStop + _reportWebSession). Closing on a fixed
@@ -205,11 +216,10 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
             .showSnackBar(SnackBar(content: Text(s.loginSuccess)));
         // Fallback: if the home page never reports (navigation stalls), close
         // after a generous timeout so the user isn't stuck.
-        final navigator = Navigator.of(context);
         Future<void>.delayed(const Duration(seconds: 8), () {
           if (mounted && _closeAfterReport) {
             _closeAfterReport = false;
-            navigator.pop();
+            _leaveLogin();
           }
         });
       }
@@ -226,7 +236,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
           ),
           IconButton(
             tooltip: s.done,
-            onPressed: () => context.pop(),
+            onPressed: _leaveLogin,
             icon: const Icon(Icons.check),
           ),
         ],
@@ -242,54 +252,90 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       ),
       body: ColoredBox(
         color: theme.scaffoldBackgroundColor,
-        child: InAppWebView(
-          initialUrlRequest: URLRequest(url: WebUri(_loginUri.toString())),
-          initialSettings: InAppWebViewSettings(
-            javaScriptEnabled: true,
-            transparentBackground: true,
-          ),
-          onWebViewCreated: (controller) {
-            _controller = controller;
-            final pending = _pendingAuthUri;
-            if (pending != null) {
-              _pendingAuthUri = null;
-              controller.loadUrl(
-                urlRequest: URLRequest(url: WebUri(pending.toString())),
-              );
-            }
-          },
-          shouldOverrideUrlLoading: (controller, navigationAction) async {
-            final uri = navigationAction.request.url;
-            if (uri != null && uri.scheme == 'dakit' && uri.host == 'oauth') {
-              _bridge?.addCallback(uri);
-              // Navigate back to the deviantart home page; its onLoadStop then
-              // reports the real web session (CSRF + login state). Do NOT read
-              // the session here — the callback page has no __INITIAL_STATE__.
-              unawaited(
-                controller.loadUrl(
-                  urlRequest: URLRequest(url: WebUri(_homeUri.toString())),
+        child: Column(
+          children: <Widget>[
+            if (auth.error case final error?)
+              Material(
+                color: theme.colorScheme.errorContainer,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          s.loginFailed(friendlyErrorMessage(error)),
+                          style: TextStyle(
+                            color: theme.colorScheme.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: auth.isLoggingIn
+                            ? null
+                            : () => _authController.login(),
+                        child: Text(s.retry),
+                      ),
+                    ],
+                  ),
                 ),
-              );
-              return NavigationActionPolicy.CANCEL;
-            }
-            return NavigationActionPolicy.ALLOW;
-          },
-          onLoadStart: (controller, url) {
-            if (mounted) setState(() => _loading = true);
-          },
-          onLoadStop: (controller, url) {
-            if (mounted) setState(() => _loading = false);
-            // Report from any deviantart.com page. A sequence counter makes
-            // the latest page win, so an earlier anonymous page (login) cannot
-            // overwrite a later signed-in page (home).
-            final uri = url;
-            if (uri != null && uri.host == 'www.deviantart.com') {
-              unawaited(_reportWebSession());
-            }
-          },
-          onProgressChanged: (controller, progress) {
-            if (mounted) setState(() => _progress = progress / 100);
-          },
+              ),
+            Expanded(
+              child: InAppWebView(
+                initialUrlRequest: URLRequest(
+                  url: WebUri(_loginUri.toString()),
+                ),
+                initialSettings: InAppWebViewSettings(
+                  javaScriptEnabled: true,
+                  transparentBackground: true,
+                ),
+                onWebViewCreated: (controller) {
+                  _controller = controller;
+                  final pending = _pendingAuthUri;
+                  if (pending != null) {
+                    _pendingAuthUri = null;
+                    controller.loadUrl(
+                      urlRequest: URLRequest(url: WebUri(pending.toString())),
+                    );
+                  }
+                },
+                shouldOverrideUrlLoading: (controller, navigationAction) async {
+                  final uri = navigationAction.request.url;
+                  if (uri != null &&
+                      uri.scheme == 'dakit' &&
+                      uri.host == 'oauth') {
+                    _bridge?.addCallback(uri);
+                    // Navigate back to the deviantart home page; its
+                    // onLoadStop then reports the real web session.
+                    unawaited(
+                      controller.loadUrl(
+                        urlRequest: URLRequest(
+                          url: WebUri(_homeUri.toString()),
+                        ),
+                      ),
+                    );
+                    return NavigationActionPolicy.CANCEL;
+                  }
+                  return NavigationActionPolicy.ALLOW;
+                },
+                onLoadStart: (controller, url) {
+                  if (mounted) setState(() => _loading = true);
+                },
+                onLoadStop: (controller, url) {
+                  if (mounted) setState(() => _loading = false);
+                  // Report from any deviantart.com page. A sequence counter
+                  // makes the latest page win, so an earlier anonymous page
+                  // cannot overwrite a later signed-in page.
+                  final uri = url;
+                  if (uri != null && uri.host == 'www.deviantart.com') {
+                    unawaited(_reportWebSession());
+                  }
+                },
+                onProgressChanged: (controller, progress) {
+                  if (mounted) setState(() => _progress = progress / 100);
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -139,24 +139,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
     redirect: (context, state) {
       final auth = ref.read(authControllerProvider);
-      final status = auth.status;
-      final location = state.matchedLocation;
-      if (status == AuthStatus.unknown) return '/splash';
-      // Once signed in, always leave the splash for home.
-      if (status == AuthStatus.signedIn && location == '/splash') {
-        return '/';
-      }
-      // Home is the public landing page. Signed-out users (including right
-      // after logout) land here — where the login buttons guide them —
-      // instead of being dumped onto a full-screen login page. The watched
-      // tab stays reachable so it can show its own sign-in prompt.
-      if (status != AuthStatus.signedIn &&
-          location != '/' &&
-          location != '/watch' &&
-          location != '/web-login') {
-        return '/';
-      }
-      return null;
+      return authRedirect(auth.status, state.matchedLocation);
     },
   );
 
@@ -165,3 +148,26 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(router.dispose);
   return router;
 });
+
+/// Keeps first-run authentication separate from authenticated feed loading.
+/// Exposed as a pure function so this critical route policy is regression
+/// tested without constructing a platform WebView.
+String? authRedirect(AuthStatus status, String location) {
+  if (status == AuthStatus.unknown) return '/splash';
+  if (status == AuthStatus.signedIn && location == '/splash') return '/';
+  // A first-run user should see the actual sign-in flow, never a home-feed
+  // request or error state. Explicit logout still lands on public Home through
+  // the general signed-out redirect below.
+  if (status == AuthStatus.signedOut && location == '/splash') {
+    return '/web-login';
+  }
+  // Home remains available after the user dismisses sign-in or logs out. The
+  // watched tab also stays reachable so it can show its own prompt.
+  if (status != AuthStatus.signedIn &&
+      location != '/' &&
+      location != '/watch' &&
+      location != '/web-login') {
+    return '/';
+  }
+  return null;
+}
