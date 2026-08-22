@@ -56,4 +56,42 @@ void main() {
   test('tiptapToHtml returns empty for invalid JSON', () {
     expect(tiptapToHtml('not-json'), isEmpty);
   });
+
+  test('tiptapToHtml renders a da-gif embed as an image', () {
+    const doc =
+        '{"document":{"type":"doc","content":['
+        '{"type":"da-gif","attrs":{"url":"https://x.test/a.gif"}}]}}';
+    expect(tiptapToHtml(doc), contains('<img src="https://x.test/a.gif"'));
+  });
+
+  test('tiptapToHtml renders a da-mention as a profile link', () {
+    const doc =
+        '{"document":{"type":"doc","content":['
+        '{"type":"da-mention","attrs":{"user":{"username":"SomeUser"}}}]}}';
+    expect(
+      tiptapToHtml(doc),
+      contains('<a href="https://www.deviantart.com/someuser">@SomeUser</a>'),
+    );
+  });
+
+  test('tiptapToHtml renders a literature da-deviation as a link', () {
+    const doc =
+        '{"document":{"type":"doc","content":['
+        '{"type":"da-deviation","attrs":{"deviation":'
+        '{"url":"https://x.test/j","title":"A story"}}}]}}';
+    expect(
+      tiptapToHtml(doc),
+      contains('<a href="https://x.test/j">📖 A story</a>'),
+    );
+  });
+
+  test('tiptapToHtml renders an image node and a horizontal rule', () {
+    const doc =
+        '{"document":{"type":"doc","content":['
+        '{"type":"image","attrs":{"src":"https://x.test/p.png"}},'
+        '{"type":"horizontalRule"}]}}';
+    final html = tiptapToHtml(doc);
+    expect(html, contains('<img src="https://x.test/p.png"'));
+    expect(html, contains('<hr>'));
+  });
 }

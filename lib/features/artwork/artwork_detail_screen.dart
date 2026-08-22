@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
@@ -69,6 +70,13 @@ final class _ArtworkDetailScreenState
     final s = strings(ref.read(appLanguageProvider));
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(s.linkCopied)));
+  }
+
+  void _openLink(String? url) {
+    if (url == null || url.isEmpty) return;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    unawaited(launchUrl(uri, mode: LaunchMode.externalApplication));
   }
 
   Future<void> _download(MediaAsset original) async {
@@ -234,14 +242,20 @@ final class _ArtworkDetailScreenState
             journalHtml.trim().isNotEmpty) ...[
           Text(s.bodyText, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
-          Html(data: journalHtml),
+          Html(
+            data: journalHtml,
+            onLinkTap: (url, attributes, element) => _openLink(url),
+          ),
           const SizedBox(height: 16),
         ] else if (!isJournal &&
             descriptionHtml != null &&
             descriptionHtml.trim().isNotEmpty) ...[
           Text(s.description, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
-          Html(data: descriptionHtml),
+          Html(
+            data: descriptionHtml,
+            onLinkTap: (url, attributes, element) => _openLink(url),
+          ),
           const SizedBox(height: 16),
         ] else if (description != null && description.trim().isNotEmpty) ...[
           Text(
