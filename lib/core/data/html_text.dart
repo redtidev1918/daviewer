@@ -123,9 +123,7 @@ void _walkTiptapHtml(Object? node, StringBuffer buffer) {
       final media = deviation is Map ? deviation['media'] : null;
       final url = media is Map ? _wixImageUrl(media) : null;
       if (url != null) {
-        buffer.write(
-          '<img src="$url" style="max-width:100%;height:auto;" />',
-        );
+        buffer.write('<img src="$url" style="max-width:100%;height:auto;" />');
       }
       return;
     }

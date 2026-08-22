@@ -257,8 +257,7 @@ final class AppStrings {
   }
 
   // --- transfers / downloads ---
-  String get viewDetail =>
-      _lang == AppLanguage.zh ? '查看详情' : 'View details';
+  String get viewDetail => _lang == AppLanguage.zh ? '查看详情' : 'View details';
   String get transferDone => _lang == AppLanguage.zh ? '已完成' : 'Done';
   String get transferDownloading =>
       _lang == AppLanguage.zh ? '下载中' : 'Downloading';
