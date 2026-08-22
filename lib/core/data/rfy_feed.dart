@@ -1,6 +1,7 @@
 import 'package:dakit_core/dakit_core.dart';
 import 'package:dio/dio.dart';
 
+import 'web_user_agent.dart';
 import 'wix_media.dart';
 
 /// One page of the DeviantArt web `rfy/deviations` personalized feed.
@@ -50,7 +51,7 @@ final class RfyFeedFetcher {
         headers: <String, dynamic>{
           'Accept': 'application/json',
           'Cookie': cookieHeader,
-          'User-Agent': _userAgent,
+          'User-Agent': webUserAgent,
         },
       ),
     );
@@ -133,7 +134,7 @@ final class RfyFeedFetcher {
     final assets = <MediaAsset>[];
 
     // Thumbnail (~400px) for the feed grid. This also covers video posters.
-    final posterUri = _transformUri(
+    final posterUri = wixResampledUrl(
       base,
       pretty,
       tokens,
@@ -227,7 +228,7 @@ final class RfyFeedFetcher {
         // rendering. The raw `baseUri` can be an enormous original (e.g. 8K),
         // which is heavy to decode inline — so it is reserved for download.
         final display = wixLargestImageType(types);
-        final displayUri = _transformUri(base, pretty, tokens, types);
+        final displayUri = wixResampledUrl(base, pretty, tokens, types);
         if (displayUri != null) {
           assets.add(
             MediaAsset(
@@ -263,40 +264,6 @@ final class RfyFeedFetcher {
     return List<MediaAsset>.unmodifiable(assets);
   }
 
-  /// Builds a Wix media URL `baseUri + <transform>?token=<jwt>`. When
-  /// [targetWidth] is given it picks the resampled size closest to that width;
-  /// when null it picks the largest resampled size. Falls back to the raw
-  /// `baseUri` when no resampled image is present. The token is optional
-  /// (video posters omit it).
-  static Uri? _transformUri(
-    String? base,
-    String pretty,
-    List<String> tokens,
-    List<Object?> types, {
-    int? targetWidth,
-  }) {
-    if (base == null || base.isEmpty) return null;
-
-    Map<Object?, Object?>? best;
-    var bestScore = 1 << 30;
-    for (final type in types) {
-      if (type is! Map) continue;
-      final transform = type['c'];
-      if (transform is! String || transform.isEmpty) continue;
-      final width = (type['w'] as num?)?.toInt() ?? 0;
-      final score = targetWidth == null ? -width : (width - targetWidth).abs();
-      if (score < bestScore) {
-        bestScore = score;
-        best = type;
-      }
-    }
-    if (best == null) {
-      return Uri.tryParse(withWixToken(base, null, tokens));
-    }
-    final transform = (best['c'] as String).replaceAll('<prettyName>', pretty);
-    return Uri.tryParse(withWixToken('$base$transform', best, tokens));
-  }
-
   static String _filenameFromUri(Uri uri, String pretty, String filetype) {
     final segments = uri.pathSegments;
     final last = segments.isNotEmpty ? segments.last : '';
@@ -329,8 +296,4 @@ final class RfyFeedFetcher {
     if (text == null || text.isEmpty) return null;
     return Uri.tryParse(text);
   }
-
-  static const String _userAgent =
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
-      'AppleWebKit/537.36 Chrome/126.0 Safari/537.36';
 }

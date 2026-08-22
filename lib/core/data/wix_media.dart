@@ -47,3 +47,36 @@ Map<Object?, Object?>? wixLargestImageType(List<Object?> types) {
   }
   return best;
 }
+
+/// Resolves a resampled image URL for a Wix descriptor: `baseUri` + the
+/// transform of the type whose width is closest to [targetWidth] (the largest
+/// when [targetWidth] is null), with `<prettyName>` substituted and the signed
+/// token appended. Falls back to the raw [base] (with token) when no resampled
+/// type is present, and to null when [base] is missing.
+Uri? wixResampledUrl(
+  String? base,
+  String pretty,
+  List<String> tokens,
+  List<Object?> types, {
+  int? targetWidth,
+}) {
+  if (base == null || base.isEmpty) return null;
+  Map<Object?, Object?>? best;
+  var bestScore = 1 << 30;
+  for (final type in types) {
+    if (type is! Map) continue;
+    final transform = type['c'];
+    if (transform is! String || transform.isEmpty) continue;
+    final width = (type['w'] as num?)?.toInt() ?? 0;
+    final score = targetWidth == null ? -width : (width - targetWidth).abs();
+    if (score < bestScore) {
+      bestScore = score;
+      best = type;
+    }
+  }
+  if (best == null) {
+    return Uri.tryParse(withWixToken(base, null, tokens));
+  }
+  final transform = (best['c'] as String).replaceAll('<prettyName>', pretty);
+  return Uri.tryParse(withWixToken('$base$transform', best, tokens));
+}
