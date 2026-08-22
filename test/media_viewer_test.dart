@@ -8,11 +8,12 @@ MediaAsset asset(
   MediaRole role = MediaRole.preview,
   Uri? uri,
   int? width,
+  MediaAvailability availability = MediaAvailability.available,
 }) => MediaAsset(
   id: id,
   kind: kind,
   role: role,
-  availability: MediaAvailability.available,
+  availability: availability,
   uri: uri,
   width: width,
 );
@@ -84,5 +85,25 @@ void main() {
       uri: Uri.parse('https://x/o.jpg'),
     );
     expect(selectDisplayAsset(<MediaAsset>[original])?.id, 'o');
+  });
+
+  test('prefers an accessible preview over gated full-size content', () {
+    final gatedContent = asset(
+      'content',
+      MediaKind.image,
+      width: 2400,
+      uri: Uri.parse('https://x/content.jpg'),
+      availability: MediaAvailability.purchaseRequired,
+    );
+    final preview = asset(
+      'preview',
+      MediaKind.image,
+      width: 800,
+      uri: Uri.parse('https://x/preview.jpg'),
+    );
+    expect(
+      selectDisplayAsset(<MediaAsset>[gatedContent, preview])?.id,
+      'preview',
+    );
   });
 }
