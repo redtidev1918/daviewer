@@ -64,15 +64,15 @@ final class AppStrings {
   String get loginHelpTooltip =>
       _lang == AppLanguage.zh ? '登录帮助' : 'Login help';
   String get loginHelpTitle =>
-      _lang == AppLanguage.zh ? '登录遇到问题？' : 'Trouble signing in?';
+      _lang == AppLanguage.zh ? '登录帮助' : 'Sign-in help';
   String get loginHelpBody => _lang == AppLanguage.zh
-      ? 'DAViewer 没有自己的账号，这里登录的是你的 DeviantArt 官方账号。\n\n'
-            '• 注册不需要谷歌邮箱：任意邮箱都可以，登录页也支持 Google / Apple 一键登录。\n'
-            '• 忘记密码：点登录页上的「Forgot Password」，或点下面的「找回密码」在浏览器里重置。\n'
-            '• 找回密码 / 注册会在系统浏览器打开，完成后回到本页登录即可。'
-      : 'DAViewer has no account of its own — you sign in with your DeviantArt account.\n\n'
-            '• You do not need a Google email to register: any email works, and the page also supports one-click Google / Apple sign-in.\n'
-            '• Forgot your password? Tap "Forgot Password" on the page, or use "Forgot password" below to reset it in your browser.\n'
+      ? '本页登录的是 DeviantArt 官方账号。DAViewer 不注册账号、不保存密码。\n\n'
+            '• 注册：支持任意邮箱（不限于 Google），也可使用登录页提供的 Google / Apple 一键登录。\n'
+            '• 找回密码：点击登录页的「Forgot Password」，或使用下方「找回密码」在浏览器中重置。\n'
+            '• 找回密码与注册均在系统浏览器中完成，完成后返回本页登录。'
+      : 'This page signs in to your DeviantArt account. DAViewer does not create accounts or store passwords.\n\n'
+            '• Register: any email works (not just Google); the page also offers Google / Apple sign-in.\n'
+            '• Forgot password: tap "Forgot Password" on the page, or use "Forgot password" below to reset it in your browser.\n'
             '• Password reset and registration open in your browser; return here to sign in afterwards.';
   String get forgotPassword =>
       _lang == AppLanguage.zh ? '找回密码' : 'Forgot password';
