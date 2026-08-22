@@ -45,4 +45,15 @@ void main() {
     expect(en.relativeTime(now.subtract(const Duration(hours: 2))), '2h ago');
     expect(en.relativeTime(now.subtract(const Duration(days: 3))), '3d ago');
   });
+
+  test('login help strings are localized', () {
+    expect(zh.loginHelpTooltip, '登录帮助');
+    expect(en.loginHelpTooltip, 'Login help');
+    expect(zh.forgotPassword, '找回密码');
+    expect(en.forgotPassword, 'Forgot password');
+    expect(zh.registerAccount, '注册 DeviantArt 账号');
+    expect(en.registerAccount, 'Register a DeviantArt account');
+    expect(zh.loginHelpBody, contains('任意邮箱'));
+    expect(en.loginHelpBody, contains('DeviantArt account'));
+  });
 }

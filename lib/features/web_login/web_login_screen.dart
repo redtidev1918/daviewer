@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/auth_state.dart';
@@ -32,6 +33,10 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     'https://www.deviantart.com/users/login',
   );
   static final Uri _homeUri = Uri.parse('https://www.deviantart.com/');
+  static final Uri _forgotUri = Uri.parse(
+    'https://www.deviantart.com/users/forgot?kind=password',
+  );
+  static final Uri _joinUri = Uri.parse('https://www.deviantart.com/join');
 
   InAppWebViewController? _controller;
   StreamSubscription<Uri>? _launchSub;
@@ -124,6 +129,55 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     });
   }
 
+  /// Shows sign-in help: the account model, that any email can register, and
+  /// browser shortcuts for password reset and registration.
+  void _showLoginHelp() {
+    final s = strings(ref.read(appLanguageProvider));
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                s.loginHelpTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              Text(s.loginHelpBody),
+              const SizedBox(height: 12),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.lock_reset),
+                title: Text(s.forgotPassword),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  unawaited(
+                    launchUrl(_forgotUri, mode: LaunchMode.externalApplication),
+                  );
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.person_add_alt),
+                title: Text(s.registerAccount),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  unawaited(
+                    launchUrl(_joinUri, mode: LaunchMode.externalApplication),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = strings(ref.watch(appLanguageProvider));
@@ -155,6 +209,11 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       appBar: AppBar(
         title: Text(s.webLogin),
         actions: <Widget>[
+          IconButton(
+            tooltip: s.loginHelpTooltip,
+            onPressed: _showLoginHelp,
+            icon: const Icon(Icons.help_outline),
+          ),
           IconButton(
             tooltip: s.done,
             onPressed: () => context.pop(),
