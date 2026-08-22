@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
@@ -177,7 +178,7 @@ String _friendlyError(Object error, AppStrings s) {
         break;
     }
   }
-  return '$error';
+  return friendlyErrorMessage(error);
 }
 
 final class _ScrollableFill extends StatelessWidget {
