@@ -363,8 +363,22 @@ final class _FullScreenImageState extends ConsumerState<_FullScreenImage> {
             child: CachedNetworkImage(
               imageUrl: widget.url,
               fit: BoxFit.contain,
-              placeholder: (context, url) => const Center(
-                child: CircularProgressIndicator(color: Colors.white),
+              // Progressive loading: blurred tiny version first, then the
+              // full-resolution decode cross-fades in.
+              placeholder: (context, url) => CachedNetworkImage(
+                imageUrl: url,
+                memCacheWidth: 40,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
+                errorWidget: (context, url, error) => const Center(
+                  child: Icon(
+                    Icons.broken_image,
+                    color: Colors.white,
+                    size: 48,
+                  ),
+                ),
               ),
               errorWidget: (context, url, error) => const Center(
                 child: Icon(Icons.broken_image, color: Colors.white, size: 48),
