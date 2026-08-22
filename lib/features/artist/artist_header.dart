@@ -3,6 +3,7 @@ import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/theme/app_theme.dart';
 import '../../core/l10n/app_strings.dart';
 
 /// The artist's avatar, name, real name, stats, tagline, and bio.
@@ -24,7 +25,7 @@ final class ArtistHeader extends ConsumerWidget {
             children: <Widget>[
               CircleAvatar(
                 radius: 28,
-                backgroundColor: const Color(0xffe9ecef),
+                backgroundColor: AppTheme.placeholderColor,
                 foregroundImage: avatar == null
                     ? null
                     : CachedNetworkImageProvider(avatar.toString()),

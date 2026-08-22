@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/theme/app_theme.dart';
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_empty_state.dart';
@@ -118,13 +119,13 @@ final class _MessageTile extends StatelessWidget {
                 placeholder: (context, url) => const SizedBox(
                   width: 56,
                   height: 56,
-                  child: ColoredBox(color: Color(0xffe9ecef)),
+                  child: ColoredBox(color: AppTheme.placeholderColor),
                 ),
                 errorWidget: (context, url, error) => const SizedBox(
                   width: 56,
                   height: 56,
                   child: ColoredBox(
-                    color: Color(0xffe9ecef),
+                    color: AppTheme.placeholderColor,
                     child: Icon(Icons.image, size: 20),
                   ),
                 ),

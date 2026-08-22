@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/theme/app_theme.dart';
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_error_state.dart';
@@ -65,16 +66,17 @@ final class FoldersView extends ConsumerWidget {
                               imageUrl: thumbUri.toString(),
                               fit: BoxFit.cover,
                               width: double.infinity,
-                              placeholder: (context, url) =>
-                                  const ColoredBox(color: Color(0xffe9ecef)),
+                              placeholder: (context, url) => const ColoredBox(
+                                color: AppTheme.placeholderColor,
+                              ),
                               errorWidget: (context, url, error) =>
                                   const ColoredBox(
-                                    color: Color(0xffe9ecef),
+                                    color: AppTheme.placeholderColor,
                                     child: Icon(Icons.folder),
                                   ),
                             )
                           : const ColoredBox(
-                              color: Color(0xffe9ecef),
+                              color: AppTheme.placeholderColor,
                               child: Icon(Icons.folder),
                             ),
                     ),
