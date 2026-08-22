@@ -19,6 +19,7 @@ import '../features/settings/settings_screen.dart';
 import '../features/splash/splash_screen.dart';
 import '../features/tag/tag_screen.dart';
 import '../features/watching/watching_screen.dart';
+import '../features/watched/watched_feed_screen.dart';
 import '../features/web_login/web_login_screen.dart';
 import 'app_shell.dart';
 
@@ -104,6 +105,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: <RouteBase>[
               GoRoute(
+                path: '/watch',
+                builder: (context, state) => const WatchedFeedScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
                 path: '/search',
                 builder: (context, state) => const SearchScreen(),
               ),
@@ -139,9 +148,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       // Home is the public landing page. Signed-out users (including right
       // after logout) land here — where the login buttons guide them —
-      // instead of being dumped onto a full-screen login page.
+      // instead of being dumped onto a full-screen login page. The watched
+      // tab stays reachable so it can show its own sign-in prompt.
       if (status != AuthStatus.signedIn &&
           location != '/' &&
+          location != '/watch' &&
           location != '/web-login') {
         return '/';
       }

@@ -9,7 +9,6 @@ import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/artwork_card.dart';
-import '../../shared/widgets/artwork_feed_grid.dart';
 import '../../shared/widgets/scrollable_fill.dart';
 import 'home_providers.dart';
 
@@ -103,47 +102,6 @@ final class DailyFeed extends ConsumerWidget {
           emptyMessage: s.noDaily,
         ),
       ),
-    );
-  }
-}
-
-/// The "deviations from watched artists" feed (OAuth).
-final class FollowingFeed extends ConsumerWidget {
-  const FollowingFeed({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authControllerProvider);
-    final s = strings(ref.watch(appLanguageProvider));
-    if (!auth.oauthSignedIn) {
-      return LoginPrompt(s: s, onLogin: () => context.push('/web-login'));
-    }
-    final feed = ref.watch(followingFeedProvider);
-    return Column(
-      children: <Widget>[
-        // Keep the followed-users list adjacent to the followed artwork feed
-        // so it is discoverable without digging into Settings.
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-          child: Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: TextButton.icon(
-              onPressed: () => context.push('/watching'),
-              icon: const Icon(Icons.people_outline, size: 18),
-              label: Text(s.watching),
-            ),
-          ),
-        ),
-        Expanded(
-          child: ArtworkFeedGrid(
-            feed: feed,
-            emptyMessage: s.noWatched,
-            onRefresh: () => ref.read(followingFeedProvider.notifier).refresh(),
-            onLoadMore: () =>
-                ref.read(followingFeedProvider.notifier).loadMore(),
-          ),
-        ),
-      ],
     );
   }
 }

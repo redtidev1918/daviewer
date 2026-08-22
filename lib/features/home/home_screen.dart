@@ -13,12 +13,14 @@ import '../../shared/widgets/artwork_feed_grid.dart';
 import 'home_feeds.dart';
 import 'home_providers.dart';
 
-/// Native home: three tabs, all rendered with the native feed UI.
+/// Native home: two tabs, all rendered with the native feed UI.
 ///
-/// - 首页: the personalized `rfy/deviations` web feed (fetched natively with
+/// - 推荐: the personalized `rfy/deviations` web feed (fetched natively with
 ///   the WebView's web session).
 /// - 每日推荐: the official daily deviations (OAuth).
-/// - 关注: deviations from watched artists (OAuth).
+///
+/// Deviations from watched artists live in the first-class "关注动态" tab
+/// (see [WatchedFeedScreen]).
 final class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -51,7 +53,7 @@ final class HomeScreen extends ConsumerWidget {
     }
 
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: Text(s.appTitle),
@@ -91,7 +93,6 @@ final class HomeScreen extends ConsumerWidget {
             tabs: <Widget>[
               Tab(text: s.home),
               Tab(text: s.daily),
-              Tab(text: s.following),
             ],
           ),
         ),
@@ -99,9 +100,7 @@ final class HomeScreen extends ConsumerWidget {
           children: <Widget>[
             ?syncBanner,
             const Expanded(
-              child: TabBarView(
-                children: <Widget>[_RfyFeed(), DailyFeed(), FollowingFeed()],
-              ),
+              child: TabBarView(children: <Widget>[_RfyFeed(), DailyFeed()]),
             ),
           ],
         ),
