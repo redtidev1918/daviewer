@@ -5,89 +5,98 @@ import 'package:daviewer/features/downloads/downloads_providers.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('progress snapshots update rows without re-reading all records', () async {
-    final manager = FakeTransferManager(<TransferSnapshot>[
-      const TransferSnapshot(
-        id: 'task-1',
-        state: TransferState.queued,
-        progress: 0,
-      ),
-    ]);
-    final controller = DownloadsController(manager);
-    await pumpEventQueue();
+  test(
+    'progress snapshots update rows without re-reading all records',
+    () async {
+      final manager = FakeTransferManager(<TransferSnapshot>[
+        const TransferSnapshot(
+          id: 'task-1',
+          state: TransferState.queued,
+          progress: 0,
+        ),
+      ]);
+      final controller = DownloadsController(manager);
+      await pumpEventQueue();
 
-    manager.emit(
-      const TransferSnapshot(
-        id: 'task-1',
-        state: TransferState.running,
-        progress: 0.5,
-      ),
-    );
-    await pumpEventQueue();
+      manager.emit(
+        const TransferSnapshot(
+          id: 'task-1',
+          state: TransferState.running,
+          progress: 0.5,
+        ),
+      );
+      await pumpEventQueue();
 
-    expect(controller.state.items.single.progress, 0.5);
-    expect(manager.recordsCalls, 1);
+      expect(controller.state.items.single.progress, 0.5);
+      expect(manager.recordsCalls, 1);
 
-    controller.dispose();
-    await pumpEventQueue();
-    expect(manager.hasUpdateListener, isFalse);
-    await manager.dispose();
-  });
+      controller.dispose();
+      await pumpEventQueue();
+      expect(manager.hasUpdateListener, isFalse);
+      await manager.dispose();
+    },
+  );
 
-  test('an event arriving during a database read cannot regress progress', () async {
-    final gate = Completer<void>();
-    final manager = FakeTransferManager(<TransferSnapshot>[
-      const TransferSnapshot(
-        id: 'task-1',
-        state: TransferState.queued,
-        progress: 0,
-      ),
-    ])..recordsGate = gate;
-    final controller = DownloadsController(manager);
-    await pumpEventQueue();
+  test(
+    'an event arriving during a database read cannot regress progress',
+    () async {
+      final gate = Completer<void>();
+      final manager = FakeTransferManager(<TransferSnapshot>[
+        const TransferSnapshot(
+          id: 'task-1',
+          state: TransferState.queued,
+          progress: 0,
+        ),
+      ])..recordsGate = gate;
+      final controller = DownloadsController(manager);
+      await pumpEventQueue();
 
-    manager.emit(
-      const TransferSnapshot(
-        id: 'task-1',
-        state: TransferState.running,
-        progress: 0.75,
-      ),
-    );
-    gate.complete();
-    await pumpEventQueue();
+      manager.emit(
+        const TransferSnapshot(
+          id: 'task-1',
+          state: TransferState.running,
+          progress: 0.75,
+        ),
+      );
+      gate.complete();
+      await pumpEventQueue();
 
-    expect(controller.state.items.single.progress, 0.75);
-    controller.dispose();
-    await manager.dispose();
-  });
+      expect(controller.state.items.single.progress, 0.75);
+      controller.dispose();
+      await manager.dispose();
+    },
+  );
 
-  test('partial deletion failure reloads and keeps the failed record visible', () async {
-    final manager = FakeTransferManager(<TransferSnapshot>[
-      const TransferSnapshot(
-        id: 'done',
-        state: TransferState.completed,
-        progress: 1,
-      ),
-      const TransferSnapshot(
-        id: 'failed-delete',
-        state: TransferState.failed,
-        progress: 0.4,
-      ),
-    ])..removeFailures.add('failed-delete');
-    final controller = DownloadsController(manager);
-    await pumpEventQueue();
+  test(
+    'partial deletion failure reloads and keeps the failed record visible',
+    () async {
+      final manager = FakeTransferManager(<TransferSnapshot>[
+        const TransferSnapshot(
+          id: 'done',
+          state: TransferState.completed,
+          progress: 1,
+        ),
+        const TransferSnapshot(
+          id: 'failed-delete',
+          state: TransferState.failed,
+          progress: 0.4,
+        ),
+      ])..removeFailures.add('failed-delete');
+      final controller = DownloadsController(manager);
+      await pumpEventQueue();
 
-    await expectLater(controller.deleteFinished(), throwsStateError);
+      await expectLater(controller.deleteFinished(), throwsStateError);
 
-    expect(controller.state.isDeleting, isFalse);
-    expect(controller.state.items.map((item) => item.id), <String>[
-      'failed-delete',
-    ]);
-    expect(manager.removeAttempts, <String>['done', 'failed-delete']);
+      expect(controller.state.isDeleting, isFalse);
+      expect(controller.state.items.map((item) => item.id), <String>[
+        'failed-delete',
+      ]);
+      expect(manager.removeAttempts, <String>['done', 'failed-delete']);
 
-    controller.dispose();
-    await manager.dispose();
-  });
+      controller.dispose();
+      await manager.dispose();
+    },
+  );
 }
 
 final class FakeTransferManager implements TransferManager {

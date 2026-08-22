@@ -121,11 +121,8 @@ final class DownloadsState {
       isDeleting = false,
       error = null;
 
-  const DownloadsState.data(
-    this.items, {
-    this.isDeleting = false,
-    this.error,
-  }) : isLoading = false;
+  const DownloadsState.data(this.items, {this.isDeleting = false, this.error})
+    : isLoading = false;
 
   final List<TransferSnapshot> items;
   final bool isLoading;

@@ -37,32 +37,32 @@ final class DownloadsScreen extends ConsumerWidget {
               onPressed: state.isDeleting
                   ? null
                   : () async {
-                final count = state.items
-                    .where((snapshot) => snapshot.isFinal)
-                    .length;
-                final confirmed = await confirmDeleteFinishedDownloads(
-                  context,
-                  strings: s,
-                  count: count,
-                );
-                if (!confirmed || !context.mounted) return;
-                try {
-                  await ref
-                      .read(downloadsProvider.notifier)
-                      .deleteFinished();
-                } on Object catch (error) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        s.deleteFinishedDownloadsFailed(
-                          friendlyErrorMessage(error),
-                        ),
-                      ),
-                    ),
-                  );
-                }
-              },
+                      final count = state.items
+                          .where((snapshot) => snapshot.isFinal)
+                          .length;
+                      final confirmed = await confirmDeleteFinishedDownloads(
+                        context,
+                        strings: s,
+                        count: count,
+                      );
+                      if (!confirmed || !context.mounted) return;
+                      try {
+                        await ref
+                            .read(downloadsProvider.notifier)
+                            .deleteFinished();
+                      } on Object catch (error) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              s.deleteFinishedDownloadsFailed(
+                                friendlyErrorMessage(error),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                    },
               icon: state.isDeleting
                   ? const SizedBox.square(
                       dimension: 20,
