@@ -221,6 +221,13 @@ OAuth authorization happens in the built-in WebView first (reusing the web
 session, no password re-entry), falling back to the system browser if the
 WebView is unavailable.
 
+## Login FAQ
+
+- **DAViewer has no account of its own**: you sign in with your DeviantArt account — the app never registers an account or stores a password.
+- **You don't need a Google email to register**: DeviantArt accepts any email, and the login page also offers one-click Google / Apple sign-in.
+- **Forgot your password?** Use the "Forgot Password" link on the login page, or tap "?" → "Forgot password" in the app's login screen to open the reset page in your browser.
+- **Register an account**: tap "?" → "Register a DeviantArt account" in the app's login screen to open the sign-up page in your browser.
+
 ## Contributing
 
 All contributions are welcome — issues, bug fixes, features, and docs. See

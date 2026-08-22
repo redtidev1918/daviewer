@@ -59,6 +59,26 @@ final class AppStrings {
   String get webLoggedOutOAuthActive => _lang == AppLanguage.zh
       ? 'App 已登录，但网页版尚未登录，首页推荐可能不是个性化内容。'
       : 'App is signed in, but the web home is not. Home recommendations may not be personalized.';
+
+  // --- login help ---
+  String get loginHelpTooltip =>
+      _lang == AppLanguage.zh ? '登录帮助' : 'Login help';
+  String get loginHelpTitle =>
+      _lang == AppLanguage.zh ? '登录遇到问题？' : 'Trouble signing in?';
+  String get loginHelpBody => _lang == AppLanguage.zh
+      ? 'DAViewer 没有自己的账号，这里登录的是你的 DeviantArt 官方账号。\n\n'
+            '• 注册不需要谷歌邮箱：任意邮箱都可以，登录页也支持 Google / Apple 一键登录。\n'
+            '• 忘记密码：点登录页上的「Forgot Password」，或点下面的「找回密码」在浏览器里重置。\n'
+            '• 找回密码 / 注册会在系统浏览器打开，完成后回到本页登录即可。'
+      : 'DAViewer has no account of its own — you sign in with your DeviantArt account.\n\n'
+            '• You do not need a Google email to register: any email works, and the page also supports one-click Google / Apple sign-in.\n'
+            '• Forgot your password? Tap "Forgot Password" on the page, or use "Forgot password" below to reset it in your browser.\n'
+            '• Password reset and registration open in your browser; return here to sign in afterwards.';
+  String get forgotPassword =>
+      _lang == AppLanguage.zh ? '找回密码' : 'Forgot password';
+  String get registerAccount => _lang == AppLanguage.zh
+      ? '注册 DeviantArt 账号'
+      : 'Register a DeviantArt account';
   String get noArtworks =>
       _lang == AppLanguage.zh ? '暂无作品' : 'No artworks found.';
   String get noDaily =>
