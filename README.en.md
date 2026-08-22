@@ -44,9 +44,10 @@
   sub-galleries (folders)**, favourites, watch
 - **Social**: favourite artworks (with favourite state), watch/unwatch artists,
   watched-user list, notifications (who posted new work)
-- **Download**: original-file background download with full-size preview
-  fallback when restricted; open file/folder; destructive confirmation and
-  retained records when file deletion fails so the user can retry
+- **Download**: verifies original-file access for the current account, explains
+  login, purchase, quota, creator, network, and storage failures, and only uses
+  an explicitly labelled highest-quality image preview fallback; persistent
+  background failure details, file/folder actions, and cleanup confirmation
 - **Bilingual**: Chinese / English toggle
 - **Proxy**: auto-detect the system proxy + manual configuration (required in
   mainland China)

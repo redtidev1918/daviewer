@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/diagnostics/error_text.dart';
+import '../../core/auth/web_session_controller.dart';
+import '../../core/auth/web_session_refresher.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../../shared/widgets/app_error_state.dart';
@@ -14,6 +16,7 @@ import '../../shared/widgets/skeleton.dart';
 import 'artwork_detail_providers.dart';
 import 'artwork_detail_sections.dart';
 import 'download_section.dart';
+import 'download_reason.dart';
 import 'favourite_actions.dart';
 import 'media_viewer.dart';
 import 'more_like_this.dart';
@@ -35,6 +38,7 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
   bool _downloading = false;
   bool _favourite = false;
   bool _favBusy = false;
+  String? _reportedTransferFailure;
 
   late final AnimationController _heartController = AnimationController(
     vsync: this,
@@ -117,16 +121,74 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
       );
       if (!mounted) return;
       setState(() => _transfer = snapshot);
+      _reportTransferFailure(snapshot);
       await _subscription?.cancel();
       _subscription = manager.updates
           .where((update) => update.id == transferId)
           .listen((update) {
             if (!mounted) return;
             setState(() => _transfer = update);
+            _reportTransferFailure(update);
           });
+    } on Object catch (error) {
+      if (mounted) {
+        final s = strings(ref.read(appLanguageProvider));
+        final reason = immediateDownloadFailureReason(s, error);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(s.downloadFailed(reason))));
+      }
     } finally {
       if (mounted) setState(() => _downloading = false);
     }
+  }
+
+  void _reportTransferFailure(TransferSnapshot snapshot) {
+    if (!mounted ||
+        (snapshot.state != TransferState.failed &&
+            snapshot.state != TransferState.notFound)) {
+      return;
+    }
+    final signature =
+        '${snapshot.id}:${snapshot.state.name}:${snapshot.failureCode}:${snapshot.failureMessage}';
+    if (_reportedTransferFailure == signature) return;
+    _reportedTransferFailure = signature;
+    final s = strings(ref.read(appLanguageProvider));
+    final reason = transferFailureReason(s, snapshot);
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(s.downloadFailed(reason))));
+  }
+
+  Future<void> _retryDownload(MediaAsset asset) async {
+    final previous = _transfer;
+    if (previous != null && previous.isFinal) {
+      try {
+        await ref.read(runtimeProvider).transfers.remove(previous.id);
+      } on Object {
+        // A failed record without a usable local file must not block retrying.
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _transfer = null;
+      _reportedTransferFailure = null;
+    });
+    await _download(asset);
+  }
+
+  Future<void> _retryDownloadAvailability() async {
+    try {
+      if (isNumericDeviationId(widget.artworkId) &&
+          ref.read(webSessionControllerProvider).signedIn) {
+        await ref.read(webSessionRefresherProvider).refresh();
+      }
+    } on Object {
+      // The provider below retains a failed refresh as a retryable lookup
+      // state, so the detail page still stays usable.
+    }
+    if (!mounted) return;
+    ref.invalidate(deviationInitProvider(widget.artworkId));
+    ref.invalidate(artworkUuidProvider(widget.artworkId));
+    ref.invalidate(originalFileProvider(widget.artworkId));
   }
 
   Future<void> _pause() async {
@@ -210,25 +272,18 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
             onRetry: () =>
                 ref.invalidate(artworkDetailProvider(widget.artworkId)),
           ),
-          data: (artwork) => original.when(
-            loading: () => const SkeletonDetail(key: ValueKey('skeleton-orig')),
-            error: (error, stackTrace) => AppErrorState(
-              key: const ValueKey('error-orig'),
-              message: friendlyErrorMessage(error),
-            ),
-            data: (original) => KeyedSubtree(
-              key: const ValueKey('content'),
-              child: _buildBody(
-                artwork,
-                original,
-                transfer,
-                description: description.valueOrNull,
-                descriptionHtml: descriptionHtml.valueOrNull,
-                journalHtml: journalHtml.valueOrNull,
-                additionalMedia:
-                    additionalMedia.valueOrNull ?? const <MediaAsset>[],
-                tags: tags.valueOrNull ?? const <String>[],
-              ),
+          data: (artwork) => KeyedSubtree(
+            key: const ValueKey('content'),
+            child: _buildBody(
+              artwork,
+              original,
+              transfer,
+              description: description.valueOrNull,
+              descriptionHtml: descriptionHtml.valueOrNull,
+              journalHtml: journalHtml.valueOrNull,
+              additionalMedia:
+                  additionalMedia.valueOrNull ?? const <MediaAsset>[],
+              tags: tags.valueOrNull ?? const <String>[],
             ),
           ),
         ),
@@ -238,7 +293,7 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
 
   Widget _buildBody(
     Artwork artwork,
-    MediaAsset original,
+    AsyncValue<OriginalFileResolution> originalResolution,
     TransferSnapshot? transfer, {
     String? description,
     String? descriptionHtml,
@@ -251,16 +306,6 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     // Journals/literature are rendered as text (with any embedded thumbs shown
     // above), never as an image with a bogus "original deleted" download row.
     final isJournal = artwork.pageUri.path.contains('/journal/');
-    // When the original download is restricted (e.g. free limit reached),
-    // fall back to a *downloadable* image in the media list so the user can
-    // still save it — never a gated (premium/restricted) one.
-    final MediaAsset downloadable = original.canTransfer
-        ? original
-        : media
-                  .where((m) => m.kind == MediaKind.image && m.canTransfer)
-                  .firstOrNull ??
-              original;
-
     // The detail screen is a thin composition of self-contained sections. To
     // add another related-content block (e.g. Suggested Deviants / Collections),
     // drop a new widget below; each section owns its provider, its loading /
@@ -289,21 +334,62 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
         if (tags.isNotEmpty) ArtworkTagsSection(tags: tags),
         if (!isJournal && media.isNotEmpty) ...[
           const SizedBox(height: 8),
-          DownloadSection(
-            s: s,
-            original: original,
-            downloadable: downloadable,
-            transfer: transfer,
-            downloading: _downloading,
-            onDownload: () => _download(downloadable),
-            onPause: _pause,
-            onResume: _resume,
-            onCancel: _cancel,
+          originalResolution.when(
+            loading: () => Row(
+              children: <Widget>[
+                const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 8),
+                Text(s.checkingDownloadAvailability),
+              ],
+            ),
+            error: (error, stackTrace) => Row(
+              children: <Widget>[
+                Expanded(child: Text(s.downloadAvailabilityCheckFailed)),
+                TextButton(
+                  onPressed: () => unawaited(_retryDownloadAvailability()),
+                  child: Text(s.retry),
+                ),
+              ],
+            ),
+            data: (resolution) =>
+                _buildDownloadSection(s, media, resolution, transfer),
           ),
         ],
         const Divider(),
         MoreLikeThisSection(artworkId: widget.artworkId),
       ],
+    );
+  }
+
+  Widget _buildDownloadSection(
+    AppStrings s,
+    List<MediaAsset> media,
+    OriginalFileResolution resolution,
+    TransferSnapshot? transfer,
+  ) {
+    final original = resolution.asset;
+    // Only image artworks may fall back to the highest-quality displayed
+    // image. A video poster must never make a restricted video look
+    // downloadable.
+    final downloadable = original.canTransfer
+        ? original
+        : bestFallbackImage(media) ?? original;
+    return DownloadSection(
+      s: s,
+      original: original,
+      downloadable: downloadable,
+      transfer: transfer,
+      downloading: _downloading,
+      lookupFailed: resolution.lookupError != null,
+      onDownload: () => _download(downloadable),
+      onRetryAvailability: () => unawaited(_retryDownloadAvailability()),
+      onPause: _pause,
+      onResume: _resume,
+      onCancel: _cancel,
+      onRetry: () => _retryDownload(downloadable),
     );
   }
 }

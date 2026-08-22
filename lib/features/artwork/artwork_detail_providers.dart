@@ -128,40 +128,59 @@ final artworkDetailProvider = FutureProvider.autoDispose
       return dataAccessFor(runtime).artworkById(artworkId);
     });
 
+/// The authoritative result of probing DeviantArt's original-download
+/// endpoint. [lookupError] is reserved for transient failures (network/server/
+/// session resolution); expected permission denials are represented by the
+/// typed [MediaAsset.availability] and [MediaAsset.availabilityReason].
+final class OriginalFileResolution {
+  const OriginalFileResolution({required this.asset, this.lookupError});
+
+  final MediaAsset asset;
+  final Object? lookupError;
+}
+
 final originalFileProvider = FutureProvider.autoDispose
-    .family<MediaAsset, String>((ref, artworkId) async {
+    .family<OriginalFileResolution, String>((ref, artworkId) async {
       final cached = ref.read(artworkStoreProvider)[artworkId];
-      final cachedOriginal = cached?.media
-          .where((m) => m.role == MediaRole.original)
-          .firstOrNull;
-      if (cachedOriginal != null) return cachedOriginal;
       // Journals/literature have no downloadable original — don't hit the
       // download endpoint (it 400s for journals). Text-only posts short-circuit
       // here too.
       final isJournal =
           cached != null && cached.pageUri.path.contains('/journal/');
       if (cached != null && (cached.media.isEmpty || isJournal)) {
-        return MediaAsset(
-          id: '$artworkId:original',
-          kind: MediaKind.unknown,
-          role: MediaRole.original,
-          availability: MediaAvailability.missing,
+        return OriginalFileResolution(
+          asset: MediaAsset(
+            id: '$artworkId:original',
+            kind: MediaKind.unknown,
+            role: MediaRole.original,
+            availability: MediaAvailability.missing,
+          ),
         );
       }
       final runtime = ref.watch(runtimeProvider);
       try {
-        return await dataAccessFor(runtime).originalFile(artworkId);
+        // Web recommendation items use numeric ids, while the official
+        // download endpoint only accepts the OAuth UUID. Always probe the
+        // endpoint instead of trusting a cached media URL: entitlement and
+        // free-download limits are user-specific and can change at any time.
+        final uuid = await ref.watch(artworkUuidProvider(artworkId).future);
+        final asset = await dataAccessFor(runtime).originalFile(uuid);
+        return OriginalFileResolution(asset: asset);
       } on Object catch (error) {
         // Never let a download-availability lookup take down the whole detail
-        // page. The download endpoint may reject an artwork (4xx), the server
-        // may be down (5xx), or the network may be unreachable — in all cases
-        // degrade to "not downloadable" so the artwork still renders.
+        // page. Expected 4xx denials are already converted into typed assets by
+        // DAKit; only transient failures reach here and remain distinguishable
+        // so the UI can say that availability could not be verified and offer
+        // a retry instead of falsely claiming the artwork is not downloadable.
         debugPrint('[orig] download lookup failed: $error');
-        return MediaAsset(
-          id: '$artworkId:original',
-          kind: MediaKind.unknown,
-          role: MediaRole.original,
-          availability: MediaAvailability.unavailable,
+        return OriginalFileResolution(
+          asset: MediaAsset(
+            id: '$artworkId:original',
+            kind: MediaKind.unknown,
+            role: MediaRole.original,
+            availability: MediaAvailability.unavailable,
+          ),
+          lookupError: error,
         );
       }
     });

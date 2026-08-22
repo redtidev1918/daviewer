@@ -159,8 +159,41 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '原图：' : 'Original: ';
   String get sizeLabel => _lang == AppLanguage.zh ? '大小：' : 'Size: ';
   String get fallbackDownloadNotice => _lang == AppLanguage.zh
-      ? '原图下载受限，将下载全尺寸预览图。'
-      : 'Original download is restricted; downloading the full-size preview instead.';
+      ? '原图不可下载，但可以保存当前展示的最高画质图片。'
+      : 'The original is unavailable, but the highest-quality displayed image can be saved.';
+  String get downloadUnavailableReason =>
+      _lang == AppLanguage.zh ? '不能下载的原因' : 'Why downloading is unavailable';
+  String get checkingDownloadAvailability => _lang == AppLanguage.zh
+      ? '正在确认当前账号的下载权限…'
+      : 'Checking download access for this account…';
+  String get downloadAvailabilityCheckFailed => _lang == AppLanguage.zh
+      ? '暂时无法确认下载权限，可能是网络、登录会话或服务异常。请重试。'
+      : 'Download permission could not be verified. Check the network/session and retry.';
+  String get retryDownloadCheck =>
+      _lang == AppLanguage.zh ? '重新检查下载权限' : 'Check again';
+  String get downloadLimitReached => _lang == AppLanguage.zh
+      ? '当前账号的免费下载次数已用完。'
+      : 'This account has reached its free-download limit.';
+  String get creatorDisabledDownload => _lang == AppLanguage.zh
+      ? '作者没有开放这件作品的原图下载。'
+      : 'The creator has not enabled original downloads for this artwork.';
+  String providerDownloadReason(String reason) => _lang == AppLanguage.zh
+      ? 'DeviantArt 返回的原因：$reason'
+      : 'DeviantArt says: $reason';
+  String downloadFailed(String reason) =>
+      _lang == AppLanguage.zh ? '下载失败：$reason' : 'Download failed: $reason';
+  String get downloadFailureNetwork => _lang == AppLanguage.zh
+      ? '网络连接中断或请求超时，请检查网络后重试。'
+      : 'The connection failed or timed out. Check your network and retry.';
+  String get downloadFailurePermission => _lang == AppLanguage.zh
+      ? '当前账号或登录会话没有下载权限，请重新登录或检查作品限制。'
+      : 'This account or session is not allowed to download the file.';
+  String get downloadFailureNotFound => _lang == AppLanguage.zh
+      ? '下载源已失效、被删除或不再提供。'
+      : 'The source file expired, was removed, or is no longer offered.';
+  String get downloadFailureStorage => _lang == AppLanguage.zh
+      ? '无法写入本地文件，请检查存储空间和文件夹权限。'
+      : 'The file could not be written. Check free space and folder permissions.';
   String get downloading => _lang == AppLanguage.zh ? '正在下载…' : 'Downloading…';
   String get downloadImage =>
       _lang == AppLanguage.zh ? '下载图片' : 'Download image';
@@ -193,6 +226,9 @@ final class AppStrings {
   String get hintUnavailable => _lang == AppLanguage.zh
       ? '该作品不提供原图下载。'
       : 'The original is not available for download.';
+  String get hintMissing => _lang == AppLanguage.zh
+      ? '作品或原始文件已删除、不存在，或下载链接已经失效。'
+      : 'The artwork or original file was removed, is missing, or its link expired.';
 
   // --- home open-link dialog ---
   String get openLinkTooltip => _lang == AppLanguage.zh ? '打开链接' : 'Open link';
@@ -319,6 +355,8 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '下载中' : 'Downloading';
   String get transferPaused => _lang == AppLanguage.zh ? '已暂停' : 'Paused';
   String get transferFailed => _lang == AppLanguage.zh ? '失败' : 'Failed';
+  String get transferNotFound =>
+      _lang == AppLanguage.zh ? '源文件失效' : 'Source unavailable';
   String get transferCancelled => _lang == AppLanguage.zh ? '已取消' : 'Cancelled';
   String get transferQueued => _lang == AppLanguage.zh ? '排队中' : 'Queued';
 

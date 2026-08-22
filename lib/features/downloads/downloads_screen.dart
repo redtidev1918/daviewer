@@ -16,6 +16,7 @@ import '../../shared/widgets/app_refresh_indicator.dart';
 import '../../shared/widgets/full_screen_image_viewer.dart';
 import '../../shared/widgets/settings_action.dart';
 import '../../shared/widgets/skeleton.dart';
+import '../artwork/download_reason.dart';
 import 'delete_downloads_dialog.dart';
 import 'download_helpers.dart';
 import 'downloads_providers.dart';
@@ -138,6 +139,9 @@ final class _DownloadTile extends ConsumerWidget {
     final manager = ref.read(runtimeProvider).transfers;
     final s = strings(ref.watch(appLanguageProvider));
     final scheme = Theme.of(context).colorScheme;
+    final failed =
+        snapshot.state == TransferState.failed ||
+        snapshot.state == TransferState.notFound;
 
     return Card(
       child: Padding(
@@ -174,6 +178,14 @@ final class _DownloadTile extends ConsumerWidget {
               value: snapshot.progress,
               borderRadius: BorderRadius.circular(4),
             ),
+            if (failed) ...[
+              const SizedBox(height: 8),
+              Text(
+                s.downloadFailed(transferFailureReason(s, snapshot)),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: scheme.error),
+              ),
+            ],
             if (snapshot.localPath != null) ...[
               const SizedBox(height: 8),
               Text(
@@ -243,6 +255,7 @@ final class _DownloadTile extends ConsumerWidget {
     TransferState.running => Icons.downloading,
     TransferState.paused => Icons.pause_circle,
     TransferState.failed => Icons.error,
+    TransferState.notFound => Icons.link_off,
     TransferState.cancelled => Icons.cancel,
     _ => Icons.schedule,
   };
@@ -251,6 +264,7 @@ final class _DownloadTile extends ConsumerWidget {
       switch (state) {
         TransferState.completed => Colors.green,
         TransferState.failed => scheme.error,
+        TransferState.notFound => scheme.error,
         TransferState.cancelled => scheme.outline,
         TransferState.running => scheme.primary,
         _ => scheme.outline,
@@ -262,6 +276,7 @@ final class _DownloadTile extends ConsumerWidget {
       TransferState.running => s.transferDownloading,
       TransferState.paused => s.transferPaused,
       TransferState.failed => s.transferFailed,
+      TransferState.notFound => s.transferNotFound,
       TransferState.cancelled => s.transferCancelled,
       _ => s.transferQueued,
     };
