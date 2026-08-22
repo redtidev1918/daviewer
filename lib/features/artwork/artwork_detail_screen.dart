@@ -13,6 +13,7 @@ import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/skeleton.dart';
 import 'artwork_detail_providers.dart';
 import 'artwork_detail_sections.dart';
+import 'collection_sections.dart';
 import 'download_section.dart';
 import 'favourite_actions.dart';
 import 'media_viewer.dart';
@@ -303,6 +304,8 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
         ],
         const Divider(),
         MoreLikeThisSection(artworkId: widget.artworkId),
+        FeaturedInCollectionsSection(artworkId: widget.artworkId),
+        SuggestedCollectionsSection(artworkId: widget.artworkId),
       ],
     );
   }

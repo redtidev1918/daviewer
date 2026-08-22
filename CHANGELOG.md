@@ -3,6 +3,15 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.83（详情页收藏集区块）
+
+### Added
+
+- 作品详情页在「更多类似作品」下方新增两个横向卡片区块：「已被收录」与
+  「建议收藏集」。两者与 More Like This 共用同一次 `browse/morelikethis/preview`
+  请求，空则自动隐藏；卡片展示收藏集封面 + 名称 + 作者，点按打开收藏集作者主页
+  （`dakit_api` 0.1.13：收藏集分组在接口形状漂移时降级为空，不拖垮相关作品）。
+
 ## 0.2.82（为 Suggested Collections 预留数据）
 
 ### Changed
