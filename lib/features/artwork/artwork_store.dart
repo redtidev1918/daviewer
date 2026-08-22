@@ -42,24 +42,7 @@ final class ArtworkStore extends Notifier<Map<String, Artwork>> {
     if (artwork == null) return;
     state = <String, Artwork>{
       ...state,
-      id: _withFavourite(artwork, favourited),
+      id: artwork.copyWith(isFavourited: favourited),
     };
   }
-
-  static Artwork _withFavourite(Artwork artwork, bool favourited) => Artwork(
-    id: artwork.id,
-    title: artwork.title,
-    author: artwork.author,
-    pageUri: artwork.pageUri,
-    media: artwork.media,
-    description: artwork.description,
-    publishedAt: artwork.publishedAt,
-    isMature: artwork.isMature,
-    isDownloadable: artwork.isDownloadable,
-    isFavourited: favourited,
-    isMultiMedia: artwork.isMultiMedia,
-    downloadAvailability: artwork.downloadAvailability,
-    textContent: artwork.textContent,
-    tags: artwork.tags,
-  );
 }

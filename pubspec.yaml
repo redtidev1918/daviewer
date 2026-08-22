@@ -34,7 +34,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  dakit_core: ^0.1.6
+  dakit_core: ^0.1.7
   dakit_api: ^0.1.9
   dakit_flutter: ^0.1.6
   flutter_riverpod: ^2.6.1
