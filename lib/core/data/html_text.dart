@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'wix_media.dart';
+
 /// Converts a provider-authored HTML fragment to readable plain text.
 ///
 /// DeviantArt descriptions arrive as HTML (`descriptionText.html.markup`, or
@@ -202,44 +204,16 @@ String? _wixImageUrl(Map media) {
       .toList(growable: false);
   final types = media['types'] as List? ?? const <Object?>[];
 
-  Map? best;
-  for (final type in types) {
-    if (type is Map && type['t'] == 'fullview') {
-      best = type;
-      break;
-    }
-  }
-  if (best == null) {
-    var bestWidth = -1;
-    for (final type in types) {
-      if (type is! Map) continue;
-      final transform = type['c'];
-      if (transform is! String || transform.isEmpty) continue;
-      final width = (type['w'] as num?)?.toInt() ?? 0;
-      if (width > bestWidth) {
-        bestWidth = width;
-        best = type;
-      }
-    }
-  }
-
+  final best = wixTypeNamed(types, 'fullview') ?? wixLargestImageType(types);
   final transform = best?['c'];
-  String url;
+  final String url;
   if (transform is String) {
     final separator = transform.startsWith('/') ? '' : '/';
     url = '$base$separator${transform.replaceAll('<prettyName>', pretty)}';
   } else {
     url = base;
   }
-  final index = best?['r'];
-  final token = index is int && index >= 0 && index < tokens.length
-      ? tokens[index]
-      : (tokens.isNotEmpty ? tokens.first : null);
-  if (token != null && token.isNotEmpty) {
-    final separator = url.contains('?') ? '&' : '?';
-    return '$url${separator}token=$token';
-  }
-  return url;
+  return withWixToken(url, best, tokens);
 }
 
 String _escapeHtml(String text) => text
