@@ -3,6 +3,15 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.81（More Like This 修复）
+
+### Fixed
+
+- **「更多类似作品」空白**：作品详情页底部的 More Like This 之前请求的是已下线的
+  `browse/morelikethis` 分页接口，导致静默失败、一片空白。现已改走官方的
+  `browse/morelikethis/preview` 接口，并把 `more_from_da` + `more_from_artist`
+  去重合并展示（`dakit_api` 0.1.11 / `dakit_core` 0.1.9）。
+
 ## 0.2.80（macOS 钥匙串体验）
 
 ### Fixed

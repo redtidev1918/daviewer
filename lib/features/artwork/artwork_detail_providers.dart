@@ -241,13 +241,12 @@ final artworkDescriptionHtmlProvider = FutureProvider.autoDispose
     });
 
 /// "More Like This" — deviations related to the artwork, fetched from the
-/// official `browse/morelikethis` endpoint. Numeric web-feed ids are resolved
-/// to their OAuth UUID first. Empty on error so the section can hide quietly.
+/// official `browse/morelikethis/preview` endpoint. Numeric web-feed ids are
+/// resolved to their OAuth UUID first. Empty on error so the section can hide
+/// quietly.
 final moreLikeThisProvider = FutureProvider.autoDispose
     .family<List<Artwork>, String>((ref, artworkId) async {
       final uuid = await ref.watch(artworkUuidProvider(artworkId).future);
       final runtime = ref.watch(runtimeProvider);
-      final page = await OfficialDiscoveryRepository(runtime.transport!)
-          .moreLikeThis(uuid, const PageRequest(limit: 12));
-      return page.items;
+      return OfficialDiscoveryRepository(runtime.transport!).moreLikeThis(uuid);
     });
