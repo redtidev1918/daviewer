@@ -27,16 +27,38 @@ final class ArtworkDetailScreen extends ConsumerStatefulWidget {
       _ArtworkDetailScreenState();
 }
 
-final class _ArtworkDetailScreenState
-    extends ConsumerState<ArtworkDetailScreen> {
+final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
+    with SingleTickerProviderStateMixin {
   StreamSubscription<TransferSnapshot>? _subscription;
   TransferSnapshot? _transfer;
   bool _downloading = false;
   bool _favourite = false;
   bool _favBusy = false;
 
+  late final AnimationController _heartController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 320),
+  );
+  late final Animation<double> _heartScale = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 1,
+        end: 1.4,
+      ).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 50,
+    ),
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 1.4,
+        end: 1,
+      ).chain(CurveTween(curve: Curves.easeInBack)),
+      weight: 50,
+    ),
+  ]).animate(_heartController);
+
   @override
   void dispose() {
+    _heartController.dispose();
     unawaited(_subscription?.cancel());
     super.dispose();
   }
@@ -55,6 +77,7 @@ final class _ArtworkDetailScreenState
           : await social.favourite(uuid);
       if (!mounted) return;
       setState(() => _favourite = result.isFavourite);
+      _heartController.forward(from: 0);
     } on Object catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -169,34 +192,46 @@ final class _ArtworkDetailScreenState
           IconButton(
             tooltip: _favourite ? s.unfavourite : s.favourite,
             onPressed: _toggleFavourite,
-            icon: Icon(
-              _favourite ? Icons.favorite : Icons.favorite_border,
-              color: _favourite ? Colors.red : null,
+            icon: ScaleTransition(
+              scale: _heartScale,
+              child: Icon(
+                _favourite ? Icons.favorite : Icons.favorite_border,
+                color: _favourite ? Colors.red : null,
+              ),
             ),
           ),
         ],
       ),
-      body: artwork.when(
-        loading: () => const SkeletonDetail(),
-        error: (error, stackTrace) => AppErrorState(
-          message: friendlyErrorMessage(error),
-          onRetry: () =>
-              ref.invalidate(artworkDetailProvider(widget.artworkId)),
-        ),
-        data: (artwork) => original.when(
-          loading: () => const SkeletonDetail(),
-          error: (error, stackTrace) =>
-              AppErrorState(message: friendlyErrorMessage(error)),
-          data: (original) => _buildBody(
-            artwork,
-            original,
-            transfer,
-            description: description.valueOrNull,
-            descriptionHtml: descriptionHtml.valueOrNull,
-            journalHtml: journalHtml.valueOrNull,
-            additionalMedia:
-                additionalMedia.valueOrNull ?? const <MediaAsset>[],
-            tags: tags.valueOrNull ?? const <String>[],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        child: artwork.when(
+          loading: () => const SkeletonDetail(key: ValueKey('skeleton-art')),
+          error: (error, stackTrace) => AppErrorState(
+            key: const ValueKey('error-art'),
+            message: friendlyErrorMessage(error),
+            onRetry: () =>
+                ref.invalidate(artworkDetailProvider(widget.artworkId)),
+          ),
+          data: (artwork) => original.when(
+            loading: () => const SkeletonDetail(key: ValueKey('skeleton-orig')),
+            error: (error, stackTrace) => AppErrorState(
+              key: const ValueKey('error-orig'),
+              message: friendlyErrorMessage(error),
+            ),
+            data: (original) => KeyedSubtree(
+              key: const ValueKey('content'),
+              child: _buildBody(
+                artwork,
+                original,
+                transfer,
+                description: description.valueOrNull,
+                descriptionHtml: descriptionHtml.valueOrNull,
+                journalHtml: journalHtml.valueOrNull,
+                additionalMedia:
+                    additionalMedia.valueOrNull ?? const <MediaAsset>[],
+                tags: tags.valueOrNull ?? const <String>[],
+              ),
+            ),
           ),
         ),
       ),
