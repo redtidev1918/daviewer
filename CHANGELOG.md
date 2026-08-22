@@ -3,6 +3,20 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.88（macOS 启动修复）
+
+### Fixed
+
+- 移除 macOS Release 中无效的空 `keychain-access-groups` 权限。该受限权限无法由
+  临时签名授权，会导致 launchd 在应用进入 `main()` 前直接终止进程。
+- Release 构建关闭开发权限自动注入，并在打包前重新应用最小生产权限。
+
+### Changed
+
+- macOS CI 新增包内签名、Intel/Apple Silicon 双架构校验，以及真实启动 8 秒的
+  smoke test，避免再次把“编译成功”误判为“客户端可以打开”。
+- 安装文档明确区分临时签名与 Apple Developer ID 公证，并补充安全的首次运行步骤。
+
 ## 0.2.87（下载可靠性 · 类似作品自愈）
 
 ### Fixed

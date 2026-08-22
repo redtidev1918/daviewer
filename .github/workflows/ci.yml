@@ -135,6 +135,41 @@ jobs:
           exit 1
       - name: Build release app
         run: flutter build macos --release
+      - name: Validate and launch macOS app
+        run: |
+          APP_PATH="build/macos/Build/Products/Release/DAViewer.app"
+          APP_EXEC="$APP_PATH/Contents/MacOS/DAViewer"
+
+          # Flutter/Xcode may inject development entitlements into an ad-hoc
+          # signature. Re-sign the outer bundle from the checked-in release
+          # entitlement file so a restricted empty keychain group cannot make
+          # launchd kill the downloaded app before main() runs.
+          codesign --force --sign - \
+            --entitlements macos/Runner/Release.entitlements \
+            "$APP_PATH"
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          lipo -verify_arch x86_64 arm64 "$APP_EXEC"
+
+          codesign -d --entitlements :- "$APP_PATH" \
+            > "$RUNNER_TEMP/daviewer-entitlements.txt" 2>&1
+          if grep -qE 'keychain-access-groups|get-task-allow' \
+            "$RUNNER_TEMP/daviewer-entitlements.txt"; then
+            cat "$RUNNER_TEMP/daviewer-entitlements.txt"
+            echo "::error::macOS release contains development-only or invalid keychain entitlements."
+            exit 1
+          fi
+
+          "$APP_EXEC" > "$RUNNER_TEMP/daviewer-smoke.log" 2>&1 &
+          APP_PID=$!
+          sleep 8
+          if ! kill -0 "$APP_PID" 2>/dev/null; then
+            cat "$RUNNER_TEMP/daviewer-smoke.log"
+            wait "$APP_PID" || true
+            echo "::error::macOS app exited during the launch smoke test."
+            exit 1
+          fi
+          kill "$APP_PID"
+          wait "$APP_PID" 2>/dev/null || true
       - name: Package app with version
         run: |
           VERSION="$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d+ -f1)"
