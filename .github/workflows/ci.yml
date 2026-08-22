@@ -29,7 +29,18 @@ jobs:
           channel: stable
           cache: true
       - name: Install dependencies
-        run: flutter pub get
+        # Retry pub get to ride out pub.dev CDN propagation lag for freshly
+        # published DAKit versions (a stale edge can briefly report them as
+        # missing and fail the build).
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if flutter pub get; then
+              exit 0
+            fi
+            echo "::warning::flutter pub get failed (attempt $attempt/5), retrying in 15s"
+            sleep 15
+          done
+          exit 1
       - name: Analyze
         run: flutter analyze
       - name: Check formatting
@@ -56,7 +67,18 @@ jobs:
           distribution: temurin
           java-version: "17"
       - name: Install dependencies
-        run: flutter pub get
+        # Retry pub get to ride out pub.dev CDN propagation lag for freshly
+        # published DAKit versions (a stale edge can briefly report them as
+        # missing and fail the build).
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if flutter pub get; then
+              exit 0
+            fi
+            echo "::warning::flutter pub get failed (attempt $attempt/5), retrying in 15s"
+            sleep 15
+          done
+          exit 1
       - name: Set up signing key
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
@@ -99,7 +121,18 @@ jobs:
           channel: stable
           cache: true
       - name: Install dependencies
-        run: flutter pub get
+        # Retry pub get to ride out pub.dev CDN propagation lag for freshly
+        # published DAKit versions (a stale edge can briefly report them as
+        # missing and fail the build).
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if flutter pub get; then
+              exit 0
+            fi
+            echo "::warning::flutter pub get failed (attempt $attempt/5), retrying in 15s"
+            sleep 15
+          done
+          exit 1
       - name: Build release app
         run: flutter build macos --release
       - name: Package app with version
@@ -131,7 +164,18 @@ jobs:
           channel: stable
           cache: true
       - name: Install dependencies
-        run: flutter pub get
+        # Retry pub get to ride out pub.dev CDN propagation lag for freshly
+        # published DAKit versions (a stale edge can briefly report them as
+        # missing and fail the build).
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if flutter pub get; then
+              exit 0
+            fi
+            echo "::warning::flutter pub get failed (attempt $attempt/5), retrying in 15s"
+            sleep 15
+          done
+          exit 1
       - name: Build release app
         run: flutter build windows --release
       - name: Package app with version
