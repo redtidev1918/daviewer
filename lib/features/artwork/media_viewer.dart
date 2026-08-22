@@ -7,6 +7,30 @@ import 'package:video_player/video_player.dart';
 
 import '../../core/l10n/app_strings.dart';
 
+/// Picks the single asset to display inline from an artwork's [media]:
+/// a playable video first, then an animation, then the largest resampled
+/// preview image (so the potentially huge original is never forced onto the
+/// inline cache), falling back to any image.
+MediaAsset? selectDisplayAsset(List<MediaAsset> media) {
+  if (media.isEmpty) return null;
+  final video = media.where((m) => m.kind == MediaKind.video).firstOrNull;
+  if (video != null && video.uri != null) return video;
+  final animation = media
+      .where((m) => m.kind == MediaKind.animation)
+      .firstOrNull;
+  if (animation != null && animation.uri != null) return animation;
+  return media
+          .where(
+            (m) => m.kind == MediaKind.image && m.role == MediaRole.preview,
+          )
+          .fold<MediaAsset?>(
+            null,
+            (best, m) =>
+                best == null || (m.width ?? 0) > (best.width ?? 0) ? m : best,
+          ) ??
+      media.where((m) => m.kind == MediaKind.image).firstOrNull;
+}
+
 /// Renders an artwork's media: static images, animated GIFs, videos, and
 /// multi-image pages (with a page counter and dot indicators).
 final class MediaViewer extends StatefulWidget {
@@ -27,31 +51,9 @@ final class MediaViewerState extends State<MediaViewer> {
   int _page = 0;
 
   List<MediaAsset> get _pages => <MediaAsset>[
-    ?_displayAsset(widget.media),
+    ?selectDisplayAsset(widget.media),
     ...widget.additionalMedia,
   ];
-
-  static MediaAsset? _displayAsset(List<MediaAsset> media) {
-    if (media.isEmpty) return null;
-    final video = media.where((m) => m.kind == MediaKind.video).firstOrNull;
-    if (video != null && video.uri != null) return video;
-    final animation = media
-        .where((m) => m.kind == MediaKind.animation)
-        .firstOrNull;
-    if (animation != null && animation.uri != null) return animation;
-    // Inline display: prefer the largest resampled preview so we never force
-    // the (potentially huge) original onto the image cache for inline use.
-    return media
-            .where(
-              (m) => m.kind == MediaKind.image && m.role == MediaRole.preview,
-            )
-            .fold<MediaAsset?>(
-              null,
-              (best, m) =>
-                  best == null || (m.width ?? 0) > (best.width ?? 0) ? m : best,
-            ) ??
-        media.where((m) => m.kind == MediaKind.image).firstOrNull;
-  }
 
   @override
   Widget build(BuildContext context) {
