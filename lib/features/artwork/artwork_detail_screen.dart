@@ -3,9 +3,7 @@ import 'dart:async';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/diagnostics/error_text.dart';
@@ -14,6 +12,7 @@ import '../../core/runtime/runtime_provider.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/skeleton.dart';
 import 'artwork_detail_providers.dart';
+import 'artwork_detail_sections.dart';
 import 'download_section.dart';
 import 'favourite_actions.dart';
 import 'media_viewer.dart';
@@ -262,6 +261,10 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
                   .firstOrNull ??
               original;
 
+    // The detail screen is a thin composition of self-contained sections. To
+    // add another related-content block (e.g. Suggested Deviants / Collections),
+    // drop a new widget below; each section owns its provider, its loading /
+    // error / empty handling, and hides itself when it has nothing to show.
     return ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
@@ -273,62 +276,17 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
           ),
           const SizedBox(height: 16),
         ],
-        Text(artwork.title, style: Theme.of(context).textTheme.headlineSmall),
-        TextButton(
-          onPressed: () => context.push('/artist/${artwork.author.username}'),
-          child: Text('${s.byPrefix}${artwork.author.username}'),
-        ),
+        ArtworkHeader(artwork: artwork, s: s),
         const Divider(),
-        if (isJournal &&
-            journalHtml != null &&
-            journalHtml.trim().isNotEmpty) ...[
-          Text(s.bodyText, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Html(
-            data: journalHtml,
-            onLinkTap: (url, attributes, element) => _openLink(url),
-          ),
-          const SizedBox(height: 16),
-        ] else if (!isJournal &&
-            descriptionHtml != null &&
-            descriptionHtml.trim().isNotEmpty) ...[
-          Text(s.description, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Html(
-            data: descriptionHtml,
-            onLinkTap: (url, attributes, element) => _openLink(url),
-          ),
-          const SizedBox(height: 16),
-        ] else if (description != null && description.trim().isNotEmpty) ...[
-          Text(
-            isJournal ? s.bodyText : s.description,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          SelectableText(
-            description,
-            style: Theme.of(context).textTheme.bodyMedium
-                ?.copyWith(height: 1.5),
-          ),
-          const SizedBox(height: 16),
-        ],
-        if (tags.isNotEmpty) ...[
-          const Divider(),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: <Widget>[
-              for (final tag in tags)
-                ActionChip(
-                  label: Text('#$tag'),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () =>
-                      context.push('/tag/${Uri.encodeComponent(tag)}'),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-        ],
+        ArtworkDescriptionSection(
+          isJournal: isJournal,
+          s: s,
+          journalHtml: journalHtml,
+          descriptionHtml: descriptionHtml,
+          description: description,
+          onOpenLink: _openLink,
+        ),
+        if (tags.isNotEmpty) ArtworkTagsSection(tags: tags),
         if (!isJournal && media.isNotEmpty) ...[
           const SizedBox(height: 8),
           DownloadSection(

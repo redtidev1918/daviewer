@@ -9,6 +9,12 @@ import 'artwork_detail_providers.dart';
 
 /// A masonry (waterfall) grid of "More Like This" deviations shown below an
 /// artwork, matching the modern feed layout. Hides itself when empty.
+///
+/// This is the reference pattern for related-content sections: a self-contained
+/// widget that owns its provider, handles loading/error/empty internally, and
+/// hides itself when there is nothing to show. Future sections (e.g. Suggested
+/// Deviants / Suggested Collections) follow the same shape and plug into the
+/// detail screen's section list without touching other sections.
 final class MoreLikeThisSection extends ConsumerWidget {
   const MoreLikeThisSection({required this.artworkId, super.key});
 
