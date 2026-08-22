@@ -1,5 +1,9 @@
 # DAViewer
 
+<p align="center">
+  <img src="docs/da_icon.png" alt="DAViewer" width="160" />
+</p>
+
 **Language:** English · [中文](README.md)
 
 > DeviantArt abandoned their official app, and the community was left without a
