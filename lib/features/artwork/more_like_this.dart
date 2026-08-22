@@ -34,7 +34,10 @@ final class MoreLikeThisSection extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(s.moreLikeThis, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              s.moreLikeThis,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             Row(
               children: <Widget>[

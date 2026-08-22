@@ -363,9 +363,8 @@ final class AppStrings {
   String get relatedTags => _lang == AppLanguage.zh ? '相关标签' : 'Related tags';
   String get moreLikeThis =>
       _lang == AppLanguage.zh ? '更多类似作品' : 'More like this';
-  String get moreLikeThisLoadFailed => _lang == AppLanguage.zh
-      ? '更多类似作品加载失败'
-      : 'Could not load similar artwork';
+  String get moreLikeThisLoadFailed =>
+      _lang == AppLanguage.zh ? '更多类似作品加载失败' : 'Could not load similar artwork';
 
   // --- OAuth configuration errors (developer-facing) ---
   String get oauthClientIdMissing => _lang == AppLanguage.zh
