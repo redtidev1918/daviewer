@@ -11,6 +11,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 
 const String _githubUrl = 'https://github.com/redtidev1918/daviewer';
+const String _releasesUrl = 'https://github.com/redtidev1918/daviewer/releases';
 const String versionLabel = '0.2.65';
 
 final class SettingsScreen extends ConsumerWidget {
@@ -168,6 +169,17 @@ final class SettingsScreen extends ConsumerWidget {
               onTap: () async {
                 await launchUrl(
                   Uri.parse(_githubUrl),
+                  mode: LaunchMode.externalApplication,
+                );
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.new_releases_outlined),
+              title: Text(s.releases),
+              onTap: () async {
+                await launchUrl(
+                  Uri.parse(_releasesUrl),
                   mode: LaunchMode.externalApplication,
                 );
               },
