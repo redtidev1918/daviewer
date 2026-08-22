@@ -12,11 +12,10 @@ import '../../core/runtime/runtime_provider.dart';
 import '../artwork/artwork_store.dart';
 
 /// The personalized home feed (`rfy/deviations`) rendered natively. It rebuilds
-/// whenever the web sign-in state changes.
+/// whenever the web sign-in state changes. Kept alive (not autoDispose) so
+/// switching Home tabs never re-fetches and flashes a skeleton again.
 final rfyFeedProvider =
-    StateNotifierProvider.autoDispose<ArtworkFeedController, ArtworkFeedState>((
-      ref,
-    ) {
+    StateNotifierProvider<ArtworkFeedController, ArtworkFeedState>((ref) {
       final runtime = ref.watch(runtimeProvider);
       final webSession = ref.watch(webSessionProvider);
       ref.watch(webSessionControllerProvider.select((web) => web.csrf));
@@ -61,10 +60,8 @@ final rfyFeedProvider =
     });
 
 /// Daily deviations (official API, requires an OAuth session). Rebuilds when
-/// the signed-in account changes.
-final dailyDeviationsProvider = FutureProvider.autoDispose<List<Artwork>>((
-  ref,
-) async {
+/// the signed-in account changes. Kept alive so tab switches don't re-fetch.
+final dailyDeviationsProvider = FutureProvider<List<Artwork>>((ref) async {
   ref.watch(authControllerProvider.select((auth) => auth.account?.id));
   final runtime = ref.watch(runtimeProvider);
   return OfficialDiscoveryRepository(runtime.transport!).dailyDeviations();
@@ -73,9 +70,7 @@ final dailyDeviationsProvider = FutureProvider.autoDispose<List<Artwork>>((
 /// The "deviations from artists you watch" feed (official API, OAuth session).
 /// Rebuilds when the signed-in account changes.
 final followingFeedProvider =
-    StateNotifierProvider.autoDispose<ArtworkFeedController, ArtworkFeedState>((
-      ref,
-    ) {
+    StateNotifierProvider<ArtworkFeedController, ArtworkFeedState>((ref) {
       final runtime = ref.watch(runtimeProvider);
       ref.watch(authControllerProvider.select((auth) => auth.account?.id));
       final controller = ArtworkFeedController((request) {
@@ -100,7 +95,7 @@ final class WatchedAuthor {
 /// The watched artists that have posted in the current feed page, newest first.
 /// Derived from [followingFeedProvider] so the avatar strip needs no extra
 /// network round-trip.
-final watchedAuthorsProvider = Provider.autoDispose<List<WatchedAuthor>>((ref) {
+final watchedAuthorsProvider = Provider<List<WatchedAuthor>>((ref) {
   return watchedAuthorsFrom(ref.watch(followingFeedProvider).items);
 });
 
