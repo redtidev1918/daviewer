@@ -11,7 +11,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 
 const String _githubUrl = 'https://github.com/redtidev1918/daviewer';
-const String versionLabel = '0.2.61';
+const String versionLabel = '0.2.62';
 
 final class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
