@@ -2,7 +2,7 @@ import 'package:dakit_core/dakit_core.dart';
 import 'package:dio/dio.dart';
 
 import 'html_text.dart';
-import 'web_user_agent.dart';
+import 'web_http.dart';
 import 'wix_media.dart';
 
 /// Result of the web `dadeviation/init` endpoint: the OAuth UUID for a numeric
@@ -65,14 +65,7 @@ final class DeviationInitFetcher {
         'include_session': false,
         'csrf_token': csrfToken,
       },
-      options: Options(
-        responseType: ResponseType.json,
-        headers: <String, dynamic>{
-          'Accept': 'application/json',
-          'Cookie': cookieHeader,
-          'User-Agent': webUserAgent,
-        },
-      ),
+      options: webSessionOptions(cookieHeader),
     );
     final data = response.data;
     if (data is! Map) {
@@ -199,14 +192,7 @@ final class JournalContentFetcher {
         'include_session': false,
         'csrf_token': csrfToken,
       },
-      options: Options(
-        responseType: ResponseType.json,
-        headers: <String, dynamic>{
-          'Accept': 'application/json',
-          'Cookie': cookieHeader,
-          'User-Agent': webUserAgent,
-        },
-      ),
+      options: webSessionOptions(cookieHeader),
     );
     final data = response.data;
     if (data is! Map) return null;

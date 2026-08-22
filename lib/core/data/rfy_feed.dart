@@ -1,7 +1,7 @@
 import 'package:dakit_core/dakit_core.dart';
 import 'package:dio/dio.dart';
 
-import 'web_user_agent.dart';
+import 'web_http.dart';
 import 'wix_media.dart';
 
 /// One page of the DeviantArt web `rfy/deviations` personalized feed.
@@ -46,14 +46,7 @@ final class RfyFeedFetcher {
         'csrf_token': csrfToken,
         if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
       },
-      options: Options(
-        responseType: ResponseType.json,
-        headers: <String, dynamic>{
-          'Accept': 'application/json',
-          'Cookie': cookieHeader,
-          'User-Agent': webUserAgent,
-        },
-      ),
+      options: webSessionOptions(cookieHeader),
     );
     final data = response.data;
     if (data is! Map) {
