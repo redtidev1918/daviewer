@@ -197,10 +197,10 @@ packages:
     dependency: "direct main"
     description:
       name: dakit_flutter
-      sha256: aff519df806de25196515a45c327a186831384ab8c42b62787fb8e77ec4e6017
+      sha256: a1fd40bbbf039ea27dc3e7552c6ead5d8c1f21fe229f28b9cbe016a8735bd0dc
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.6"
+    version: "0.1.7"
   dbus:
     dependency: transitive
     description:

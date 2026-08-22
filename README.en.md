@@ -229,6 +229,7 @@ WebView is unavailable.
 - **You don't need a Google email to register**: DeviantArt accepts any email, and the login page also offers one-click Google / Apple sign-in.
 - **Forgot your password?** Use the "Forgot Password" link on the login page, or tap "?" → "Forgot password" in the app's login screen to open the reset page in your browser.
 - **Register an account**: tap "?" → "Register a DeviantArt account" in the app's login screen to open the sign-up page in your browser.
+- **macOS "Keychain" prompt**: on first sign-in macOS may show "DAViewer wants to use confidential information stored in your keychain". This is the standard confirmation macOS shows for *any* app that keeps its own login credentials in Keychain. DAViewer stores only the OAuth token it received after you signed in to DeviantArt — it never reads or stores other secrets (browser passwords, Wi-Fi, etc.). The item is named "DAViewer" and the sandboxed app declares its keychain access, so you shouldn't see repeated prompts.
 
 ## Contributing
 

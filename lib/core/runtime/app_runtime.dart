@@ -105,6 +105,17 @@ final class AppRuntime {
       ),
       endpoint: dio == null ? null : DioOAuthEndpoint(dio: dio),
       networkProfile: dio == null ? networkProfile : null,
+      // Use a DAViewer-named Keychain item on macOS so the system's
+      // "…wants to use confidential information stored in …" prompt shows the
+      // product name instead of the plugin default
+      // "flutter_secure_storage_service" (which reads like an arbitrary secret
+      // being exfiltrated). Only DAViewer's own OAuth tokens are stored there.
+      tokenStore: SecureTokenStore(
+        storage: clientSecureStorage(serviceName: 'DAViewer'),
+      ),
+      pendingStore: SecurePendingAuthorizationStore(
+        storage: clientSecureStorage(serviceName: 'DAViewer'),
+      ),
       launcher: webViewOAuthBridge,
       callbacks: MergedCallbackUriSource(
         initial: AppLinksCallbackUriSource(),
