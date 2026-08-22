@@ -69,4 +69,17 @@ final class ArtworkFeedController extends StateNotifier<ArtworkFeedState> {
       );
     }
   }
+
+  /// Re-fetches the first page without clearing the current items, so the feed
+  /// updates in place without a spinner flicker (e.g. when the app resumes).
+  Future<void> refreshSilently() async {
+    if (!mounted || state.isLoading) return;
+    try {
+      final page = await _fetch(const PageRequest(limit: 24));
+      if (!mounted) return;
+      state = ArtworkFeedState(items: page.items, nextCursor: page.nextCursor);
+    } on Object {
+      // Keep the current items when a silent refresh fails.
+    }
+  }
 }

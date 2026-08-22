@@ -227,9 +227,10 @@ final class _RfyFeedState extends ConsumerState<_RfyFeed>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Refresh the personalized feed when the app comes back to the foreground
-    // so it does not sit on a stale list indefinitely.
+    // so it does not sit on a stale list indefinitely — silently, so the
+    // current list stays visible while the new one loads.
     if (state == AppLifecycleState.resumed && mounted) {
-      ref.read(rfyFeedProvider.notifier).refresh();
+      ref.read(rfyFeedProvider.notifier).refreshSilently();
     }
   }
 
