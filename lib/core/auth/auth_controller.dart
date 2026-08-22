@@ -47,8 +47,12 @@ final class AuthController extends StateNotifier<AuthState> {
           return;
         }
 
-        // 2. Restore a session persisted by a previous run.
-        final tokens = await runtime.oauth!.validTokens(forceRefresh: false);
+        // 2. Restore a session persisted by a previous run. Bound the network
+        //    round-trips so a slow/hung proxy on cold start can never pin the
+        //    splash screen in a "loading forever" state.
+        final tokens = await runtime.oauth!
+            .validTokens(forceRefresh: false)
+            .timeout(const Duration(seconds: 15));
         _log.info(
           'auth',
           'initialize: restored persisted session '
@@ -185,7 +189,8 @@ final class AuthController extends StateNotifier<AuthState> {
   Future<void> _loadAccount(AppRuntime runtime) async {
     _log.info('auth', 'loading account');
     final account = await OfficialAccountRepository(runtime.transport!)
-        .currentUser();
+        .currentUser()
+        .timeout(const Duration(seconds: 15));
     _log.info('auth', 'account loaded: ${account.username}');
     state = AuthState(status: AuthStatus.signedIn, account: account);
   }
