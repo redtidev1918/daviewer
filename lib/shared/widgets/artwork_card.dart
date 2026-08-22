@@ -11,6 +11,20 @@ import '../../core/l10n/app_strings.dart';
 import '../../features/artwork/artwork_store.dart';
 import '../../features/artwork/favourite_actions.dart';
 
+/// A clamped aspect ratio (width / height) for an artwork's display image,
+/// used by masonry layouts to size cards at the image's natural shape.
+double artworkAspectRatio(Artwork artwork) {
+  for (final media in artwork.media) {
+    if (media.kind == MediaKind.image &&
+        media.width != null &&
+        media.height != null &&
+        media.height! > 0) {
+      return (media.width! / media.height!).clamp(0.5, 2.0);
+    }
+  }
+  return 0.68;
+}
+
 final class ArtworkCard extends ConsumerWidget {
   const ArtworkCard({required this.artwork, this.onTap, super.key});
 
