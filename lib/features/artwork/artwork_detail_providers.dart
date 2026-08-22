@@ -8,6 +8,7 @@ import '../../core/data/data_access.dart';
 import '../../core/data/deviation_init.dart';
 import '../../core/data/html_text.dart';
 import '../../core/data/web_session.dart';
+import '../../core/data/web_more_like_this.dart';
 import '../../core/runtime/runtime_provider.dart';
 import 'artwork_store.dart';
 
@@ -259,13 +260,60 @@ final artworkDescriptionHtmlProvider = FutureProvider.autoDispose
       return null;
     });
 
-/// "More Like This" — related deviations plus collection groups, fetched from
-/// the official `browse/morelikethis/preview` endpoint. Numeric web-feed ids
-/// are resolved to their OAuth UUID first. Empty on error so the section can
-/// hide quietly.
+/// "More Like This" — use the current website's organic related blocks first,
+/// because they can diverge from the legacy OAuth preview endpoint. The
+/// official endpoint remains a fallback when the artwork page is unavailable.
 final moreLikeThisProvider = FutureProvider.autoDispose
     .family<MoreLikeThisResult, String>((ref, artworkId) async {
-      final uuid = await ref.watch(artworkUuidProvider(artworkId).future);
       final runtime = ref.watch(runtimeProvider);
-      return OfficialDiscoveryRepository(runtime.transport!).moreLikeThis(uuid);
+      final artwork = await ref.watch(artworkDetailProvider(artworkId).future);
+      final numericId = isNumericDeviationId(artworkId)
+          ? artworkId
+          : RegExp(r'-(\d+)/?$').firstMatch(artwork.pageUri.path)?.group(1);
+      Object? websiteError;
+      if (numericId != null) {
+        try {
+          final webSession = ref.watch(webSessionProvider);
+          final cookieHeader = await webSession.cookieHeader();
+          final artworks = await WebMoreLikeThisFetcher(runtime.dio!).fetch(
+            pageUri: artwork.pageUri,
+            deviationId: numericId,
+            cookieHeader: cookieHeader,
+          );
+          if (artworks.isNotEmpty) {
+            ref.read(artworkStoreProvider.notifier).putAll(artworks);
+            debugPrint(
+              '[moreLikeThis] website source returned ${artworks.length} '
+              'items for $numericId',
+            );
+            return MoreLikeThisResult(artworks: artworks);
+          }
+          debugPrint('[moreLikeThis] website source empty for $numericId');
+        } on Object catch (error) {
+          websiteError = error;
+          debugPrint(
+            '[moreLikeThis] website source failed for $numericId: $error',
+          );
+        }
+      }
+
+      try {
+        final uuid = await ref.watch(artworkUuidProvider(artworkId).future);
+        final result = await OfficialDiscoveryRepository(runtime.transport!)
+            .moreLikeThis(uuid);
+        ref.read(artworkStoreProvider.notifier).putAll(result.artworks);
+        debugPrint(
+          '[moreLikeThis] OAuth source returned ${result.artworks.length} '
+          'items for $uuid',
+        );
+        return result;
+      } on Object catch (officialError) {
+        if (websiteError != null) {
+          throw StateError(
+            'Both More Like This sources failed. '
+            'Website: $websiteError; OAuth: $officialError',
+          );
+        }
+        rethrow;
+      }
     });

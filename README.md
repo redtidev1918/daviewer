@@ -111,9 +111,15 @@ flutter run -d windows   # Windows
 ```shell
 export http_proxy=http://127.0.0.1:7890
 export https_proxy=http://127.0.0.1:7890
+# 也支持只设置一个通用代理（大小写变量均可）：
+# export all_proxy=http://127.0.0.1:7892
 export no_proxy=localhost,127.0.0.1
 flutter pub get
 ```
+
+DAViewer 自身也识别 `http_proxy` / `https_proxy` / `all_proxy` 及其大写形式；从
+Finder 直接启动时通常不会继承终端环境变量，此时请使用系统代理或 App 内的
+「设置 → 网络代理」。
 
 ## 构建 Release
 

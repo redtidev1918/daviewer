@@ -14,7 +14,8 @@ const _proxyUrl = String.fromEnvironment('DAKIT_PROXY_URL');
 /// Priority (highest first):
 /// 1. Manual override set at runtime (e.g. from Settings).
 /// 2. OS system proxy (macOS `scutil`, Windows registry).
-/// 3. `https_proxy` / `http_proxy` environment variables.
+/// 3. Standard proxy environment variables (lowercase and uppercase,
+///    including `all_proxy` / `ALL_PROXY`).
 /// 4. Compile-time `--dart-define=DAKIT_PROXY_URL=...`.
 final class ProxyController extends ChangeNotifier {
   ProxyController({this.refreshInterval = const Duration(seconds: 15)});
@@ -100,7 +101,11 @@ final class ProxyController extends ChangeNotifier {
   static SystemProxyConfig? _environmentProxy() {
     final raw =
         Platform.environment['https_proxy'] ??
-        Platform.environment['http_proxy'];
+        Platform.environment['HTTPS_PROXY'] ??
+        Platform.environment['http_proxy'] ??
+        Platform.environment['HTTP_PROXY'] ??
+        Platform.environment['all_proxy'] ??
+        Platform.environment['ALL_PROXY'];
     if (raw == null || raw.trim().isEmpty) return null;
     return _parseUrl(raw.trim());
   }

@@ -171,7 +171,11 @@ final class AppRuntime {
   static NetworkProfile _environmentNetworkProfile() {
     final rawProxy =
         Platform.environment['https_proxy'] ??
-        Platform.environment['http_proxy'];
+        Platform.environment['HTTPS_PROXY'] ??
+        Platform.environment['http_proxy'] ??
+        Platform.environment['HTTP_PROXY'] ??
+        Platform.environment['all_proxy'] ??
+        Platform.environment['ALL_PROXY'];
     if (rawProxy == null || rawProxy.trim().isEmpty) {
       return NetworkProfile.environment();
     }
