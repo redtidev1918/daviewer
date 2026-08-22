@@ -34,12 +34,11 @@ final artistFavouritesProvider = StateNotifierProvider.autoDispose
 final artistFoldersProvider = FutureProvider.autoDispose
     .family<List<ArtworkFolder>, String>((ref, username) async {
       final runtime = ref.watch(runtimeProvider);
-      final page = await OfficialFolderRepository(
-        runtime.transport!,
-      ).galleryFolders(
-        username: username,
-        options: const FolderQueryOptions(calculateSize: true),
-      );
+      final page = await OfficialFolderRepository(runtime.transport!)
+          .galleryFolders(
+            username: username,
+            options: const FolderQueryOptions(calculateSize: true),
+          );
       return page.items;
     });
 

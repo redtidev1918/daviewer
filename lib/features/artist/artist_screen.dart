@@ -1,14 +1,15 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
+import 'artist_folders_view.dart';
+import 'artist_header.dart';
+import 'artist_journals_view.dart';
 import 'artist_providers.dart';
 
 final class ArtistScreen extends ConsumerStatefulWidget {
@@ -116,10 +117,11 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
         ),
         body: profile.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stackTrace) => AppErrorState(message: friendlyErrorMessage(error)),
+          error: (error, stackTrace) =>
+              AppErrorState(message: friendlyErrorMessage(error)),
           data: (profile) => Column(
             children: <Widget>[
-              _ArtistHeader(profile: profile),
+              ArtistHeader(profile: profile),
               Expanded(
                 child: TabBarView(
                   children: <Widget>[
@@ -147,8 +149,8 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                           )
                           .loadMore(),
                     ),
-                    _JournalsView(username: widget.username),
-                    _FoldersView(username: widget.username),
+                    JournalsView(username: widget.username),
+                    FoldersView(username: widget.username),
                   ],
                 ),
               ),
@@ -156,225 +158,6 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-final class _ArtistHeader extends ConsumerWidget {
-  const _ArtistHeader({required this.profile});
-
-  final UserProfileDetails profile;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = strings(ref.watch(appLanguageProvider));
-    final avatar = profile.user.avatarUri;
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: const Color(0xffe9ecef),
-                foregroundImage: avatar == null
-                    ? null
-                    : CachedNetworkImageProvider(avatar.toString()),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      profile.user.displayName ?? profile.user.username,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    if (profile.realName case final realName?) Text(realName),
-                    Text(
-                      s.artistStats(
-                        profile.stats.deviations,
-                        profile.stats.favourites,
-                      ),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (profile.tagline case final tagline?) ...[
-            const SizedBox(height: 8),
-            Text(
-              tagline,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-          if (profile.bio case final bio?) ...[
-            const SizedBox(height: 4),
-            Text(
-              bio,
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-final class _JournalsView extends ConsumerWidget {
-  const _JournalsView({required this.username});
-
-  final String username;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final journals = ref.watch(artistJournalsProvider(username));
-    final s = strings(ref.watch(appLanguageProvider));
-    return journals.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => AppErrorState(message: friendlyErrorMessage(error)),
-      data: (items) {
-        if (items.isEmpty) {
-          return Center(child: Text(s.noJournals));
-        }
-        return ListView.separated(
-          padding: const EdgeInsets.all(8),
-          itemCount: items.length,
-          separatorBuilder: (context, index) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final journal = items[index];
-            return ListTile(
-              leading: const Icon(Icons.article_outlined),
-              title: Text(
-                journal.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: journal.publishedAt == null
-                  ? null
-                  : Text(_formatDate(journal.publishedAt!)),
-              onTap: () => context.push('/artwork/${journal.id}'),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  String _formatDate(DateTime time) {
-    final local = time.toLocal();
-    return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
-  }
-}
-
-final class _FoldersView extends ConsumerWidget {
-  const _FoldersView({required this.username});
-
-  final String username;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final folders = ref.watch(artistFoldersProvider(username));
-    final s = strings(ref.watch(appLanguageProvider));
-    return folders.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => AppErrorState(message: friendlyErrorMessage(error)),
-      data: (items) {
-        if (items.isEmpty) {
-          return Center(child: Text(s.noFolders));
-        }
-        return GridView.builder(
-          padding: const EdgeInsets.all(12),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 200,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.9,
-          ),
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            final folder = items[index];
-            // Pick the smallest image (the thumbnail) — `media.first` is the
-            // full-size `content` and would make the grid painfully slow.
-            final thumbUri = folder.thumbnail?.media
-                .where((m) => m.kind == MediaKind.image)
-                .fold<MediaAsset?>(
-                  null,
-                  (best, m) =>
-                      best == null || (m.width ?? 0) < (best.width ?? 0)
-                      ? m
-                      : best,
-                )
-                ?.uri;
-            return InkWell(
-              onTap: () => context.push(
-                '/artist/$username/folder/${folder.id}?name=${Uri.encodeComponent(folder.name)}',
-              ),
-              child: Card(
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(
-                      child: thumbUri != null
-                          ? CachedNetworkImage(
-                              imageUrl: thumbUri.toString(),
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              placeholder: (context, url) =>
-                                  const ColoredBox(color: Color(0xffe9ecef)),
-                              errorWidget: (context, url, error) =>
-                                  const ColoredBox(
-                                    color: Color(0xffe9ecef),
-                                    child: Icon(Icons.folder),
-                                  ),
-                            )
-                          : const ColoredBox(
-                              color: Color(0xffe9ecef),
-                              child: Icon(Icons.folder),
-                            ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            folder.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleSmall,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            folder.size == null || folder.size == 0
-                                ? s.emptyFolderBadge
-                                : s.folderArtworkCount(folder.size!),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }
