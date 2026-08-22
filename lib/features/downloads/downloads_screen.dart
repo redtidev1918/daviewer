@@ -12,6 +12,7 @@ import '../../core/runtime/runtime_provider.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/settings_action.dart';
+import 'download_helpers.dart';
 import 'downloads_providers.dart';
 
 final class DownloadsScreen extends ConsumerWidget {
@@ -137,10 +138,9 @@ final class _DownloadTile extends ConsumerWidget {
                   OutlinedButton.icon(
                     icon: const Icon(Icons.open_in_new, size: 18),
                     label: Text(s.open),
-                    onPressed: () =>
-                        _openImage(context, snapshot.localPath!),
+                    onPressed: () => _openImage(context, snapshot.localPath!),
                   ),
-                  if (_artworkIdFromTransfer(snapshot.id) case final id?)
+                  if (artworkIdFromTransfer(snapshot.id) case final id?)
                     OutlinedButton.icon(
                       icon: const Icon(Icons.art_track, size: 18),
                       label: Text(s.viewDetail),
@@ -209,40 +209,14 @@ final class _DownloadTile extends ConsumerWidget {
   }
 
   void _openImage(BuildContext context, String path) {
-    if (_isImage(path)) {
+    if (isImageFile(path)) {
       Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => _LocalImageViewer(path: path),
-        ),
+        MaterialPageRoute<void>(builder: (_) => _LocalImageViewer(path: path)),
       );
     } else {
       // Videos and other files open with the platform's default handler.
       unawaited(launchUrl(Uri.file(path)));
     }
-  }
-
-  /// Recovers the artwork id from a transfer id of the form
-  /// `artwork-<id>-original`.
-  static String? _artworkIdFromTransfer(String transferId) {
-    const prefix = 'artwork-';
-    const suffix = '-original';
-    if (!transferId.startsWith(prefix) || !transferId.endsWith(suffix)) {
-      return null;
-    }
-    final id = transferId.substring(
-      prefix.length,
-      transferId.length - suffix.length,
-    );
-    return id.isEmpty ? null : id;
-  }
-
-  static bool _isImage(String path) {
-    final lower = path.toLowerCase();
-    return lower.endsWith('.jpg') ||
-        lower.endsWith('.jpeg') ||
-        lower.endsWith('.png') ||
-        lower.endsWith('.gif') ||
-        lower.endsWith('.webp');
   }
 }
 

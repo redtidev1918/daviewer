@@ -7,8 +7,10 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
+import '../../shared/widgets/app_error_state.dart';
 import 'artwork_detail_providers.dart';
 import 'download_section.dart';
 import 'media_viewer.dart';
@@ -167,10 +169,15 @@ final class _ArtworkDetailScreenState
       ),
       body: artwork.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(child: Text('$error')),
+        error: (error, stackTrace) => AppErrorState(
+          message: friendlyErrorMessage(error),
+          onRetry: () =>
+              ref.invalidate(artworkDetailProvider(widget.artworkId)),
+        ),
         data: (artwork) => original.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stackTrace) => Center(child: Text('$error')),
+          error: (error, stackTrace) =>
+              AppErrorState(message: friendlyErrorMessage(error)),
           data: (original) => _buildBody(
             artwork,
             original,
