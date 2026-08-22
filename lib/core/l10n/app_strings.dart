@@ -320,6 +320,8 @@ final class AppStrings {
   String get artworks => _lang == AppLanguage.zh ? '作品' : 'Artworks';
   String get users => _lang == AppLanguage.zh ? '用户' : 'Users';
   String get popularTags => _lang == AppLanguage.zh ? '热门标签' : 'Popular tags';
+  String get popularTagsHint =>
+      _lang == AppLanguage.zh ? '点击标签浏览该标签下的作品' : 'Tap a tag to browse it';
   String get searchIdleHint => _lang == AppLanguage.zh
       ? '输入关键词搜索作品，或输入 #标签 浏览标签。'
       : 'Search artworks, or type #tag to browse a tag.';
