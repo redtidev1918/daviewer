@@ -7,6 +7,7 @@ import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
+import '../../shared/widgets/compact_tag_strip.dart';
 
 /// The "browse by tag" feed (official `browse/tags` endpoint).
 final tagFeedProvider = StateNotifierProvider.autoDispose
@@ -32,61 +33,73 @@ final relatedTagsProvider = FutureProvider.autoDispose
           .toList();
     });
 
-final class TagScreen extends ConsumerWidget {
+final class TagScreen extends ConsumerStatefulWidget {
   const TagScreen({required this.tag, super.key});
 
   final String tag;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final feed = ref.watch(tagFeedProvider(tag));
-    final related = ref.watch(relatedTagsProvider(tag));
+  ConsumerState<TagScreen> createState() => _TagScreenState();
+}
+
+final class _TagScreenState extends ConsumerState<TagScreen> {
+  bool _showRelated = true;
+  double _lastPixels = 0;
+
+  bool _handleScroll(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical ||
+        notification is! ScrollUpdateNotification) {
+      return false;
+    }
+    final pixels = notification.metrics.pixels;
+    final scrollingDown = pixels > _lastPixels;
+    _lastPixels = pixels;
+    final shouldShow = pixels < 16 || !scrollingDown;
+    if (shouldShow != _showRelated && mounted) {
+      setState(() => _showRelated = shouldShow);
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final feed = ref.watch(tagFeedProvider(widget.tag));
+    final related = ref.watch(relatedTagsProvider(widget.tag));
     final s = strings(ref.watch(appLanguageProvider));
     return Scaffold(
-      appBar: AppBar(title: Text('#$tag')),
+      appBar: AppBar(title: Text('#${widget.tag}')),
       body: Column(
         children: <Widget>[
-          related.when(
-            loading: () => const SizedBox.shrink(),
-            error: (error, stackTrace) => const SizedBox.shrink(),
-            data: (tags) => tags.isEmpty
-                ? const SizedBox.shrink()
-                : Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          s.relatedTags,
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                        const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: <Widget>[
-                            for (final t in tags)
-                              ActionChip(
-                                label: Text('#$t'),
-                                visualDensity: VisualDensity.compact,
-                                onPressed: () => context.push(
-                                  '/tag/${Uri.encodeComponent(t)}',
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
+          AnimatedSize(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            child: _showRelated
+                ? related.when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (error, stackTrace) => const SizedBox.shrink(),
+                    data: (tags) => CompactTagStrip(
+                      tags: tags,
+                      leading: Text(
+                        s.relatedTags,
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      onSelected: (tag) =>
+                          context.push('/tag/${Uri.encodeComponent(tag)}'),
                     ),
-                  ),
+                  )
+                : const SizedBox.shrink(),
           ),
           Expanded(
-            child: ArtworkFeedGrid(
-              feed: feed,
-              emptyMessage: s.noArtworks,
-              onRefresh: () =>
-                  ref.read(tagFeedProvider(tag).notifier).refresh(),
-              onLoadMore: () =>
-                  ref.read(tagFeedProvider(tag).notifier).loadMore(),
+            child: NotificationListener<ScrollNotification>(
+              onNotification: _handleScroll,
+              child: ArtworkFeedGrid(
+                feed: feed,
+                emptyMessage: s.noArtworks,
+                onRefresh: () =>
+                    ref.read(tagFeedProvider(widget.tag).notifier).refresh(),
+                onLoadMore: () =>
+                    ref.read(tagFeedProvider(widget.tag).notifier).loadMore(),
+              ),
             ),
           ),
         ],

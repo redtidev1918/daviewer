@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
+import '../../shared/widgets/compact_tag_strip.dart';
 import '../../shared/widgets/settings_action.dart';
 import 'search_providers.dart';
 import 'search_user_results.dart';
@@ -187,7 +188,7 @@ final class _SectionTitle extends StatelessWidget {
   }
 }
 
-/// A wrapping row of tappable `#tag` chips.
+/// A compact, horizontally scrollable row of tappable tags.
 final class _TagChips extends StatelessWidget {
   const _TagChips({required this.tags});
 
@@ -195,20 +196,9 @@ final class _TagChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 4,
-        children: <Widget>[
-          for (final tag in tags)
-            ActionChip(
-              label: Text('#$tag'),
-              visualDensity: VisualDensity.compact,
-              onPressed: () => context.push('/tag/${Uri.encodeComponent(tag)}'),
-            ),
-        ],
-      ),
+    return CompactTagStrip(
+      tags: tags,
+      onSelected: (tag) => context.push('/tag/${Uri.encodeComponent(tag)}'),
     );
   }
 }

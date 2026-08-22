@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/skeleton.dart';
+import '../artwork/artwork_navigation.dart';
 import 'artist_providers.dart';
 
 /// The artist's journal posts (articles).
@@ -42,7 +42,12 @@ final class JournalsView extends ConsumerWidget {
               subtitle: journal.publishedAt == null
                   ? null
                   : Text(formatJournalDate(journal.publishedAt!)),
-              onTap: () => context.push('/artwork/${journal.id}'),
+              onTap: () => openArtworkFromList(
+                context,
+                ref,
+                artworks: items,
+                artwork: journal,
+              ),
             );
           },
         );

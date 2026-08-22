@@ -12,6 +12,7 @@ import '../../shared/widgets/app_refresh_indicator.dart';
 import '../../shared/widgets/artwork_card.dart';
 import '../../shared/widgets/scrollable_fill.dart';
 import '../../shared/widgets/skeleton.dart';
+import '../artwork/artwork_navigation.dart';
 import 'home_providers.dart';
 
 /// The banner shown when the web session and the OAuth session are out of sync.
@@ -157,7 +158,7 @@ final class LoginPrompt extends StatelessWidget {
 }
 
 /// A scrollable grid of artworks, handling empty/error/loading states.
-final class ArtworkGrid extends StatelessWidget {
+final class ArtworkGrid extends ConsumerWidget {
   const ArtworkGrid({
     super.key,
     required this.items,
@@ -172,7 +173,7 @@ final class ArtworkGrid extends StatelessWidget {
   final String emptyMessage;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (error != null && items.isEmpty) {
       return ScrollableFill(
         child: AppErrorState(message: friendlyErrorMessage(error!)),
@@ -199,7 +200,12 @@ final class ArtworkGrid extends StatelessWidget {
         final artwork = items[index];
         return ArtworkCard(
           artwork: artwork,
-          onTap: () => context.push('/artwork/${artwork.id}'),
+          onTap: () => openArtworkFromList(
+            context,
+            ref,
+            artworks: items,
+            artwork: artwork,
+          ),
         );
       },
     );

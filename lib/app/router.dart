@@ -8,6 +8,7 @@ import '../core/l10n/app_strings.dart';
 import '../features/artist/artist_screen.dart';
 import '../features/artist/folder_screen.dart';
 import '../features/artwork/artwork_detail_screen.dart';
+import '../features/artwork/artwork_navigation.dart';
 import '../features/diagnostics/diagnostics_screen.dart';
 import '../features/downloads/downloads_screen.dart';
 import '../features/favourites/favourites_screen.dart';
@@ -39,8 +40,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/artwork/:id',
-        builder: (context, state) =>
-            ArtworkDetailScreen(artworkId: state.pathParameters['id']!),
+        builder: (context, state) => ArtworkDetailScreen(
+          key: state.pageKey,
+          artworkId: state.pathParameters['id']!,
+          browseSession: state.extra is ArtworkBrowseSession
+              ? state.extra! as ArtworkBrowseSession
+              : null,
+        ),
       ),
       GoRoute(
         path: '/artist/:username',

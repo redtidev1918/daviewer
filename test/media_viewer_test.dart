@@ -1,5 +1,7 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:daviewer/features/artwork/media_viewer.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 MediaAsset asset(
@@ -125,5 +127,50 @@ void main() {
       selectDisplayAsset(<MediaAsset>[gatedContent, preview])?.id,
       'preview',
     );
+  });
+
+  testWidgets('multi-image pages consume swipes before the next artwork', (
+    tester,
+  ) async {
+    var nextArtwork = 0;
+    final first = asset(
+      'first',
+      MediaKind.image,
+      uri: Uri.parse('https://example.test/first.jpg'),
+    );
+    final second = asset(
+      'second',
+      MediaKind.image,
+      uri: Uri.parse('https://example.test/second.jpg'),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: 400,
+                child: MediaViewer(
+                  media: <MediaAsset>[first],
+                  additionalMedia: <MediaAsset>[second],
+                  onNextArtwork: () => nextArtwork++,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.drag(find.byType(PageView), const Offset(-320, 0));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('2 / 2'), findsOneWidget);
+    expect(nextArtwork, 0);
+
+    await tester.drag(find.byType(PageView), const Offset(-320, 0));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(nextArtwork, 1);
   });
 }

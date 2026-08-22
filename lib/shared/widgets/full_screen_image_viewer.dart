@@ -10,11 +10,15 @@ final class FullScreenImageViewer extends ConsumerStatefulWidget {
   const FullScreenImageViewer({
     required this.imageProvider,
     this.heroTag,
+    this.onPreviousArtwork,
+    this.onNextArtwork,
     super.key,
   });
 
   final ImageProvider<Object> imageProvider;
   final Object? heroTag;
+  final VoidCallback? onPreviousArtwork;
+  final VoidCallback? onNextArtwork;
 
   @override
   ConsumerState<FullScreenImageViewer> createState() =>
@@ -26,6 +30,7 @@ final class _FullScreenImageViewerState
   final TransformationController _transformation = TransformationController();
   TapDownDetails? _doubleTap;
   bool _zoomed = false;
+  double _horizontalDrag = 0;
 
   @override
   void initState() {
@@ -64,6 +69,26 @@ final class _FullScreenImageViewerState
     }
     matrix.scaleByDouble(scale, scale, 1, 1);
     _transformation.value = matrix;
+  }
+
+  void _finishHorizontalDrag(DragEndDetails details) {
+    if (_zoomed) return;
+    final velocity = details.primaryVelocity ?? 0;
+    final threshold = (MediaQuery.sizeOf(context).width * 0.16).clamp(
+      56.0,
+      96.0,
+    );
+    final callback = switch ((_horizontalDrag, velocity)) {
+      (final distance, _) when distance > threshold => widget.onPreviousArtwork,
+      (_, final speed) when speed > 700 => widget.onPreviousArtwork,
+      (final distance, _) when distance < -threshold => widget.onNextArtwork,
+      (_, final speed) when speed < -700 => widget.onNextArtwork,
+      _ => null,
+    };
+    _horizontalDrag = 0;
+    if (callback == null) return;
+    Navigator.of(context).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) => callback());
   }
 
   @override
@@ -113,11 +138,23 @@ final class _FullScreenImageViewerState
         behavior: HitTestBehavior.opaque,
         onDoubleTapDown: (details) => _doubleTap = details,
         onDoubleTap: _toggleZoom,
+        onHorizontalDragStart:
+            !_zoomed &&
+                (widget.onPreviousArtwork != null ||
+                    widget.onNextArtwork != null)
+            ? (_) => _horizontalDrag = 0
+            : null,
+        onHorizontalDragUpdate: !_zoomed
+            ? (details) => _horizontalDrag += details.delta.dx
+            : null,
+        onHorizontalDragCancel: () => _horizontalDrag = 0,
+        onHorizontalDragEnd: !_zoomed ? _finishHorizontalDrag : null,
         child: InteractiveViewer(
           transformationController: _transformation,
           minScale: 1,
           maxScale: 8,
           boundaryMargin: const EdgeInsets.all(80),
+          panEnabled: _zoomed,
           child: SizedBox.expand(child: image),
         ),
       ),

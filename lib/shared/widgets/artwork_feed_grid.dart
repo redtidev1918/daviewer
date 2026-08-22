@@ -1,16 +1,17 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/diagnostics/error_text.dart';
 import '../../core/feed/artwork_feed_controller.dart';
+import '../../features/artwork/artwork_navigation.dart';
 import 'app_empty_state.dart';
 import 'app_error_state.dart';
 import 'app_refresh_indicator.dart';
 import 'artwork_card.dart';
 import 'skeleton.dart';
 
-final class ArtworkFeedGrid extends StatelessWidget {
+final class ArtworkFeedGrid extends ConsumerWidget {
   const ArtworkFeedGrid({
     required this.feed,
     required this.emptyMessage,
@@ -31,7 +32,7 @@ final class ArtworkFeedGrid extends StatelessWidget {
   final VoidCallback? emptyOnAction;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     Widget body;
 
     if (feed.error != null && feed.items.isEmpty) {
@@ -77,7 +78,12 @@ final class ArtworkFeedGrid extends StatelessWidget {
             aspectRatio: artworkAspectRatio(artwork),
             child: ArtworkCard(
               artwork: artwork,
-              onTap: () => context.push('/artwork/${artwork.id}'),
+              onTap: () => openArtworkFromList(
+                context,
+                ref,
+                artworks: feed.items,
+                artwork: artwork,
+              ),
             ),
           );
         },
