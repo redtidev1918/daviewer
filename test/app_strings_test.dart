@@ -69,5 +69,7 @@ void main() {
       en.deleteFinishedDownloadsMessage(2),
       contains('2 finished download records'),
     );
+    expect(zh.deleteFinishedDownloadsFailed('无权限'), '删除失败：无权限');
+    expect(en.moreLikeThisLoadFailed, 'Could not load similar artwork');
   });
 }

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/auth/web_session_controller.dart';
+import '../../core/auth/web_session_refresher.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/artwork_card.dart';
 import 'artwork_detail_providers.dart';
@@ -11,10 +13,7 @@ import 'artwork_detail_providers.dart';
 /// artwork, matching the modern feed layout. Hides itself when empty.
 ///
 /// This is the reference pattern for related-content sections: a self-contained
-/// widget that owns its provider, handles loading/error/empty internally, and
-/// hides itself when there is nothing to show. Future sections (e.g. Suggested
-/// Deviants / Suggested Collections) follow the same shape and plug into the
-/// detail screen's section list without touching other sections.
+/// widget that owns its provider and handles loading/error/empty internally.
 final class MoreLikeThisSection extends ConsumerWidget {
   const MoreLikeThisSection({required this.artworkId, super.key});
 
@@ -32,7 +31,23 @@ final class MoreLikeThisSection extends ConsumerWidget {
       ),
       error: (error, stackTrace) {
         debugPrint('[moreLikeThis] $artworkId failed: $error');
-        return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(s.moreLikeThis, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Row(
+              children: <Widget>[
+                Expanded(child: Text(s.moreLikeThisLoadFailed)),
+                TextButton.icon(
+                  onPressed: () => _retry(context, ref),
+                  icon: const Icon(Icons.refresh),
+                  label: Text(s.retry),
+                ),
+              ],
+            ),
+          ],
+        );
       },
       data: (result) {
         final items = result.artworks;
@@ -67,5 +82,19 @@ final class MoreLikeThisSection extends ConsumerWidget {
         );
       },
     );
+  }
+
+  Future<void> _retry(BuildContext context, WidgetRef ref) async {
+    // Numeric web-feed ids need a current web CSRF token before they can be
+    // resolved to the UUID accepted by the official endpoint. Await the real
+    // headless refresh completion, then invalidate the whole resolution chain.
+    if (isNumericDeviationId(artworkId) &&
+        ref.read(webSessionControllerProvider).signedIn) {
+      await ref.read(webSessionRefresherProvider).refresh();
+    }
+    if (!context.mounted) return;
+    ref.invalidate(deviationInitProvider(artworkId));
+    ref.invalidate(artworkUuidProvider(artworkId));
+    ref.invalidate(moreLikeThisProvider(artworkId));
   }
 }

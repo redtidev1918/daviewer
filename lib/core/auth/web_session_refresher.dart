@@ -25,12 +25,20 @@ final class WebSessionRefresher {
   HeadlessInAppWebView? _headless;
   bool _running = false;
   Timer? _timeout;
+  Completer<void>? _completion;
 
   /// Loads `www.deviantart.com` headlessly and reports a fresh CSRF token.
-  /// No-op when a refresh is already in flight.
+  /// Concurrent callers share the same operation, and the returned future does
+  /// not complete until the page reports a token or the safety timeout fires.
   Future<void> refresh() async {
-    if (_running) return;
+    final active = _completion;
+    if (_running && active != null) {
+      await active.future;
+      return;
+    }
     _running = true;
+    final completion = Completer<void>();
+    _completion = completion;
     try {
       final headless = HeadlessInAppWebView(
         initialSize: const Size(480, 800),
@@ -50,14 +58,17 @@ final class WebSessionRefresher {
       _headless = headless;
       await headless.run();
       // Safety net in case navigation never completes.
-      _timeout = Timer(const Duration(seconds: 20), () {
-        if (_running) unawaited(_dispose());
-      });
+      if (_running) {
+        _timeout = Timer(const Duration(seconds: 20), () {
+          if (_running) unawaited(_dispose());
+        });
+      }
     } on Object catch (error, stack) {
       debugPrint('[web-session] headless refresh failed: $error');
       debugPrintStack(stackTrace: stack);
       await _dispose();
     }
+    await completion.future;
   }
 
   Future<void> _report(InAppWebViewController controller) async {
@@ -83,7 +94,6 @@ final class WebSessionRefresher {
   }
 
   Future<void> _dispose() async {
-    _running = false;
     _timeout?.cancel();
     _timeout = null;
     final headless = _headless;
@@ -94,6 +104,12 @@ final class WebSessionRefresher {
       } on Object {
         // Best effort.
       }
+    }
+    final completion = _completion;
+    _completion = null;
+    _running = false;
+    if (completion != null && !completion.isCompleted) {
+      completion.complete();
     }
   }
 }

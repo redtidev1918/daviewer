@@ -110,6 +110,8 @@ final class AppStrings {
   }
 
   String get deleteAction => _lang == AppLanguage.zh ? '删除' : 'Delete';
+  String deleteFinishedDownloadsFailed(String detail) =>
+      _lang == AppLanguage.zh ? '删除失败：$detail' : 'Delete failed: $detail';
   String get noResults =>
       _lang == AppLanguage.zh ? '无搜索结果' : 'No results found.';
   String get retry => _lang == AppLanguage.zh ? '重试' : 'Retry';
@@ -361,6 +363,9 @@ final class AppStrings {
   String get relatedTags => _lang == AppLanguage.zh ? '相关标签' : 'Related tags';
   String get moreLikeThis =>
       _lang == AppLanguage.zh ? '更多类似作品' : 'More like this';
+  String get moreLikeThisLoadFailed => _lang == AppLanguage.zh
+      ? '更多类似作品加载失败'
+      : 'Could not load similar artwork';
 
   // --- OAuth configuration errors (developer-facing) ---
   String get oauthClientIdMissing => _lang == AppLanguage.zh
