@@ -55,4 +55,34 @@ void main() {
     expect(controller.state.items, hasLength(1));
     expect(controller.state.isLoading, isFalse);
   });
+
+  test('refreshSilently keeps items when the re-fetch fails', () async {
+    var calls = 0;
+    final controller = ArtworkFeedController((request) async {
+      calls += 1;
+      if (calls == 1) {
+        return Page<Artwork>(items: <Artwork>[artwork(1)], hasMore: false);
+      }
+      throw StateError('boom');
+    }, autoLoad: false);
+
+    await controller.refresh();
+    expect(controller.state.items, hasLength(1));
+
+    await controller.refreshSilently();
+    expect(calls, 2);
+    expect(controller.state.items, hasLength(1));
+  });
+
+  test('refreshSilently replaces items on success', () async {
+    final controller = ArtworkFeedController(
+      (request) async =>
+          Page<Artwork>(items: <Artwork>[artwork(2), artwork(3)], hasMore: false),
+      autoLoad: false,
+    );
+
+    await controller.refresh();
+    await controller.refreshSilently();
+    expect(controller.state.items.map((a) => a.id), <String>['art-2', 'art-3']);
+  });
 }
