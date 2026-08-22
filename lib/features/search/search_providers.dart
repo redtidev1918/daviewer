@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/data/data_access.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/runtime/runtime_provider.dart';
+import '../../core/search/search_history_store.dart';
 import '../artwork/artwork_store.dart';
 import '../favourites/favourites_providers.dart';
 import '../home/home_providers.dart';
@@ -64,4 +65,29 @@ List<String> recommendedTagsFrom(Map<List<String>, int> weighted) {
   final sorted = counts.entries.toList()
     ..sort((a, b) => b.value.compareTo(a.value));
   return sorted.take(10).map((e) => e.key).toList(growable: false);
+}
+
+/// The recent-search history, persisted via [SearchHistoryStore].
+final searchHistoryProvider =
+    StateNotifierProvider<SearchHistoryController, List<String>>(
+      (ref) => SearchHistoryController(),
+    );
+
+final class SearchHistoryController extends StateNotifier<List<String>> {
+  SearchHistoryController() : super(const <String>[]) {
+    _load();
+  }
+
+  Future<void> _load() async => state = await SearchHistoryStore.load();
+
+  Future<void> add(String query) async =>
+      state = await SearchHistoryStore.add(query);
+
+  Future<void> remove(String query) async =>
+      state = await SearchHistoryStore.remove(query);
+
+  Future<void> clear() async {
+    await SearchHistoryStore.clear();
+    state = const <String>[];
+  }
 }
