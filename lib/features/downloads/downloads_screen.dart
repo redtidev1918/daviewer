@@ -13,6 +13,7 @@ import '../../core/runtime/runtime_provider.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/app_refresh_indicator.dart';
+import '../../shared/widgets/full_screen_image_viewer.dart';
 import '../../shared/widgets/settings_action.dart';
 import '../../shared/widgets/skeleton.dart';
 import 'delete_downloads_dialog.dart';
@@ -296,19 +297,6 @@ final class _LocalImageViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-      ),
-      body: Center(
-        child: InteractiveViewer(
-          minScale: 0.5,
-          maxScale: 8,
-          child: Image.file(File(path), fit: BoxFit.contain),
-        ),
-      ),
-    );
+    return FullScreenImageViewer(imageProvider: FileImage(File(path)));
   }
 }

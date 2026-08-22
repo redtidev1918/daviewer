@@ -8,6 +8,8 @@ MediaAsset asset(
   MediaRole role = MediaRole.preview,
   Uri? uri,
   int? width,
+  int? height,
+  String? filename,
   MediaAvailability availability = MediaAvailability.available,
 }) => MediaAsset(
   id: id,
@@ -16,6 +18,8 @@ MediaAsset asset(
   availability: availability,
   uri: uri,
   width: width,
+  height: height,
+  filename: filename,
 );
 
 void main() {
@@ -35,6 +39,22 @@ void main() {
       uri: Uri.parse('https://x/i.jpg'),
     );
     expect(selectDisplayAsset(<MediaAsset>[image, video])?.id, 'v');
+  });
+
+  test('prefers the highest-quality playable video', () {
+    final low = asset(
+      'low',
+      MediaKind.video,
+      uri: Uri.parse('https://x/360.mp4'),
+      filename: '360p',
+    );
+    final high = asset(
+      'high',
+      MediaKind.video,
+      uri: Uri.parse('https://x/1080.mp4'),
+      filename: '1080p',
+    );
+    expect(selectDisplayAsset(<MediaAsset>[low, high])?.id, 'high');
   });
 
   test('skips a video without a URI', () {

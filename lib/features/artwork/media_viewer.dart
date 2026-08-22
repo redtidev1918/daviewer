@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../app/theme/app_theme.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../shared/widgets/full_screen_image_viewer.dart';
 
 /// Picks the single asset to display inline from an artwork's [media]:
 /// a playable video first, then an animation, then the largest resampled
@@ -18,8 +19,14 @@ MediaAsset? selectDisplayAsset(List<MediaAsset> media) {
   if (media.isEmpty) return null;
   bool available(MediaAsset m) => m.availability == MediaAvailability.available;
   final video = media
-      .where((m) => m.kind == MediaKind.video && available(m))
-      .firstOrNull;
+      .where((m) => m.kind == MediaKind.video && available(m) && m.uri != null)
+      .fold<MediaAsset?>(
+        null,
+        (best, candidate) =>
+            best == null || _videoQuality(candidate) > _videoQuality(best)
+            ? candidate
+            : best,
+      );
   if (video != null && video.uri != null) return video;
   final animation = media
       .where((m) => m.kind == MediaKind.animation && available(m))
@@ -39,6 +46,15 @@ MediaAsset? selectDisplayAsset(List<MediaAsset> media) {
       );
   if (accessibleImage != null) return accessibleImage;
   return media.where((m) => m.kind == MediaKind.image).firstOrNull;
+}
+
+int _videoQuality(MediaAsset asset) {
+  final dimensions = (asset.height ?? 0) * (asset.width ?? 1);
+  if (dimensions > 0) return dimensions;
+  final quality = asset.filename == null
+      ? null
+      : RegExp(r'(\d{3,4})').firstMatch(asset.filename!)?.group(1);
+  return int.tryParse(quality ?? '') ?? asset.byteLength ?? 0;
 }
 
 /// Renders an artwork's media: static images, animated GIFs, videos, and
@@ -260,7 +276,9 @@ final class _TappableImage extends StatelessWidget {
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (context) => _FullScreenImage(url: url),
+          builder: (context) => FullScreenImageViewer(
+            imageProvider: CachedNetworkImageProvider(url),
+          ),
         ),
       ),
       child: ClipRRect(
@@ -309,32 +327,48 @@ final class _AnimatedImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        url,
-        fit: BoxFit.contain,
-        width: double.infinity,
-        gaplessPlayback: true,
-        loadingBuilder: (context, child, progress) => progress == null
-            ? child
-            : const AspectRatio(
-                aspectRatio: 1,
-                child: ColoredBox(
-                  color: AppTheme.placeholderColor,
-                  child: Center(child: CircularProgressIndicator()),
-                ),
+    final decodeWidth =
+        (MediaQuery.sizeOf(context).width *
+                MediaQuery.devicePixelRatioOf(context))
+            .round()
+            .clamp(480, 2048)
+            .toInt();
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (context) => FullScreenImageViewer(
+            imageProvider: CachedNetworkImageProvider(url),
+          ),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: CachedNetworkImage(
+          imageUrl: url,
+          fit: BoxFit.contain,
+          width: double.infinity,
+          memCacheWidth: decodeWidth,
+          fadeInDuration: const Duration(milliseconds: 180),
+          progressIndicatorBuilder: (context, url, progress) => AspectRatio(
+            aspectRatio: 1,
+            child: ColoredBox(
+              color: AppTheme.placeholderColor,
+              child: Center(
+                child: CircularProgressIndicator(value: progress.progress),
               ),
-        errorBuilder: (context, error, stack) => AspectRatio(
-          aspectRatio: 1,
-          child: _MediaMessage(
-            icon: Icons.broken_image_outlined,
-            message: strings(
-              ProviderScope.containerOf(
-                context,
-                listen: false,
-              ).read(appLanguageProvider),
-            ).imageLoadFailed,
+            ),
+          ),
+          errorWidget: (context, url, error) => AspectRatio(
+            aspectRatio: 1,
+            child: _MediaMessage(
+              icon: Icons.broken_image_outlined,
+              message: strings(
+                ProviderScope.containerOf(
+                  context,
+                  listen: false,
+                ).read(appLanguageProvider),
+              ).imageLoadFailed,
+            ),
           ),
         ),
       ),
@@ -351,43 +385,129 @@ final class _VideoPlayer extends StatefulWidget {
   State<_VideoPlayer> createState() => _VideoPlayerState();
 }
 
-final class _VideoPlayerState extends State<_VideoPlayer> {
-  late final VideoPlayerController _controller;
-  late final ChewieController _chewie;
+final class _VideoPlayerState extends State<_VideoPlayer>
+    with WidgetsBindingObserver {
+  VideoPlayerController? _controller;
+  ChewieController? _chewie;
+  Object? _error;
+  int _loadGeneration = 0;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
-      ..initialize().then((_) {
-        if (!mounted) return;
-        setState(() {
-          _chewie = ChewieController(
-            videoPlayerController: _controller,
-            autoPlay: false,
-            looping: false,
-            allowFullScreen: true,
-            allowPlaybackSpeedChanging: false,
-            materialProgressColors: ChewieProgressColors(
-              playedColor: Colors.red,
-              handleColor: Colors.red,
-              bufferedColor: Colors.red.shade200,
-            ),
-          );
-        });
+    WidgetsBinding.instance.addObserver(this);
+    _initialize();
+  }
+
+  @override
+  void didUpdateWidget(covariant _VideoPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) _initialize();
+  }
+
+  Future<void> _initialize() async {
+    final generation = ++_loadGeneration;
+    final oldChewie = _chewie;
+    final oldController = _controller;
+    _chewie = null;
+    _controller = null;
+    oldChewie?.dispose();
+    await oldController?.dispose();
+    if (!mounted || generation != _loadGeneration) return;
+    setState(() => _error = null);
+
+    final controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    _controller = controller;
+    try {
+      await controller.initialize();
+      if (!mounted ||
+          generation != _loadGeneration ||
+          _controller != controller) {
+        await controller.dispose();
+        return;
+      }
+      setState(() {
+        _chewie = ChewieController(
+          videoPlayerController: controller,
+          autoPlay: false,
+          looping: false,
+          allowFullScreen: true,
+          allowMuting: true,
+          allowPlaybackSpeedChanging: true,
+          showControlsOnInitialize: true,
+          materialProgressColors: ChewieProgressColors(
+            playedColor: Colors.red,
+            handleColor: Colors.red,
+            bufferedColor: Colors.red.shade200,
+          ),
+        );
       });
+    } on Object catch (error) {
+      if (!mounted ||
+          generation != _loadGeneration ||
+          _controller != controller) {
+        await controller.dispose();
+        return;
+      }
+      _controller = null;
+      await controller.dispose();
+      if (mounted) setState(() => _error = error);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) _controller?.pause();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _chewie.dispose();
+    _loadGeneration += 1;
+    WidgetsBinding.instance.removeObserver(this);
+    _chewie?.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_controller.value.isInitialized) {
+    if (_error != null) {
+      final s = strings(
+        ProviderScope.containerOf(
+          context,
+          listen: false,
+        ).read(appLanguageProvider),
+      );
+      return AspectRatio(
+        aspectRatio: 16 / 9,
+        child: ColoredBox(
+          color: Colors.black,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Icon(Icons.videocam_off, color: Colors.white, size: 42),
+                const SizedBox(height: 8),
+                Text(
+                  s.videoLoadFailed,
+                  style: const TextStyle(color: Colors.white),
+                ),
+                TextButton.icon(
+                  onPressed: _initialize,
+                  icon: const Icon(Icons.refresh),
+                  label: Text(s.retry),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    final controller = _controller;
+    final chewie = _chewie;
+    if (controller == null ||
+        chewie == null ||
+        !controller.value.isInitialized) {
       return const AspectRatio(
         aspectRatio: 16 / 9,
         child: ColoredBox(
@@ -397,93 +517,10 @@ final class _VideoPlayerState extends State<_VideoPlayer> {
       );
     }
     return AspectRatio(
-      aspectRatio: _controller.value.aspectRatio,
-      child: Chewie(controller: _chewie),
-    );
-  }
-}
-
-final class _FullScreenImage extends ConsumerStatefulWidget {
-  const _FullScreenImage({required this.url});
-
-  final String url;
-
-  @override
-  ConsumerState<_FullScreenImage> createState() => _FullScreenImageState();
-}
-
-final class _FullScreenImageState extends ConsumerState<_FullScreenImage> {
-  final TransformationController _transformation = TransformationController();
-  bool _zoomed = false;
-
-  @override
-  void dispose() {
-    _transformation.dispose();
-    super.dispose();
-  }
-
-  void _toggleZoom() {
-    if (_zoomed) {
-      _transformation.value = Matrix4.identity();
-      setState(() => _zoomed = false);
-    } else {
-      _transformation.value = Matrix4.identity()
-        ..scaleByDouble(2.5, 2.5, 2.5, 1);
-      setState(() => _zoomed = true);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final s = strings(ref.watch(appLanguageProvider));
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        actions: <Widget>[
-          IconButton(
-            tooltip: _zoomed ? s.zoomReset : s.zoomIn,
-            onPressed: _toggleZoom,
-            icon: Icon(_zoomed ? Icons.zoom_out_map : Icons.zoom_in),
-          ),
-        ],
-      ),
-      body: GestureDetector(
-        onDoubleTap: _toggleZoom,
-        child: InteractiveViewer(
-          transformationController: _transformation,
-          minScale: 0.5,
-          maxScale: 8,
-          boundaryMargin: const EdgeInsets.all(80),
-          child: SizedBox.expand(
-            child: CachedNetworkImage(
-              imageUrl: widget.url,
-              fit: BoxFit.contain,
-              // Progressive loading: blurred tiny version first, then the
-              // full-resolution decode cross-fades in.
-              placeholder: (context, url) => CachedNetworkImage(
-                imageUrl: url,
-                memCacheWidth: 40,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-                errorWidget: (context, url, error) => const Center(
-                  child: Icon(
-                    Icons.broken_image,
-                    color: Colors.white,
-                    size: 48,
-                  ),
-                ),
-              ),
-              errorWidget: (context, url, error) => const Center(
-                child: Icon(Icons.broken_image, color: Colors.white, size: 48),
-              ),
-            ),
-          ),
-        ),
-      ),
+      aspectRatio: controller.value.aspectRatio > 0
+          ? controller.value.aspectRatio
+          : 16 / 9,
+      child: Chewie(controller: chewie),
     );
   }
 }

@@ -12,9 +12,23 @@ import '../../core/auth/auth_state.dart';
 import '../../core/auth/web_session_controller.dart';
 import '../../core/auth/webview_oauth_bridge.dart';
 import '../../core/data/web_session.dart';
+import '../../core/diagnostics/app_logger.dart';
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
+
+bool shouldStartOAuthAfterWebSession({
+  required bool webSignedIn,
+  required bool oauthSignedIn,
+  required bool oauthBusy,
+  required bool alreadyRequested,
+}) => webSignedIn && !oauthSignedIn && !oauthBusy && !alreadyRequested;
+
+bool shouldRecoverLogin403({
+  required bool isMainFrame,
+  required int statusCode,
+  required String username,
+}) => isMainFrame && statusCode == 403 && username.isNotEmpty;
 
 /// Hosts the embedded DeviantArt WebView.
 ///
@@ -45,6 +59,8 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   bool _loading = true;
   bool _closeAfterReport = false;
   bool _announcedWebLogin = false;
+  bool _oauthRequested = false;
+  bool _recoveringHttp403 = false;
   int _reportSeq = 0;
   double _progress = 0;
   late final AuthController _authController;
@@ -60,16 +76,10 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     if (bridge != null) {
       _launchSub = bridge.launchRequests.listen(_loadAuthRequest);
     }
-    // Single unified login: this screen hosts the WebView that establishes BOTH
-    // the DeviantArt web session and the OAuth authorization. Any "login"
-    // button just opens this screen; once the WebView is subscribed here, we
-    // auto-start the OAuth authorize so it completes in this same WebView.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final auth = ref.read(authControllerProvider);
-      if (!auth.oauthSignedIn && !auth.isLoggingIn && mounted) {
-        _authController.login();
-      }
-    });
+    // OAuth is deliberately not started here. On a first install the login
+    // form must finish establishing its cookies before the same WebView is
+    // navigated to /oauth2/authorize; racing those two navigations produced a
+    // misleading 403 after the user submitted a valid password on macOS.
   }
 
   @override
@@ -123,10 +133,29 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(s.webLoginSuccess)));
       }
+      if (isLoggedIn) _startOAuthIfNeeded();
       _maybeClose();
     } on Object {
       // Best effort; the page may not expose the state during navigation.
     }
+  }
+
+  void _startOAuthIfNeeded() {
+    final auth = ref.read(authControllerProvider);
+    if (!shouldStartOAuthAfterWebSession(
+      webSignedIn: ref.read(webSessionControllerProvider).signedIn,
+      oauthSignedIn: auth.oauthSignedIn,
+      oauthBusy: auth.isLoggingIn,
+      alreadyRequested: _oauthRequested,
+    )) {
+      return;
+    }
+    _oauthRequested = true;
+    unawaited(
+      _authController.login().whenComplete(() {
+        _oauthRequested = false;
+      }),
+    );
   }
 
   void _maybeClose() {
@@ -272,7 +301,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                       TextButton(
                         onPressed: auth.isLoggingIn
                             ? null
-                            : () => _authController.login(),
+                            : _startOAuthIfNeeded,
                         child: Text(s.retry),
                       ),
                     ],
@@ -329,6 +358,36 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                   if (uri != null && uri.host == 'www.deviantart.com') {
                     unawaited(_reportWebSession());
                   }
+                },
+                onReceivedHttpError: (controller, request, response) async {
+                  if (request.isForMainFrame != true ||
+                      response.statusCode != 403 ||
+                      _recoveringHttp403) {
+                    return;
+                  }
+                  // DeviantArt can return a transient HTML 403 after accepting
+                  // the first WebView password submission. If the persistent
+                  // userinfo cookie was already committed, move to Home so a
+                  // fresh CSRF can be read instead of leaving the user staring
+                  // at the stale error document.
+                  final username = await const WebSession().webUsername();
+                  if (!shouldRecoverLogin403(
+                        isMainFrame: request.isForMainFrame == true,
+                        statusCode: response.statusCode ?? 0,
+                        username: username,
+                      ) ||
+                      !mounted) {
+                    return;
+                  }
+                  AppLogger.instance.warning(
+                    'auth',
+                    'recovering committed WebView login after HTTP 403',
+                  );
+                  _recoveringHttp403 = true;
+                  await controller.loadUrl(
+                    urlRequest: URLRequest(url: WebUri(_homeUri.toString())),
+                  );
+                  _recoveringHttp403 = false;
                 },
                 onProgressChanged: (controller, progress) {
                   if (mounted) setState(() => _progress = progress / 100);
