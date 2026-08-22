@@ -1,2 +1,6 @@
 #include "../../Flutter/Flutter-Release.xcconfig"
 #include "Warnings.xcconfig"
+
+// Ad-hoc CI builds must contain only the entitlements declared by the app.
+// Injected development entitlements are not valid for downloaded releases.
+CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO

@@ -58,10 +58,14 @@ dependencies:
 从 [Releases](https://github.com/redtidev1918/daviewer/releases) 下载对应平台的安装包：
 
 - **Android**：`DAViewer-<版本>.apk`
-- **macOS**：`DAViewer-<版本>-macos.zip`（解压后拖入「应用程序」）
+- **macOS 12+**：`DAViewer-<版本>-macos.zip`（同时支持 Intel 与 Apple Silicon；
+  解压后拖入「应用程序」）
 - **Windows**：`DAViewer-<版本>-windows.zip`（解压后运行 `DAViewer.exe`）
 
-> 注意：macOS 未签名，首次打开需右键「打开」或到「系统设置 → 隐私与安全性」允许。
+> 注意：macOS 包通过完整签名校验和真实启动测试，但目前没有 Apple Developer ID
+> 签名与公证。首次打开请右键应用选择「打开」；如果系统仍拦截，请到
+> 「系统设置 → 隐私与安全性」选择「仍要打开」。不要在来源不明的副本上绕过
+> Gatekeeper。
 
 ## 使用前准备
 
@@ -113,6 +117,10 @@ GitHub Release 并上传构建产物（带版本号、自动生成 changelog、�
 Release APK 始终使用 upload keystore 签名（来自 CI 的 `KEYSTORE_B64` /
 `KEYSTORE_PROPERTIES` secret）；本地无 `android/key.properties` 时 release 构建会
 直接报错，避免误用 debug 签名导致「无法覆盖安装」的签名不一致问题。
+
+macOS CI 会重新应用仓库中的 Release 权限、验证包内签名与双架构，并实际启动应用
+至少 8 秒。当前发布包仍是临时签名；要做到下载后无需任何首次运行确认，还需要配置
+Apple Developer ID Application 证书并完成 Apple 公证。
 
 ### 一键发布（推荐）
 

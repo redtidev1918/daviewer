@@ -76,11 +76,15 @@ Download the package for your platform from
 [Releases](https://github.com/redtidev1918/daviewer/releases):
 
 - **Android**: `DAViewer-<version>.apk`
-- **macOS**: `DAViewer-<version>-macos.zip` (unzip and drag to Applications)
+- **macOS 12+**: `DAViewer-<version>-macos.zip` (universal Intel and Apple
+  Silicon build; unzip and drag to Applications)
 - **Windows**: `DAViewer-<version>-windows.zip` (unzip and run `DAViewer.exe`)
 
-> Note: the macOS app is unsigned. On first launch, right-click → Open, or allow
-> it in System Settings → Privacy & Security.
+> Note: the macOS bundle passes signature-integrity and real launch checks, but
+> it is not yet signed with an Apple Developer ID or notarized. On first launch,
+> right-click the app and choose Open. If macOS still blocks it, use Open Anyway
+> in System Settings → Privacy & Security. Never bypass Gatekeeper for a copy
+> obtained from an untrusted source.
 
 ## Before you start
 
@@ -132,6 +136,11 @@ flutter pub get
 Pushes to `main` trigger CI quality checks and Android/macOS/Windows builds;
 pushing a `v*` tag creates a GitHub Release and uploads the artifacts (with a
 version number, auto-generated changelog, and only the latest release kept).
+
+The macOS CI job reapplies the checked-in release entitlements, verifies the
+bundle signature and both CPU architectures, and keeps the built app running
+for an eight-second launch smoke test. The artifact remains ad-hoc signed until
+Developer ID Application credentials and Apple notarization are configured.
 
 The release APK is always signed with the upload keystore (from the CI
 `KEYSTORE_B64` / `KEYSTORE_PROPERTIES` secrets); a release build without a local
