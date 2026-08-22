@@ -4,6 +4,9 @@ abstract final class AppTheme {
   /// A calm indigo seed shared by both light and dark themes.
   static const seed = Color(0xff4263eb);
 
+  /// Neutral backdrop for image/avatar/media placeholders while they load.
+  static const placeholderColor = Color(0xffe9ecef);
+
   static ThemeData light() => _theme(Brightness.light);
 
   static ThemeData dark() => _theme(Brightness.dark);

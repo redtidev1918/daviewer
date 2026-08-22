@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/theme/app_theme.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
@@ -137,7 +138,7 @@ final class _WatchingScreenState extends ConsumerState<WatchingScreen> {
             final user = relation.user;
             return ListTile(
               leading: CircleAvatar(
-                backgroundColor: const Color(0xffe9ecef),
+                backgroundColor: AppTheme.placeholderColor,
                 foregroundImage: user.avatarUri == null
                     ? null
                     : CachedNetworkImageProvider(user.avatarUri.toString()),

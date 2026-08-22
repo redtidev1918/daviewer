@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../app/theme/app_theme.dart';
 import '../../core/l10n/app_strings.dart';
 
 /// Picks the single asset to display inline from an artwork's [media]:
@@ -62,7 +63,7 @@ final class MediaViewerState extends State<MediaViewer> {
       return const AspectRatio(
         aspectRatio: 1,
         child: ColoredBox(
-          color: Color(0xffe9ecef),
+          color: AppTheme.placeholderColor,
           child: Icon(Icons.image, size: 48),
         ),
       );
@@ -134,7 +135,7 @@ final class MediaViewerState extends State<MediaViewer> {
     final url = asset.uri?.toString();
     if (url == null) {
       return const ColoredBox(
-        color: Color(0xffe9ecef),
+        color: AppTheme.placeholderColor,
         child: Icon(Icons.image, size: 48),
       );
     }
@@ -171,14 +172,14 @@ final class _TappableImage extends StatelessWidget {
           placeholder: (context, url) => const AspectRatio(
             aspectRatio: 1,
             child: ColoredBox(
-              color: Color(0xffe9ecef),
+              color: AppTheme.placeholderColor,
               child: Center(child: CircularProgressIndicator()),
             ),
           ),
           errorWidget: (context, url, error) => const AspectRatio(
             aspectRatio: 1,
             child: ColoredBox(
-              color: Color(0xffe9ecef),
+              color: AppTheme.placeholderColor,
               child: Icon(Icons.broken_image, size: 48),
             ),
           ),
@@ -207,14 +208,14 @@ final class _AnimatedImage extends StatelessWidget {
             : const AspectRatio(
                 aspectRatio: 1,
                 child: ColoredBox(
-                  color: Color(0xffe9ecef),
+                  color: AppTheme.placeholderColor,
                   child: Center(child: CircularProgressIndicator()),
                 ),
               ),
         errorBuilder: (context, error, stack) => const AspectRatio(
           aspectRatio: 1,
           child: ColoredBox(
-            color: Color(0xffe9ecef),
+            color: AppTheme.placeholderColor,
             child: Icon(Icons.broken_image, size: 48),
           ),
         ),

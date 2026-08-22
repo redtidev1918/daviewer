@@ -2,6 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dakit_core/dakit_core.dart';
 import 'package:flutter/material.dart';
 
+import '../../app/theme/app_theme.dart';
+
 final class ArtworkCard extends StatelessWidget {
   const ArtworkCard({required this.artwork, this.onTap, super.key});
 
@@ -34,15 +36,15 @@ final class ArtworkCard extends StatelessWidget {
                       imageUrl: uri.toString(),
                       fit: BoxFit.cover,
                       placeholder: (context, url) =>
-                          const ColoredBox(color: Color(0xffe9ecef)),
+                          const ColoredBox(color: AppTheme.placeholderColor),
                       errorWidget: (context, url, error) => const ColoredBox(
-                        color: Color(0xffe9ecef),
+                        color: AppTheme.placeholderColor,
                         child: Icon(Icons.image),
                       ),
                     )
                   else
                     const ColoredBox(
-                      color: Color(0xffe9ecef),
+                      color: AppTheme.placeholderColor,
                       child: Icon(Icons.image),
                     ),
                   if (hasVideo)
