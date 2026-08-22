@@ -4,13 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/search/search_history_store.dart';
-import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
 import '../../shared/widgets/settings_action.dart';
 import 'search_providers.dart';
+import 'search_user_results.dart';
 
 const List<String> _popularTags = <String>[
   'digitalart',
@@ -138,7 +137,7 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
                     onLoadMore: () =>
                         ref.read(searchFeedProvider(query).notifier).loadMore(),
                   )
-                : _UserResults(query: query),
+                : UserResults(query: query),
           ),
         ],
       ),
@@ -212,47 +211,6 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
         ],
       ],
-    );
-  }
-}
-
-final class _UserResults extends ConsumerWidget {
-  const _UserResults({required this.query});
-
-  final String query;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final users = ref.watch(userSearchProvider(query));
-    final s = strings(ref.watch(appLanguageProvider));
-    return users.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) =>
-          AppErrorState(message: friendlyErrorMessage(error)),
-      data: (items) {
-        if (items.isEmpty) {
-          return Center(child: Text(s.noUsersFound));
-        }
-        return ListView.separated(
-          itemCount: items.length,
-          separatorBuilder: (context, index) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final user = items[index];
-            return ListTile(
-              leading: user.avatarUri == null
-                  ? const CircleAvatar(child: Icon(Icons.person))
-                  : CircleAvatar(
-                      foregroundImage: NetworkImage(user.avatarUri.toString()),
-                    ),
-              title: Text(user.username),
-              subtitle: user.displayName == null
-                  ? null
-                  : Text(user.displayName!),
-              onTap: () => context.push('/artist/${user.username}'),
-            );
-          },
-        );
-      },
     );
   }
 }
