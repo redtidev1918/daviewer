@@ -14,6 +14,7 @@ import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/app_refresh_indicator.dart';
 import '../../shared/widgets/settings_action.dart';
+import '../../shared/widgets/skeleton.dart';
 import 'download_helpers.dart';
 import 'downloads_providers.dart';
 
@@ -46,7 +47,7 @@ final class DownloadsScreen extends ConsumerWidget {
       );
     }
     if (state.items.isEmpty && state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const SkeletonList();
     }
     if (state.items.isEmpty) {
       return AppRefreshIndicator(

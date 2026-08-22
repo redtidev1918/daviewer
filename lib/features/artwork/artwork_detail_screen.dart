@@ -15,6 +15,7 @@ import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/skeleton.dart';
 import 'artwork_detail_providers.dart';
 import 'download_section.dart';
+import 'favourite_actions.dart';
 import 'media_viewer.dart';
 
 final class ArtworkDetailScreen extends ConsumerStatefulWidget {
@@ -67,16 +68,13 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     if (_favBusy) return;
     setState(() => _favBusy = true);
     try {
-      final runtime = ref.read(runtimeProvider);
-      final social = OfficialSocialRepository(runtime.transport!);
-      // Resolve the OAuth UUID: numeric web-feed ids map through
-      // dadeviation/init before they can be favourited.
-      final uuid = await ref.read(artworkUuidProvider(widget.artworkId).future);
-      final result = _favourite
-          ? await social.unfavourite(uuid)
-          : await social.favourite(uuid);
+      final isFavourite = await setArtworkFavourite(
+        ref,
+        widget.artworkId,
+        !_favourite,
+      );
       if (!mounted) return;
-      setState(() => _favourite = result.isFavourite);
+      setState(() => _favourite = isFavourite);
       _heartController.forward(from: 0);
     } on Object catch (error) {
       if (mounted) {

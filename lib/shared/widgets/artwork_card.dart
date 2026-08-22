@@ -6,16 +6,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/theme/app_theme.dart';
+import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../features/artwork/artwork_store.dart';
+import '../../features/artwork/favourite_actions.dart';
 
-final class ArtworkCard extends StatelessWidget {
+final class ArtworkCard extends ConsumerWidget {
   const ArtworkCard({required this.artwork, this.onTap, super.key});
 
   final Artwork artwork;
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Track the favourite flag through the store so a favourite action here is
+    // reflected immediately (and mirrored in the detail screen).
+    final favourited = ref.watch(
+      artworkStoreProvider.select(
+        (map) => map[artwork.id]?.isFavourited ?? artwork.isFavourited,
+      ),
+    );
     // Prefer a static image for the grid thumbnail; fall back to any media
     // (video / animation) so every card shows something.
     final media = artwork.media;
@@ -28,7 +38,7 @@ final class ArtworkCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        onLongPress: () => _showCardMenu(context),
+        onLongPress: () => _showCardMenu(context, ref, favourited),
         child: Stack(
           fit: StackFit.expand,
           children: <Widget>[
@@ -174,13 +184,8 @@ final class ArtworkCard extends StatelessWidget {
     );
   }
 
-  void _showCardMenu(BuildContext context) {
-    final s = strings(
-      ProviderScope.containerOf(
-        context,
-        listen: false,
-      ).read(appLanguageProvider),
-    );
+  void _showCardMenu(BuildContext context, WidgetRef ref, bool favourited) {
+    final s = strings(ref.read(appLanguageProvider));
     final url = artwork.pageUri.toString();
     showModalBottomSheet<void>(
       context: context,
@@ -194,6 +199,37 @@ final class ArtworkCard extends StatelessWidget {
               onTap: () {
                 Navigator.pop(context);
                 onTap?.call();
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                favourited ? Icons.favorite : Icons.favorite_border,
+              ),
+              title: Text(favourited ? s.unfavourite : s.favourite),
+              onTap: () async {
+                Navigator.pop(context);
+                try {
+                  final now = await setArtworkFavourite(
+                    ref,
+                    artwork.id,
+                    !favourited,
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          now ? s.favouritedToast : s.unfavouritedToast,
+                        ),
+                      ),
+                    );
+                  }
+                } on Object catch (error) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(friendlyErrorMessage(error))),
+                    );
+                  }
+                }
               },
             ),
             ListTile(

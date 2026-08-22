@@ -124,6 +124,9 @@ final class AppStrings {
   String get share => _lang == AppLanguage.zh ? '分享' : 'Share';
   String get favourite => _lang == AppLanguage.zh ? '收藏' : 'Favourite';
   String get unfavourite => _lang == AppLanguage.zh ? '取消收藏' : 'Unfavourite';
+  String get favouritedToast => _lang == AppLanguage.zh ? '已收藏' : 'Favourited';
+  String get unfavouritedToast =>
+      _lang == AppLanguage.zh ? '已取消收藏' : 'Removed from favourites';
   String get bodyText => _lang == AppLanguage.zh ? '正文' : 'Text';
   String get originalStatusPrefix =>
       _lang == AppLanguage.zh ? '原图：' : 'Original: ';

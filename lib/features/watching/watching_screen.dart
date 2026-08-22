@@ -11,6 +11,7 @@ import '../../core/runtime/runtime_provider.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/app_refresh_indicator.dart';
+import '../../shared/widgets/skeleton.dart';
 
 /// Lists the users the current account is watching (following).
 final class WatchingScreen extends ConsumerStatefulWidget {
@@ -109,7 +110,7 @@ final class _WatchingScreenState extends ConsumerState<WatchingScreen> {
       );
     }
     if (_items.isEmpty && _loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const SkeletonList();
     }
     if (_items.isEmpty) {
       return AppEmptyState(message: s.noWatchedUsers);

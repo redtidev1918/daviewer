@@ -34,4 +34,32 @@ final class ArtworkStore extends Notifier<Map<String, Artwork>> {
     }
     state = next;
   }
+
+  /// Updates a cached artwork's favourite flag so the detail screen reflects a
+  /// favourite/unfavourite action without a network round-trip.
+  void setFavourite(String id, bool favourited) {
+    final artwork = state[id];
+    if (artwork == null) return;
+    state = <String, Artwork>{
+      ...state,
+      id: _withFavourite(artwork, favourited),
+    };
+  }
+
+  static Artwork _withFavourite(Artwork artwork, bool favourited) => Artwork(
+    id: artwork.id,
+    title: artwork.title,
+    author: artwork.author,
+    pageUri: artwork.pageUri,
+    media: artwork.media,
+    description: artwork.description,
+    publishedAt: artwork.publishedAt,
+    isMature: artwork.isMature,
+    isDownloadable: artwork.isDownloadable,
+    isFavourited: favourited,
+    isMultiMedia: artwork.isMultiMedia,
+    downloadAvailability: artwork.downloadAvailability,
+    textContent: artwork.textContent,
+    tags: artwork.tags,
+  );
 }

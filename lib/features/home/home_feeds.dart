@@ -11,6 +11,7 @@ import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/app_refresh_indicator.dart';
 import '../../shared/widgets/artwork_card.dart';
 import '../../shared/widgets/scrollable_fill.dart';
+import '../../shared/widgets/skeleton.dart';
 import 'home_providers.dart';
 
 /// The banner shown when the web session and the OAuth session are out of sync.
@@ -84,7 +85,7 @@ final class DailyFeed extends ConsumerWidget {
     }
     final daily = ref.watch(dailyDeviationsProvider);
     return daily.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const SkeletonGrid(),
       error: (error, stackTrace) => AppRefreshIndicator(
         onRefresh: () => ref.refresh(dailyDeviationsProvider.future),
         child: ScrollableFill(
@@ -178,7 +179,7 @@ final class ArtworkGrid extends StatelessWidget {
       );
     }
     if (items.isEmpty && isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const SkeletonGrid();
     }
     if (items.isEmpty) {
       return ScrollableFill(child: AppEmptyState(message: emptyMessage));

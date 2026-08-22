@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_error_state.dart';
+import '../../shared/widgets/skeleton.dart';
 import 'search_providers.dart';
 
 /// The user-search results list.
@@ -18,7 +19,7 @@ final class UserResults extends ConsumerWidget {
     final users = ref.watch(userSearchProvider(query));
     final s = strings(ref.watch(appLanguageProvider));
     return users.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const SkeletonList(),
       error: (error, stackTrace) =>
           AppErrorState(message: friendlyErrorMessage(error)),
       data: (items) {
