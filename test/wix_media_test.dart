@@ -69,10 +69,7 @@ void main() {
     const tokens = ['tok0', 'tok1'];
 
     test('returns null when base is missing or empty', () {
-      expect(
-        wixResampledUrl(null, 'pretty', tokens, types),
-        isNull,
-      );
+      expect(wixResampledUrl(null, 'pretty', tokens, types), isNull);
       expect(wixResampledUrl('', 'pretty', tokens, types), isNull);
     });
 
