@@ -1,5 +1,9 @@
 # DAViewer
 
+<p align="center">
+  <img src="docs/da_icon.png" alt="DAViewer" width="160" />
+</p>
+
 **语言 / Language:** 中文 · [English](README.en.md)
 
 > DeviantArt 官方放弃了他们的移动 App，社区没有一个像样的第三方客户端。
