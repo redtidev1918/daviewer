@@ -91,6 +91,8 @@ final class AppStrings {
   String get noFavourites =>
       _lang == AppLanguage.zh ? '暂无收藏' : 'No favourites.';
   String get noDownloads => _lang == AppLanguage.zh ? '暂无下载' : 'No downloads.';
+  String get clearCompleted =>
+      _lang == AppLanguage.zh ? '清除已完成' : 'Clear completed';
   String get noResults =>
       _lang == AppLanguage.zh ? '无搜索结果' : 'No results found.';
   String get retry => _lang == AppLanguage.zh ? '重试' : 'Retry';
