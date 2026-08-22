@@ -56,4 +56,18 @@ void main() {
     expect(zh.loginHelpBody, contains('任意邮箱'));
     expect(en.loginHelpBody, contains('DeviantArt account'));
   });
+
+  test('download deletion warning states that local files are removed', () {
+    expect(zh.deleteFinishedDownloadsTitle, '删除已结束的下载？');
+    expect(zh.deleteFinishedDownloadsMessage(2), contains('本地文件'));
+    expect(zh.deleteFinishedDownloadsMessage(2), contains('无法撤销'));
+    expect(
+      en.deleteFinishedDownloadsMessage(1),
+      contains('1 finished download record'),
+    );
+    expect(
+      en.deleteFinishedDownloadsMessage(2),
+      contains('2 finished download records'),
+    );
+  });
 }
