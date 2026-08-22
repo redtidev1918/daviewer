@@ -1,3 +1,5 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dakit_core/dakit_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,68 +24,82 @@ final class SettingsScreen extends ConsumerWidget {
     final proxy = runtime.proxyController;
     final language = ref.watch(appLanguageProvider);
     final s = strings(language);
+    final signedIn = auth.status == AuthStatus.signedIn;
 
     return Scaffold(
       appBar: AppBar(title: Text(s.settings)),
       body: ListView(
+        padding: const EdgeInsets.all(16),
         children: <Widget>[
-          ListTile(
-            leading: const Icon(Icons.account_circle_outlined),
-            title: Text(account?.username ?? s.notLoggedIn),
-            subtitle: Text(
-              auth.status == AuthStatus.signedIn
-                  ? s.signedInWithDA
-                  : s.loginHint,
-            ),
+          _AccountHeader(account: account, signedIn: signedIn, s: s),
+          const SizedBox(height: 16),
+          _SettingsCard(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.translate),
+                title: Text(s.language),
+                subtitle: Text(
+                  language == AppLanguage.zh ? s.chinese : s.english,
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showLanguagePicker(context, ref, language),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.lan_outlined),
+                title: Text(s.proxy),
+                subtitle: Text(
+                  proxy?.config == null
+                      ? s.directProxy
+                      : '${proxy!.config!.host}:${proxy.config!.port}',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/settings/proxy'),
+              ),
+            ],
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.translate),
-            title: Text(s.language),
-            subtitle: Text(language == AppLanguage.zh ? s.chinese : s.english),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showLanguagePicker(context, ref, language),
+          const SizedBox(height: 16),
+          _SettingsCard(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.terminal_outlined),
+                title: Text(s.diagnostics),
+                subtitle: Text(s.viewLogs),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/settings/diagnostics'),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.lan_outlined),
-            title: Text(s.proxy),
-            subtitle: Text(
-              proxy?.config == null
-                  ? s.directProxy
-                  : '${proxy!.config!.host}:${proxy.config!.port}',
-            ),
-            onTap: () => context.push('/settings/proxy'),
+          const SizedBox(height: 16),
+          _SettingsCard(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: Text(s.about),
+                subtitle: const Text('DAViewer · $versionLabel'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showAbout(context, s),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.terminal_outlined),
-            title: Text(s.diagnostics),
-            subtitle: Text(s.viewLogs),
-            onTap: () => context.push('/settings/diagnostics'),
+          const SizedBox(height: 16),
+          _SettingsCard(
+            children: <Widget>[
+              ListTile(
+                leading: Icon(signedIn ? Icons.logout : Icons.login),
+                title: Text(signedIn ? s.logout : s.login),
+                onTap: () {
+                  if (signedIn) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text(s.signedOut)));
+                    ref.read(authControllerProvider.notifier).logout();
+                  } else {
+                    context.push('/web-login');
+                  }
+                },
+              ),
+            ],
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: Text(s.about),
-            subtitle: const Text('DAViewer · $versionLabel'),
-            onTap: () => _showAbout(context, s),
-          ),
-          const Divider(),
-          if (auth.status == AuthStatus.signedIn) ...[
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: Text(s.logout),
-              onTap: () {
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(s.signedOut)));
-                ref.read(authControllerProvider.notifier).logout();
-              },
-            ),
-          ] else
-            ListTile(
-              leading: const Icon(Icons.login),
-              title: Text(s.login),
-              onTap: () => context.push('/web-login'),
-            ),
         ],
       ),
     );
@@ -164,6 +180,88 @@ final class SettingsScreen extends ConsumerWidget {
             child: Text(s.close),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A rounded card holding a related group of [ListTile]s.
+final class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: children),
+    );
+  }
+}
+
+/// The account header: avatar, username, and sign-in state.
+final class _AccountHeader extends StatelessWidget {
+  const _AccountHeader({
+    required this.account,
+    required this.signedIn,
+    required this.s,
+  });
+
+  final UserProfile? account;
+  final bool signedIn;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final username = account?.username ?? '';
+    final uri = account?.avatarUri?.toString();
+    final fallback = CircleAvatar(
+      radius: 28,
+      child: Text(username.isEmpty ? '?' : username[0].toUpperCase()),
+    );
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: <Widget>[
+            if (uri == null || uri.isEmpty)
+              fallback
+            else
+              CachedNetworkImage(
+                imageUrl: uri,
+                memCacheWidth: 120,
+                imageBuilder: (context, imageProvider) =>
+                    CircleAvatar(radius: 28, backgroundImage: imageProvider),
+                placeholder: (context, url) => fallback,
+                errorWidget: (context, url, error) => fallback,
+              ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    username.isEmpty ? s.notLoggedIn : username,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    signedIn ? s.signedInWithDA : s.loginHint,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
