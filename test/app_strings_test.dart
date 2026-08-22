@@ -11,7 +11,10 @@ void main() {
     expect(en.notificationTypeLabel('favourited'), 'favourited your work');
     expect(en.notificationTypeLabel('comment'), 'commented on your work');
     expect(en.notificationTypeLabel('mention'), 'mentioned you');
-    expect(en.notificationTypeLabel('collection'), 'added your work to a collection');
+    expect(
+      en.notificationTypeLabel('collection'),
+      'added your work to a collection',
+    );
     expect(en.notificationTypeLabel('journal'), 'posted a journal');
     expect(en.notificationTypeLabel('gift'), 'sent you a gift');
     expect(en.notificationTypeLabel('note'), 'sent you a note');
@@ -38,10 +41,7 @@ void main() {
     final now = DateTime.now();
     expect(en.relativeTime(null), isEmpty);
     expect(en.relativeTime(now.subtract(const Duration(seconds: 5))), 'now');
-    expect(
-      en.relativeTime(now.subtract(const Duration(minutes: 5))),
-      '5m ago',
-    );
+    expect(en.relativeTime(now.subtract(const Duration(minutes: 5))), '5m ago');
     expect(en.relativeTime(now.subtract(const Duration(hours: 2))), '2h ago');
     expect(en.relativeTime(now.subtract(const Duration(days: 3))), '3d ago');
   });

@@ -14,7 +14,8 @@ void main() {
   });
 
   test('tiptapToPlainText unwraps document and hardBreaks', () {
-    const doc = '{"version":1,"document":{"type":"doc","content":['
+    const doc =
+        '{"version":1,"document":{"type":"doc","content":['
         '{"type":"paragraph","content":['
         '{"type":"text","text":"Hi"},{"type":"hardBreak"},'
         '{"type":"text","text":"There"}]}]}}';
@@ -22,14 +23,16 @@ void main() {
   });
 
   test('tiptapToHtml preserves inline marks', () {
-    const doc = '{"document":{"type":"doc","content":['
+    const doc =
+        '{"document":{"type":"doc","content":['
         '{"type":"paragraph","content":['
         '{"type":"text","text":"Bold","marks":[{"type":"bold"}]}]}]}}';
     expect(tiptapToHtml(doc), contains('<b>Bold</b>'));
   });
 
   test('tiptapToHtml renders a link mark', () {
-    const doc = '{"document":{"type":"doc","content":['
+    const doc =
+        '{"document":{"type":"doc","content":['
         '{"type":"paragraph","content":['
         '{"type":"text","text":"go","marks":['
         '{"type":"link","attrs":{"href":"https://e.test"}}]}]}]}}';
@@ -37,7 +40,8 @@ void main() {
   });
 
   test('tiptapToHtml renders an embedded image with a resolved URL', () {
-    const doc = '{"version":1,"document":{"type":"doc","content":['
+    const doc =
+        '{"version":1,"document":{"type":"doc","content":['
         '{"type":"da-deviation","attrs":{"deviation":{"media":'
         '{"baseUri":"https://x.test/a.jpg","prettyName":"p","token":["t"],'
         '"types":[{"t":"fullview","r":0,"c":"v1/fill/w_1280","w":1280}]'
