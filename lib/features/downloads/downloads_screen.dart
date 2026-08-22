@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../../shared/widgets/app_empty_state.dart';
@@ -39,7 +40,7 @@ final class DownloadsScreen extends ConsumerWidget {
   ) {
     if (state.error != null && state.items.isEmpty) {
       return AppErrorState(
-        message: '${state.error}',
+        message: friendlyErrorMessage(state.error!),
         onRetry: () => ref.read(downloadsProvider.notifier).refresh(),
       );
     }
