@@ -183,11 +183,18 @@ final class _TappableImage extends StatelessWidget {
           fit: BoxFit.contain,
           width: double.infinity,
           memCacheWidth: 1080,
-          placeholder: (context, url) => const AspectRatio(
+          // Progressive loading: show a tiny (blurred) version of the same
+          // image instantly, then cross-fade to the full-resolution decode.
+          placeholder: (context, url) => AspectRatio(
             aspectRatio: 1,
-            child: ColoredBox(
-              color: AppTheme.placeholderColor,
-              child: Center(child: CircularProgressIndicator()),
+            child: CachedNetworkImage(
+              imageUrl: url,
+              memCacheWidth: 40,
+              fit: BoxFit.cover,
+              placeholder: (context, url) =>
+                  const ColoredBox(color: AppTheme.placeholderColor),
+              errorWidget: (context, url, error) =>
+                  const ColoredBox(color: AppTheme.placeholderColor),
             ),
           ),
           errorWidget: (context, url, error) => const AspectRatio(
