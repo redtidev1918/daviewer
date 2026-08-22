@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_error_state.dart';
+import '../../shared/widgets/skeleton.dart';
 import 'artist_providers.dart';
 
 /// The artist's journal posts (articles).
@@ -18,7 +19,7 @@ final class JournalsView extends ConsumerWidget {
     final journals = ref.watch(artistJournalsProvider(username));
     final s = strings(ref.watch(appLanguageProvider));
     return journals.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const SkeletonList(),
       error: (error, stackTrace) =>
           AppErrorState(message: friendlyErrorMessage(error)),
       data: (items) {

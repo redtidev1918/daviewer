@@ -7,6 +7,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
+import '../../shared/widgets/skeleton.dart';
 import 'artist_folders_view.dart';
 import 'artist_header.dart';
 import 'artist_journals_view.dart';
@@ -116,7 +117,7 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
           ),
         ),
         body: profile.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const SkeletonDetail(),
           error: (error, stackTrace) =>
               AppErrorState(message: friendlyErrorMessage(error)),
           data: (profile) => Column(

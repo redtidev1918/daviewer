@@ -11,6 +11,7 @@ import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/app_refresh_indicator.dart';
 import '../../shared/widgets/scrollable_fill.dart';
+import '../../shared/widgets/skeleton.dart';
 import 'notifications_providers.dart';
 
 /// The user's DeviantArt notifications (message center). Each entry shows
@@ -27,7 +28,7 @@ final class NotificationsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(s.notifications)),
       body: messages.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const SkeletonList(),
         error: (error, stackTrace) => AppRefreshIndicator(
           onRefresh: () => ref.refresh(notificationsProvider.future),
           child: ScrollableFill(

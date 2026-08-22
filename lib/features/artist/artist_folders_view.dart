@@ -8,6 +8,7 @@ import '../../app/theme/app_theme.dart';
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_error_state.dart';
+import '../../shared/widgets/skeleton.dart';
 import 'artist_providers.dart';
 
 /// The artist's gallery folders (sub-galleries).
@@ -21,7 +22,7 @@ final class FoldersView extends ConsumerWidget {
     final folders = ref.watch(artistFoldersProvider(username));
     final s = strings(ref.watch(appLanguageProvider));
     return folders.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const SkeletonList(),
       error: (error, stackTrace) =>
           AppErrorState(message: friendlyErrorMessage(error)),
       data: (items) {

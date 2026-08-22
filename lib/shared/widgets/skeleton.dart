@@ -139,3 +139,35 @@ final class SkeletonDetail extends StatelessWidget {
     );
   }
 }
+
+/// A list of shimmer rows (avatar + title + subtitle), used while list-style
+/// screens (notifications, downloads, watching, …) load.
+final class SkeletonList extends StatelessWidget {
+  const SkeletonList({this.itemCount = 8, super.key});
+
+  final int itemCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: itemCount,
+      separatorBuilder: (_, _) => const Divider(height: 1),
+      itemBuilder: (context, index) => const _SkeletonListTile(),
+    );
+  }
+}
+
+final class _SkeletonListTile extends StatelessWidget {
+  const _SkeletonListTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ListTile(
+      leading: Skeleton(width: 48, height: 48, radius: 24),
+      title: Skeleton(width: 140, height: 14, radius: 6),
+      subtitle: Skeleton(width: 200, height: 12, radius: 6),
+    );
+  }
+}
