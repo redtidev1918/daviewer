@@ -5,6 +5,7 @@ import '../../core/diagnostics/error_text.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import 'app_empty_state.dart';
 import 'app_error_state.dart';
+import 'app_refresh_indicator.dart';
 import 'artwork_card.dart';
 import 'skeleton.dart';
 
@@ -67,7 +68,7 @@ final class ArtworkFeedGrid extends StatelessWidget {
     // the grid is empty or not yet filled.
     final refreshable = onRefresh == null
         ? body
-        : RefreshIndicator(
+        : AppRefreshIndicator(
             onRefresh: onRefresh!,
             child: body is GridView
                 ? body

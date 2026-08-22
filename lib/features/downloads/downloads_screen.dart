@@ -12,6 +12,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
+import '../../shared/widgets/app_refresh_indicator.dart';
 import '../../shared/widgets/settings_action.dart';
 import 'download_helpers.dart';
 import 'downloads_providers.dart';
@@ -48,7 +49,7 @@ final class DownloadsScreen extends ConsumerWidget {
       return const Center(child: CircularProgressIndicator());
     }
     if (state.items.isEmpty) {
-      return RefreshIndicator(
+      return AppRefreshIndicator(
         onRefresh: () => ref.read(downloadsProvider.notifier).refresh(),
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
@@ -62,7 +63,7 @@ final class DownloadsScreen extends ConsumerWidget {
         ),
       );
     }
-    return RefreshIndicator(
+    return AppRefreshIndicator(
       onRefresh: () => ref.read(downloadsProvider.notifier).refresh(),
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),

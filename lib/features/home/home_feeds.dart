@@ -8,6 +8,7 @@ import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
+import '../../shared/widgets/app_refresh_indicator.dart';
 import '../../shared/widgets/artwork_card.dart';
 import '../../shared/widgets/scrollable_fill.dart';
 import 'home_providers.dart';
@@ -84,7 +85,7 @@ final class DailyFeed extends ConsumerWidget {
     final daily = ref.watch(dailyDeviationsProvider);
     return daily.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => RefreshIndicator(
+      error: (error, stackTrace) => AppRefreshIndicator(
         onRefresh: () => ref.refresh(dailyDeviationsProvider.future),
         child: ScrollableFill(
           child: AppErrorState(
@@ -93,7 +94,7 @@ final class DailyFeed extends ConsumerWidget {
           ),
         ),
       ),
-      data: (items) => RefreshIndicator(
+      data: (items) => AppRefreshIndicator(
         onRefresh: () => ref.refresh(dailyDeviationsProvider.future),
         child: ArtworkGrid(
           items: items,

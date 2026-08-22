@@ -9,6 +9,7 @@ import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
+import '../../shared/widgets/app_refresh_indicator.dart';
 import '../../shared/widgets/scrollable_fill.dart';
 import 'notifications_providers.dart';
 
@@ -27,7 +28,7 @@ final class NotificationsScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(s.notifications)),
       body: messages.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => RefreshIndicator(
+        error: (error, stackTrace) => AppRefreshIndicator(
           onRefresh: () => ref.refresh(notificationsProvider.future),
           child: ScrollableFill(
             child: AppErrorState(
@@ -38,7 +39,7 @@ final class NotificationsScreen extends ConsumerWidget {
         ),
         data: (items) {
           if (items.isEmpty) {
-            return RefreshIndicator(
+            return AppRefreshIndicator(
               onRefresh: () => ref.refresh(notificationsProvider.future),
               child: ScrollableFill(
                 child: AppEmptyState(
@@ -48,7 +49,7 @@ final class NotificationsScreen extends ConsumerWidget {
               ),
             );
           }
-          return RefreshIndicator(
+          return AppRefreshIndicator(
             onRefresh: () => ref.refresh(notificationsProvider.future),
             child: ListView.separated(
               physics: const AlwaysScrollableScrollPhysics(),
