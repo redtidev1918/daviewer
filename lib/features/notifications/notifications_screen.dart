@@ -8,6 +8,7 @@ import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
+import '../../shared/widgets/scrollable_fill.dart';
 import 'notifications_providers.dart';
 
 /// The user's DeviantArt notifications (message center). Each entry shows
@@ -27,7 +28,7 @@ final class NotificationsScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => RefreshIndicator(
           onRefresh: () => ref.refresh(notificationsProvider.future),
-          child: _ScrollableFill(
+          child: ScrollableFill(
             child: AppErrorState(
               message: _friendlyError(error, s),
               onRetry: () => ref.invalidate(notificationsProvider),
@@ -38,7 +39,7 @@ final class NotificationsScreen extends ConsumerWidget {
           if (items.isEmpty) {
             return RefreshIndicator(
               onRefresh: () => ref.refresh(notificationsProvider.future),
-              child: _ScrollableFill(
+              child: ScrollableFill(
                 child: AppEmptyState(
                   message: s.noNotifications,
                   icon: Icons.notifications_none,
@@ -179,24 +180,4 @@ String _friendlyError(Object error, AppStrings s) {
     }
   }
   return friendlyErrorMessage(error);
-}
-
-final class _ScrollableFill extends StatelessWidget {
-  const _ScrollableFill({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: SizedBox(
-          height: constraints.maxHeight,
-          width: constraints.maxWidth,
-          child: child,
-        ),
-      ),
-    );
-  }
 }

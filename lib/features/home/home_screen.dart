@@ -15,6 +15,7 @@ import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/artwork_card.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
+import '../../shared/widgets/scrollable_fill.dart';
 import 'home_providers.dart';
 
 /// Native home: three tabs, all rendered with the native feed UI.
@@ -277,7 +278,7 @@ final class _DailyFeed extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => RefreshIndicator(
         onRefresh: () => ref.refresh(dailyDeviationsProvider.future),
-        child: _ScrollableFill(
+        child: ScrollableFill(
           child: AppErrorState(
             message: friendlyErrorMessage(error),
             onRetry: () => ref.invalidate(dailyDeviationsProvider),
@@ -379,28 +380,6 @@ final class _LoginPrompt extends StatelessWidget {
   }
 }
 
-/// Wraps a non-scrollable child in a scroll view so pull-to-refresh works even
-/// for empty/error states.
-final class _ScrollableFill extends StatelessWidget {
-  const _ScrollableFill({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: SizedBox(
-          height: constraints.maxHeight,
-          width: constraints.maxWidth,
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
 final class _ArtworkGrid extends StatelessWidget {
   const _ArtworkGrid({
     required this.items,
@@ -417,7 +396,7 @@ final class _ArtworkGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (error != null && items.isEmpty) {
-      return _ScrollableFill(
+      return ScrollableFill(
         child: AppErrorState(message: friendlyErrorMessage(error!)),
       );
     }
@@ -425,7 +404,7 @@ final class _ArtworkGrid extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
     if (items.isEmpty) {
-      return _ScrollableFill(child: AppEmptyState(message: emptyMessage));
+      return ScrollableFill(child: AppEmptyState(message: emptyMessage));
     }
 
     return GridView.builder(
