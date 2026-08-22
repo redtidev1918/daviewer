@@ -8,6 +8,7 @@ import 'package:video_player/video_player.dart';
 import '../../app/theme/app_theme.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/full_screen_image_viewer.dart';
+import 'artwork_navigation.dart';
 
 /// Picks the single asset to display inline from an artwork's [media]:
 /// a playable video first, then an animation, then the largest resampled
@@ -65,6 +66,8 @@ final class MediaViewer extends StatefulWidget {
     required this.media,
     this.additionalMedia = const <MediaAsset>[],
     this.heroTag,
+    this.onPreviousArtwork,
+    this.onNextArtwork,
   });
 
   final List<MediaAsset> media;
@@ -73,6 +76,8 @@ final class MediaViewer extends StatefulWidget {
   /// Hero tag for the first page's image, used to animate the grid → detail
   /// transition (matching [ArtworkCard]'s tag).
   final String? heroTag;
+  final VoidCallback? onPreviousArtwork;
+  final VoidCallback? onNextArtwork;
 
   @override
   State<MediaViewer> createState() => MediaViewerState();
@@ -80,6 +85,7 @@ final class MediaViewer extends StatefulWidget {
 
 final class MediaViewerState extends State<MediaViewer> {
   int _page = 0;
+  final ArtworkEdgeSwipeTracker _edgeSwipe = ArtworkEdgeSwipeTracker();
 
   List<MediaAsset> get _pages => <MediaAsset>[
     ?selectDisplayAsset(widget.media),
@@ -112,12 +118,42 @@ final class MediaViewerState extends State<MediaViewer> {
           children: <Widget>[
             AspectRatio(
               aspectRatio: 1,
-              child: PageView.builder(
-                itemCount: pages.length,
-                onPageChanged: (index) => setState(() => _page = index),
-                itemBuilder: (context, index) => _pageWidget(
-                  pages[index],
-                  heroTag: index == 0 ? widget.heroTag : null,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is ScrollStartNotification) {
+                    _edgeSwipe.reset();
+                  } else if (notification is OverscrollNotification) {
+                    _edgeSwipe.add(
+                      notification.overscroll,
+                      atFirst: _page == 0,
+                      atLast: _page == pages.length - 1,
+                    );
+                  } else if (notification is ScrollEndNotification) {
+                    final direction = _edgeSwipe.finish();
+                    if (direction != null) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        switch (direction) {
+                          case ArtworkSwipeDirection.previous:
+                            widget.onPreviousArtwork?.call();
+                          case ArtworkSwipeDirection.next:
+                            widget.onNextArtwork?.call();
+                        }
+                      });
+                    }
+                  }
+                  return false;
+                },
+                child: PageView.builder(
+                  itemCount: pages.length,
+                  onPageChanged: (index) {
+                    _edgeSwipe.reset();
+                    setState(() => _page = index);
+                  },
+                  itemBuilder: (context, index) => _pageWidget(
+                    pages[index],
+                    heroTag: index == 0 ? widget.heroTag : null,
+                  ),
                 ),
               ),
             ),
@@ -185,9 +221,17 @@ final class MediaViewerState extends State<MediaViewer> {
       child = _VideoPlayer(url: url);
     } else if (asset.mimeType == 'image/gif') {
       // Animated GIFs render through Image.network so they actually animate.
-      child = _AnimatedImage(url: url);
+      child = _AnimatedImage(
+        url: url,
+        onPreviousArtwork: _pages.length == 1 ? widget.onPreviousArtwork : null,
+        onNextArtwork: _pages.length == 1 ? widget.onNextArtwork : null,
+      );
     } else {
-      child = _TappableImage(url: url);
+      child = _TappableImage(
+        url: url,
+        onPreviousArtwork: _pages.length == 1 ? widget.onPreviousArtwork : null,
+        onNextArtwork: _pages.length == 1 ? widget.onNextArtwork : null,
+      );
     }
     if (heroTag != null && asset.kind != MediaKind.video) {
       return Hero(tag: heroTag, child: child);
@@ -267,9 +311,15 @@ final class _GatedPlaceholder extends StatelessWidget {
 }
 
 final class _TappableImage extends StatelessWidget {
-  const _TappableImage({required this.url});
+  const _TappableImage({
+    required this.url,
+    this.onPreviousArtwork,
+    this.onNextArtwork,
+  });
 
   final String url;
+  final VoidCallback? onPreviousArtwork;
+  final VoidCallback? onNextArtwork;
 
   @override
   Widget build(BuildContext context) {
@@ -278,6 +328,8 @@ final class _TappableImage extends StatelessWidget {
         MaterialPageRoute<void>(
           builder: (context) => FullScreenImageViewer(
             imageProvider: CachedNetworkImageProvider(url),
+            onPreviousArtwork: onPreviousArtwork,
+            onNextArtwork: onNextArtwork,
           ),
         ),
       ),
@@ -321,9 +373,15 @@ final class _TappableImage extends StatelessWidget {
 }
 
 final class _AnimatedImage extends StatelessWidget {
-  const _AnimatedImage({required this.url});
+  const _AnimatedImage({
+    required this.url,
+    this.onPreviousArtwork,
+    this.onNextArtwork,
+  });
 
   final String url;
+  final VoidCallback? onPreviousArtwork;
+  final VoidCallback? onNextArtwork;
 
   @override
   Widget build(BuildContext context) {
@@ -338,6 +396,8 @@ final class _AnimatedImage extends StatelessWidget {
         MaterialPageRoute<void>(
           builder: (context) => FullScreenImageViewer(
             imageProvider: CachedNetworkImageProvider(url),
+            onPreviousArtwork: onPreviousArtwork,
+            onNextArtwork: onNextArtwork,
           ),
         ),
       ),

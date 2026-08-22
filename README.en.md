@@ -33,13 +33,17 @@
   (`rfy/deviations`), matching the website
 - **Search**: keyword search + history + paste a DeviantArt link to jump straight
   to an artwork or artist
-- **Artwork detail**: one double-tap/pinch zoom experience for images; highest-
-  quality video selection with seeking and retry; cached GIFs with progress;
-  multi-image paging; cached rich-text images with placeholders and retry
-- **Related content**: a native "More like this" waterfall that hydrates sparse
-  previews and keeps explicit empty, failure and retry states visible
-- **Tags**: `#tags` on the detail page, tap through to the tag feed, plus
-  "related tags" on the tag page
+- **Artwork detail**: preserves the originating feed so a horizontal swipe or
+  top-bar button opens the previous/next work; full-screen images switch works
+  only at 1× zoom, while zoomed gestures pan; multi-image works page internally
+  first and switch work only after another swipe beyond the first/last page
+- **Media**: shared double-tap/pinch image zoom; highest-quality video selection
+  with seeking and retry; cached GIFs and rich-text images with progress,
+  placeholders, and retry
+- **Related content**: native "More like this" results matching the current
+  website, with the official API retained as a fallback
+- **Tags**: one compact horizontal tag row across detail, search, and tag
+  screens; related tags collapse while the artwork feed scrolls down
 - **Artist**: profile (including the artist's bio), gallery, **custom
   sub-galleries (folders)**, favourites, watch
 - **Social**: favourite artworks (with favourite state), watch/unwatch artists,
@@ -65,19 +69,13 @@ dependencies:
   dakit_flutter: ^0.1.8
 ```
 
-Numeric artwork ids from the personalized web feed must first be resolved to
-the UUID accepted by the official API. If the CSRF session rotates, "More like
-this" shows a native retry action; retry waits for the headless web-session
-refresh to actually finish before resolving the id again. If the official
-preview only includes ids, DAKit hydrates those details with bounded
-concurrency. Genuine empty results remain visible with an explanation and retry.
-
-A fresh installation opens the unified sign-in screen directly. Personalized
-recommendations are not requested until both the web identity and CSRF session
-are ready, so signed-out state is never rendered as a feed error. First sign-in
-commits the web Cookie/CSRF before OAuth starts, preventing the two navigations
-from racing. OAuth errors remain on the sign-in screen with their cause and a
-retry action.
+The boundary is explicit: OAuth, official API mapping, domain models, and
+background transfers live in DAKit; website-personalized feeds, current website
+recommendations, and native page interaction live in DAViewer. Web data is
+mapped back into DAKit models, so detail, cache, download, and error handling do
+not split into parallel implementations. First sign-in commits the web
+Cookie/CSRF before OAuth; signed-out state remains normal onboarding, not a feed
+error.
 
 ## Install
 
@@ -136,9 +134,15 @@ the registry). To set one manually, enter `host:port` in Settings → Proxy.
 ```shell
 export http_proxy=http://127.0.0.1:7890
 export https_proxy=http://127.0.0.1:7890
+# Or use one general proxy (lowercase and uppercase variables are supported):
+# export all_proxy=http://127.0.0.1:7892
 export no_proxy=localhost,127.0.0.1
 flutter pub get
 ```
+
+DAViewer also reads `http_proxy`, `https_proxy`, `all_proxy`, and their uppercase
+forms. Apps launched from Finder usually do not inherit terminal variables; use
+the system proxy or Settings → Proxy in that case.
 
 ## Release build
 
@@ -162,17 +166,7 @@ Actions → **Release** → Run workflow → pick `patch` / `minor` / `major` (o
 an exact version) → run. It bumps the version, commits, pushes the tag, and CI
 builds and publishes.
 
-### Manual release
-
-```shell
-# 1. Update `version` in pubspec.yaml and `versionLabel` in
-#    lib/features/settings/settings_screen.dart
-# 2. Commit and push
-# 3. Push a tag to trigger the release
-git tag v0.2.42 && git push origin v0.2.42   # replace with the actual version
-```
-
-Local builds:
+Local verification builds:
 
 ```shell
 flutter build apk --release          # Android APK (requires android/key.properties)

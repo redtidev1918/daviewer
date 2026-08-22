@@ -1,7 +1,6 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/auth/web_session_controller.dart';
 import '../../core/auth/web_session_refresher.dart';
@@ -9,6 +8,7 @@ import '../../core/diagnostics/app_logger.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/artwork_card.dart';
 import 'artwork_detail_providers.dart';
+import 'artwork_navigation.dart';
 
 /// A masonry (waterfall) grid of "More Like This" deviations shown below an
 /// artwork, matching the modern feed layout. Hides itself when empty.
@@ -110,7 +110,12 @@ final class MoreLikeThisSection extends ConsumerWidget {
                   aspectRatio: artworkAspectRatio(artwork),
                   child: ArtworkCard(
                     artwork: artwork,
-                    onTap: () => context.push('/artwork/${artwork.id}'),
+                    onTap: () => openArtworkFromList(
+                      context,
+                      ref,
+                      artworks: items,
+                      artwork: artwork,
+                    ),
                   ),
                 );
               },

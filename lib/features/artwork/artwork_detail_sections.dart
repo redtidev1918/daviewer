@@ -2,6 +2,8 @@ import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../shared/widgets/compact_tag_strip.dart';
+
 import '../../core/l10n/app_strings.dart';
 import 'rich_html.dart';
 
@@ -100,7 +102,7 @@ final class ArtworkDescriptionSection extends StatelessWidget {
   }
 }
 
-/// The searchable tag chips.
+/// A compact, single-line strip of searchable tags.
 final class ArtworkTagsSection extends StatelessWidget {
   const ArtworkTagsSection({required this.tags, super.key});
 
@@ -108,25 +110,13 @@ final class ArtworkTagsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        const Divider(),
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          children: <Widget>[
-            for (final tag in tags)
-              ActionChip(
-                label: Text('#$tag'),
-                visualDensity: VisualDensity.compact,
-                onPressed: () =>
-                    context.push('/tag/${Uri.encodeComponent(tag)}'),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: CompactTagStrip(
+        tags: tags,
+        padding: EdgeInsets.zero,
+        onSelected: (tag) => context.push('/tag/${Uri.encodeComponent(tag)}'),
+      ),
     );
   }
 }

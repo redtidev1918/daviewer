@@ -4,6 +4,7 @@ import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/diagnostics/error_text.dart';
@@ -15,6 +16,7 @@ import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/skeleton.dart';
 import 'artwork_detail_providers.dart';
 import 'artwork_detail_sections.dart';
+import 'artwork_navigation.dart';
 import 'download_section.dart';
 import 'download_reason.dart';
 import 'favourite_actions.dart';
@@ -22,9 +24,14 @@ import 'media_viewer.dart';
 import 'more_like_this.dart';
 
 final class ArtworkDetailScreen extends ConsumerStatefulWidget {
-  const ArtworkDetailScreen({required this.artworkId, super.key});
+  const ArtworkDetailScreen({
+    required this.artworkId,
+    this.browseSession,
+    super.key,
+  });
 
   final String artworkId;
+  final ArtworkBrowseSession? browseSession;
 
   @override
   ConsumerState<ArtworkDetailScreen> createState() =>
@@ -38,6 +45,7 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
   bool _downloading = false;
   bool _favourite = false;
   bool _favBusy = false;
+  bool _navigatingArtwork = false;
   String? _reportedTransferFailure;
 
   late final AnimationController _heartController = AnimationController(
@@ -209,6 +217,17 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     await ref.read(runtimeProvider).transfers.cancel(transfer.id);
   }
 
+  void _navigateArtwork(int offset) {
+    if (_navigatingArtwork) return;
+    final session = widget.browseSession;
+    final id = offset < 0
+        ? session?.previousOf(widget.artworkId)
+        : session?.nextOf(widget.artworkId);
+    if (id == null) return;
+    _navigatingArtwork = true;
+    context.replace('/artwork/$id', extra: session);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = strings(ref.watch(appLanguageProvider));
@@ -224,6 +243,8 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     );
     final tags = ref.watch(artworkTagsProvider(widget.artworkId));
     final transfer = _transfer;
+    final previousArtwork = widget.browseSession?.previousOf(widget.artworkId);
+    final nextArtwork = widget.browseSession?.nextOf(widget.artworkId);
 
     // Reflect the real favourite state once it loads (the heart must show as
     // filled when re-opening an already-favourited artwork).
@@ -241,6 +262,20 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
       appBar: AppBar(
         title: Text(artwork.valueOrNull?.title ?? s.artworkDetail),
         actions: <Widget>[
+          IconButton(
+            tooltip: s.previousArtwork,
+            visualDensity: VisualDensity.compact,
+            onPressed: previousArtwork == null
+                ? null
+                : () => _navigateArtwork(-1),
+            icon: const Icon(Icons.chevron_left),
+          ),
+          IconButton(
+            tooltip: s.nextArtwork,
+            visualDensity: VisualDensity.compact,
+            onPressed: nextArtwork == null ? null : () => _navigateArtwork(1),
+            icon: const Icon(Icons.chevron_right),
+          ),
           IconButton(
             tooltip: s.share,
             onPressed: () {
@@ -284,6 +319,8 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
               additionalMedia:
                   additionalMedia.valueOrNull ?? const <MediaAsset>[],
               tags: tags.valueOrNull ?? const <String>[],
+              hasPreviousArtwork: previousArtwork != null,
+              hasNextArtwork: nextArtwork != null,
             ),
           ),
         ),
@@ -300,6 +337,8 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     String? journalHtml,
     List<MediaAsset> additionalMedia = const <MediaAsset>[],
     List<String> tags = const <String>[],
+    bool hasPreviousArtwork = false,
+    bool hasNextArtwork = false,
   }) {
     final s = strings(ref.read(appLanguageProvider));
     final media = artwork.media;
@@ -310,57 +349,65 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     // add another related-content block (e.g. Suggested Deviants / Collections),
     // drop a new widget below; each section owns its provider, its loading /
     // error / empty handling, and hides itself when it has nothing to show.
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: <Widget>[
-        if (media.isNotEmpty) ...[
-          MediaViewer(
-            media: media,
-            additionalMedia: additionalMedia,
-            heroTag: 'artwork-${artwork.id}',
-          ),
-          const SizedBox(height: 16),
-        ],
-        ArtworkHeader(artwork: artwork, s: s),
-        const Divider(),
-        ArtworkDescriptionSection(
-          isJournal: isJournal,
-          s: s,
-          journalHtml: journalHtml,
-          descriptionHtml: descriptionHtml,
-          description: description,
-          onOpenLink: _openLink,
-        ),
-        if (tags.isNotEmpty) ArtworkTagsSection(tags: tags),
-        if (!isJournal && media.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          originalResolution.when(
-            loading: () => Row(
-              children: <Widget>[
-                const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                const SizedBox(width: 8),
-                Text(s.checkingDownloadAvailability),
-              ],
+    return ArtworkSwipeRegion(
+      onPrevious: hasPreviousArtwork ? () => _navigateArtwork(-1) : null,
+      onNext: hasNextArtwork ? () => _navigateArtwork(1) : null,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: <Widget>[
+          if (media.isNotEmpty) ...[
+            MediaViewer(
+              media: media,
+              additionalMedia: additionalMedia,
+              heroTag: 'artwork-${artwork.id}',
+              onPreviousArtwork: hasPreviousArtwork
+                  ? () => _navigateArtwork(-1)
+                  : null,
+              onNextArtwork: hasNextArtwork ? () => _navigateArtwork(1) : null,
             ),
-            error: (error, stackTrace) => Row(
-              children: <Widget>[
-                Expanded(child: Text(s.downloadAvailabilityCheckFailed)),
-                TextButton(
-                  onPressed: () => unawaited(_retryDownloadAvailability()),
-                  child: Text(s.retry),
-                ),
-              ],
-            ),
-            data: (resolution) =>
-                _buildDownloadSection(s, media, resolution, transfer),
+            const SizedBox(height: 16),
+          ],
+          ArtworkHeader(artwork: artwork, s: s),
+          const Divider(),
+          ArtworkDescriptionSection(
+            isJournal: isJournal,
+            s: s,
+            journalHtml: journalHtml,
+            descriptionHtml: descriptionHtml,
+            description: description,
+            onOpenLink: _openLink,
           ),
+          if (tags.isNotEmpty) ArtworkTagsSection(tags: tags),
+          if (!isJournal && media.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            originalResolution.when(
+              loading: () => Row(
+                children: <Widget>[
+                  const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(s.checkingDownloadAvailability),
+                ],
+              ),
+              error: (error, stackTrace) => Row(
+                children: <Widget>[
+                  Expanded(child: Text(s.downloadAvailabilityCheckFailed)),
+                  TextButton(
+                    onPressed: () => unawaited(_retryDownloadAvailability()),
+                    child: Text(s.retry),
+                  ),
+                ],
+              ),
+              data: (resolution) =>
+                  _buildDownloadSection(s, media, resolution, transfer),
+            ),
+          ],
+          const Divider(),
+          MoreLikeThisSection(artworkId: widget.artworkId),
         ],
-        const Divider(),
-        MoreLikeThisSection(artworkId: widget.artworkId),
-      ],
+      ),
     );
   }
 

@@ -89,6 +89,9 @@ final class AppStrings {
   String get noImage => _lang == AppLanguage.zh ? '暂无图片' : 'No image';
   String get imageLoadFailed =>
       _lang == AppLanguage.zh ? '图片加载失败' : 'Failed to load';
+  String get previousArtwork =>
+      _lang == AppLanguage.zh ? '上一个作品' : 'Previous artwork';
+  String get nextArtwork => _lang == AppLanguage.zh ? '下一个作品' : 'Next artwork';
   String get videoLoadFailed =>
       _lang == AppLanguage.zh ? '视频加载失败' : 'Video failed to load';
   String get byPrefix => _lang == AppLanguage.zh ? '作者：' : 'by ';
