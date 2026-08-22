@@ -47,7 +47,6 @@ dependencies:
   video_player: ^2.14.0
   chewie: ^1.15.0
   flutter_inappwebview: 6.1.5
-  gal: ^2.3.3
 dev_dependencies:
   flutter_test:
     sdk: flutter

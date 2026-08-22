@@ -267,8 +267,6 @@ final class AppStrings {
 
   // --- transfers / downloads ---
   String get openFolderLabel => _lang == AppLanguage.zh ? '文件夹' : 'Folder';
-  String get openInGallery =>
-      _lang == AppLanguage.zh ? '在相册查看' : 'View in gallery';
   String get transferDone => _lang == AppLanguage.zh ? '已完成' : 'Done';
   String get transferDownloading =>
       _lang == AppLanguage.zh ? '下载中' : 'Downloading';
