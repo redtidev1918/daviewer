@@ -3,7 +3,7 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
-## 0.2.79（macOS 钥匙串体验）
+## 0.2.80（macOS 钥匙串体验）
 
 ### Fixed
 
