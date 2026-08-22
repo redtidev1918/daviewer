@@ -1,11 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
-import '../../core/search/search_history_store.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
 import '../../shared/widgets/settings_action.dart';
 import 'search_providers.dart';
@@ -32,21 +29,9 @@ final class SearchScreen extends ConsumerStatefulWidget {
 }
 
 final class _SearchScreenState extends ConsumerState<SearchScreen> {
-  final _controller = TextEditingController();
+  final TextEditingController _controller = TextEditingController();
   String _query = '';
-  List<String> _history = const <String>[];
   int _mode = 0; // 0 = artworks, 1 = users
-
-  @override
-  void initState() {
-    super.initState();
-    _loadHistory();
-  }
-
-  Future<void> _loadHistory() async {
-    final history = await SearchHistoryStore.load();
-    if (mounted) setState(() => _history = history);
-  }
 
   @override
   void dispose() {
@@ -54,20 +39,24 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
     super.dispose();
   }
 
-  Future<void> _submit(String value) async {
+  void _submit(String value) {
     final query = value.trim();
     if (query.isEmpty) return;
     // '#tag' → browse by tag.
     if (query.startsWith('#')) {
       final tag = query.substring(1).trim();
       if (tag.isNotEmpty) {
-        unawaited(context.push('/tag/${Uri.encodeComponent(tag)}'));
+        context.push('/tag/${Uri.encodeComponent(tag)}');
         return;
       }
     }
     setState(() => _query = query);
-    final history = await SearchHistoryStore.add(query);
-    if (mounted) setState(() => _history = history);
+    ref.read(searchHistoryProvider.notifier).add(query);
+  }
+
+  void _selectFromHistory(String query) {
+    _controller.text = query;
+    _submit(query);
   }
 
   void _clear() {
@@ -127,7 +116,7 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
           Expanded(
             child: query.isEmpty
-                ? _buildIdle(context, s)
+                ? _SearchIdleView(onSelect: _selectFromHistory)
                 : _mode == 0
                 ? ArtworkFeedGrid(
                     feed: ref.watch(searchFeedProvider(query)),
@@ -143,40 +132,29 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
       ),
     );
   }
+}
 
-  Widget _buildIdle(BuildContext context, AppStrings s) {
+/// The idle search view: recommended tags, popular tags, and recent history.
+final class _SearchIdleView extends ConsumerWidget {
+  const _SearchIdleView({required this.onSelect});
+
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = strings(ref.watch(appLanguageProvider));
     final theme = Theme.of(context);
     final recommended = ref.watch(recommendedTagsProvider);
+
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: <Widget>[
         if (recommended.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-            child: Text(s.recommendedTags, style: theme.textTheme.titleSmall),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: <Widget>[
-                for (final tag in recommended)
-                  ActionChip(
-                    label: Text('#$tag'),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () =>
-                        context.push('/tag/${Uri.encodeComponent(tag)}'),
-                  ),
-              ],
-            ),
-          ),
+          _SectionTitle(text: s.recommendedTags),
+          _TagChips(tags: recommended),
           const Divider(),
         ],
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
-          child: Text(s.popularTags, style: theme.textTheme.titleSmall),
-        ),
+        _SectionTitle(text: s.popularTags),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
           child: Text(
@@ -186,77 +164,114 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
           ),
         ),
+        _TagChips(tags: _popularTags),
+        const Divider(),
+        _SearchHistorySection(onSelect: onSelect),
+      ],
+    );
+  }
+}
+
+/// A section header.
+final class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+      child: Text(text, style: Theme.of(context).textTheme.titleSmall),
+    );
+  }
+}
+
+/// A wrapping row of tappable `#tag` chips.
+final class _TagChips extends StatelessWidget {
+  const _TagChips({required this.tags});
+
+  final List<String> tags;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: <Widget>[
+          for (final tag in tags)
+            ActionChip(
+              label: Text('#$tag'),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => context.push('/tag/${Uri.encodeComponent(tag)}'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The recent-search history list (with per-item delete and clear-all).
+final class _SearchHistorySection extends ConsumerWidget {
+  const _SearchHistorySection({required this.onSelect});
+
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = strings(ref.watch(appLanguageProvider));
+    final theme = Theme.of(context);
+    final history = ref.watch(searchHistoryProvider);
+
+    if (history.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
+        child: Column(
+          children: <Widget>[
+            Icon(Icons.search, size: 40, color: theme.colorScheme.outline),
+            const SizedBox(height: 12),
+            Text(
+              s.searchIdleHint,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: <Widget>[
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 4,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
             children: <Widget>[
-              for (final tag in _popularTags)
-                ActionChip(
-                  label: Text('#$tag'),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () =>
-                      context.push('/tag/${Uri.encodeComponent(tag)}'),
-                ),
+              Text(s.recent, style: theme.textTheme.titleSmall),
+              const Spacer(),
+              TextButton(
+                onPressed: () =>
+                    ref.read(searchHistoryProvider.notifier).clear(),
+                child: Text(s.clearHistory),
+              ),
             ],
           ),
         ),
-        const Divider(),
-        if (_history.isEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
-            child: Column(
-              children: <Widget>[
-                Icon(Icons.search, size: 40, color: theme.colorScheme.outline),
-                const SizedBox(height: 12),
-                Text(
-                  s.searchIdleHint,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+        for (final item in history)
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: Text(item),
+            trailing: IconButton(
+              tooltip: s.clear,
+              icon: const Icon(Icons.close, size: 18),
+              onPressed: () =>
+                  ref.read(searchHistoryProvider.notifier).remove(item),
             ),
-          )
-        else ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: <Widget>[
-                Text(s.recent, style: Theme.of(context).textTheme.titleSmall),
-                const Spacer(),
-                TextButton(
-                  onPressed: () async {
-                    await SearchHistoryStore.clear();
-                    if (mounted) {
-                      setState(() => _history = const <String>[]);
-                    }
-                  },
-                  child: Text(s.clearHistory),
-                ),
-              ],
-            ),
+            onTap: () => onSelect(item),
           ),
-          for (final item in _history)
-            ListTile(
-              leading: const Icon(Icons.history),
-              title: Text(item),
-              trailing: IconButton(
-                tooltip: s.clear,
-                icon: const Icon(Icons.close, size: 18),
-                onPressed: () async {
-                  final updated = await SearchHistoryStore.remove(item);
-                  if (mounted) setState(() => _history = updated);
-                },
-              ),
-              onTap: () {
-                _controller.text = item;
-                _submit(item);
-              },
-            ),
-        ],
       ],
     );
   }

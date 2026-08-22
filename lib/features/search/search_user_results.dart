@@ -1,9 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/skeleton.dart';
 import 'search_providers.dart';
@@ -24,7 +27,10 @@ final class UserResults extends ConsumerWidget {
           AppErrorState(message: friendlyErrorMessage(error)),
       data: (items) {
         if (items.isEmpty) {
-          return Center(child: Text(s.noUsersFound));
+          return AppEmptyState(
+            message: s.noUsersFound,
+            icon: Icons.person_search_outlined,
+          );
         }
         return ListView.separated(
           itemCount: items.length,
@@ -32,11 +38,7 @@ final class UserResults extends ConsumerWidget {
           itemBuilder: (context, index) {
             final user = items[index];
             return ListTile(
-              leading: user.avatarUri == null
-                  ? const CircleAvatar(child: Icon(Icons.person))
-                  : CircleAvatar(
-                      foregroundImage: NetworkImage(user.avatarUri.toString()),
-                    ),
+              leading: _UserAvatar(user: user),
               title: Text(user.username),
               subtitle: user.displayName == null
                   ? null
@@ -46,6 +48,29 @@ final class UserResults extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+}
+
+final class _UserAvatar extends StatelessWidget {
+  const _UserAvatar({required this.user});
+
+  final UserProfile user;
+
+  @override
+  Widget build(BuildContext context) {
+    final uri = user.avatarUri?.toString();
+    final fallback = CircleAvatar(
+      child: Text(user.username.isEmpty ? '?' : user.username[0].toUpperCase()),
+    );
+    if (uri == null || uri.isEmpty) return fallback;
+    return CachedNetworkImage(
+      imageUrl: uri,
+      memCacheWidth: 120,
+      imageBuilder: (context, imageProvider) =>
+          CircleAvatar(backgroundImage: imageProvider),
+      placeholder: (context, url) => fallback,
+      errorWidget: (context, url, error) => fallback,
     );
   }
 }
