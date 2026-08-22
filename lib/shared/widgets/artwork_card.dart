@@ -67,14 +67,14 @@ final class ArtworkCard extends ConsumerWidget {
                       const ColoredBox(color: AppTheme.placeholderColor),
                   errorWidget: (context, url, error) => const ColoredBox(
                     color: AppTheme.placeholderColor,
-                    child: Icon(Icons.image),
+                    child: Icon(Icons.broken_image_outlined),
                   ),
                 ),
               )
             else
               const ColoredBox(
                 color: AppTheme.placeholderColor,
-                child: Icon(Icons.image),
+                child: Icon(Icons.image_outlined),
               ),
             // Title + author overlaid on a bottom gradient.
             Positioned(

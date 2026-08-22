@@ -74,12 +74,15 @@ final class MediaViewerState extends State<MediaViewer> {
   Widget build(BuildContext context) {
     final pages = _pages;
     if (pages.isEmpty) {
-      return const AspectRatio(
+      final s = strings(
+        ProviderScope.containerOf(
+          context,
+          listen: false,
+        ).read(appLanguageProvider),
+      );
+      return AspectRatio(
         aspectRatio: 1,
-        child: ColoredBox(
-          color: AppTheme.placeholderColor,
-          child: Icon(Icons.image, size: 48),
-        ),
+        child: _MediaMessage(icon: Icons.image_outlined, message: s.noImage),
       );
     }
 
@@ -177,6 +180,40 @@ final class MediaViewerState extends State<MediaViewer> {
   }
 }
 
+/// A centered icon + message used for empty/gated/error media states.
+final class _MediaMessage extends StatelessWidget {
+  const _MediaMessage({required this.icon, required this.message});
+
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ColoredBox(
+      color: AppTheme.placeholderColor,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(icon, size: 48, color: scheme.onSurfaceVariant),
+          if (message.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                message,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /// A placeholder for content the user cannot access (premium/paid, blocked, or
 /// deleted), showing the reason instead of a broken image.
 final class _GatedPlaceholder extends StatelessWidget {
@@ -186,7 +223,6 @@ final class _GatedPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final s = strings(
       ProviderScope.containerOf(
         context,
@@ -209,27 +245,7 @@ final class _GatedPlaceholder extends StatelessWidget {
     };
     return AspectRatio(
       aspectRatio: 1,
-      child: ColoredBox(
-        color: AppTheme.placeholderColor,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Icon(icon, size: 48, color: scheme.onSurfaceVariant),
-            if (label.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium
-                      ?.copyWith(color: scheme.onSurfaceVariant),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+      child: _MediaMessage(icon: icon, message: label),
     );
   }
 }
@@ -268,11 +284,16 @@ final class _TappableImage extends StatelessWidget {
                   const ColoredBox(color: AppTheme.placeholderColor),
             ),
           ),
-          errorWidget: (context, url, error) => const AspectRatio(
+          errorWidget: (context, url, error) => AspectRatio(
             aspectRatio: 1,
-            child: ColoredBox(
-              color: AppTheme.placeholderColor,
-              child: Icon(Icons.broken_image, size: 48),
+            child: _MediaMessage(
+              icon: Icons.broken_image_outlined,
+              message: strings(
+                ProviderScope.containerOf(
+                  context,
+                  listen: false,
+                ).read(appLanguageProvider),
+              ).imageLoadFailed,
             ),
           ),
         ),
@@ -304,11 +325,16 @@ final class _AnimatedImage extends StatelessWidget {
                   child: Center(child: CircularProgressIndicator()),
                 ),
               ),
-        errorBuilder: (context, error, stack) => const AspectRatio(
+        errorBuilder: (context, error, stack) => AspectRatio(
           aspectRatio: 1,
-          child: ColoredBox(
-            color: AppTheme.placeholderColor,
-            child: Icon(Icons.broken_image, size: 48),
+          child: _MediaMessage(
+            icon: Icons.broken_image_outlined,
+            message: strings(
+              ProviderScope.containerOf(
+                context,
+                listen: false,
+              ).read(appLanguageProvider),
+            ).imageLoadFailed,
           ),
         ),
       ),

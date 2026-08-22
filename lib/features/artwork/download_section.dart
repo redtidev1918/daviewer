@@ -90,7 +90,6 @@ final class DownloadSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text('${s.originalStatusPrefix}${availabilityLabel(s, availability)}'),
-        if (original.mimeType != null) Text('MIME: ${original.mimeType}'),
         if (original.byteLength != null)
           Text('${s.sizeLabel}${formatBytes(original.byteLength!)}'),
         if (usingFallback) ...[

@@ -146,9 +146,33 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Widget _buildIdle(BuildContext context, AppStrings s) {
     final theme = Theme.of(context);
+    final recommended = ref.watch(recommendedTagsProvider);
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: <Widget>[
+        if (recommended.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+            child: Text(s.recommendedTags, style: theme.textTheme.titleSmall),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: <Widget>[
+                for (final tag in recommended)
+                  ActionChip(
+                    label: Text('#$tag'),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () =>
+                        context.push('/tag/${Uri.encodeComponent(tag)}'),
+                  ),
+              ],
+            ),
+          ),
+          const Divider(),
+        ],
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
           child: Text(s.popularTags, style: theme.textTheme.titleSmall),

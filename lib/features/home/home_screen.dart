@@ -79,11 +79,6 @@ final class HomeScreen extends ConsumerWidget {
               icon: const Icon(Icons.link),
             ),
             IconButton(
-              tooltip: s.notifications,
-              onPressed: () => context.push('/notifications'),
-              icon: const Icon(Icons.notifications_outlined),
-            ),
-            IconButton(
               tooltip: s.settings,
               onPressed: () => context.push('/settings'),
               icon: const Icon(Icons.settings_outlined),
