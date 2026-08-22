@@ -94,4 +94,19 @@ void main() {
     expect(html, contains('<img src="https://x.test/p.png"'));
     expect(html, contains('<hr>'));
   });
+
+  test('tiptapToHtml prefers the preview transform over fullview', () {
+    const doc =
+        '{"document":{"type":"doc","content":['
+        '{"type":"da-deviation","attrs":{"deviation":{"media":'
+        '{"baseUri":"https://x.test/a.jpg","prettyName":"p","token":["t"],'
+        '"types":['
+        '{"t":"preview","r":0,"c":"v1/fit/w_700","w":700},'
+        '{"t":"fullview","r":0,"c":"v1/fill/w_1280","w":1280}'
+        ']}}}}]}}';
+    expect(
+      tiptapToHtml(doc),
+      contains('<img src="https://x.test/a.jpg/v1/fit/w_700?token=t"'),
+    );
+  });
 }

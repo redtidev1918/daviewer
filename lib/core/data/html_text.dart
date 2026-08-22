@@ -255,8 +255,10 @@ int _headingLevel(Object? attrs) {
   return 2;
 }
 
-/// Resolves a Wix media descriptor into a display URL: the `fullview` transform
-/// (or the largest resampled image) appended to the base URI with its token.
+/// Resolves a Wix media descriptor into a display URL. Journals embed inline
+/// artwork per page, so prefer the `preview` transform (typically ~700px) over
+/// `fullview`/largest — a 30+ page comic would otherwise force dozens of
+/// full-resolution images into memory at once.
 String? _wixImageUrl(Map media) {
   final base = media['baseUri'] as String?;
   if (base == null || base.isEmpty) return null;
@@ -266,7 +268,10 @@ String? _wixImageUrl(Map media) {
       .toList(growable: false);
   final types = media['types'] as List? ?? const <Object?>[];
 
-  final best = wixTypeNamed(types, 'fullview') ?? wixLargestImageType(types);
+  final best =
+      wixTypeNamed(types, 'preview') ??
+      wixTypeNamed(types, 'fullview') ??
+      wixLargestImageType(types);
   final transform = best?['c'];
   final String url;
   if (transform is String) {
