@@ -10,6 +10,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
+import '../../shared/widgets/app_refresh_indicator.dart';
 
 /// Lists the users the current account is watching (following).
 final class WatchingScreen extends ConsumerStatefulWidget {
@@ -113,7 +114,7 @@ final class _WatchingScreenState extends ConsumerState<WatchingScreen> {
     if (_items.isEmpty) {
       return AppEmptyState(message: s.noWatchedUsers);
     }
-    return RefreshIndicator(
+    return AppRefreshIndicator(
       onRefresh: _load,
       child: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
