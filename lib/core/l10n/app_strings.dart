@@ -99,9 +99,8 @@ final class AppStrings {
   String get noDownloads => _lang == AppLanguage.zh ? '暂无下载' : 'No downloads.';
   String get deleteFinishedDownloads =>
       _lang == AppLanguage.zh ? '删除已结束下载' : 'Delete finished downloads';
-  String get deleteFinishedDownloadsTitle => _lang == AppLanguage.zh
-      ? '删除已结束的下载？'
-      : 'Delete finished downloads?';
+  String get deleteFinishedDownloadsTitle =>
+      _lang == AppLanguage.zh ? '删除已结束的下载？' : 'Delete finished downloads?';
   String deleteFinishedDownloadsMessage(int count) {
     if (_lang == AppLanguage.zh) {
       return '将删除 $count 条已结束的下载记录及其本地文件（如有）。此操作无法撤销。';
@@ -109,6 +108,7 @@ final class AppStrings {
     final record = count == 1 ? 'record' : 'records';
     return 'This will permanently delete $count finished download $record and any local files. This cannot be undone.';
   }
+
   String get deleteAction => _lang == AppLanguage.zh ? '删除' : 'Delete';
   String get noResults =>
       _lang == AppLanguage.zh ? '无搜索结果' : 'No results found.';
