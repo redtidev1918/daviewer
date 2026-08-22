@@ -33,6 +33,8 @@
 - **Artwork detail**: images / video (seekable) / GIF playback, swipe through
   multi-image galleries, full rich-text description (links / bold / emotes /
   embedded images)
+- **Related content**: "More like this" waterfall plus "Featured in / Suggested
+  collections" card rails at the bottom of the detail page
 - **Tags**: `#tags` on the detail page, tap through to the tag feed, plus
   "related tags" on the tag page
 - **Artist**: profile (including the artist's bio), gallery, **custom
