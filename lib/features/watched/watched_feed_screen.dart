@@ -114,6 +114,7 @@ final class _WatchedAuthorAvatar extends StatelessWidget {
             else
               CachedNetworkImage(
                 imageUrl: uri,
+                memCacheWidth: 120,
                 imageBuilder: (context, imageProvider) =>
                     CircleAvatar(backgroundImage: imageProvider),
                 placeholder: (context, url) => fallback,

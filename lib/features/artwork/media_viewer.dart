@@ -182,6 +182,7 @@ final class _TappableImage extends StatelessWidget {
           imageUrl: url,
           fit: BoxFit.contain,
           width: double.infinity,
+          memCacheWidth: 1080,
           placeholder: (context, url) => const AspectRatio(
             aspectRatio: 1,
             child: ColoredBox(

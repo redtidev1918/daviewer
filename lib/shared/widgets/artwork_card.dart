@@ -33,6 +33,7 @@ final class ArtworkCard extends StatelessWidget {
                 child: CachedNetworkImage(
                   imageUrl: uri.toString(),
                   fit: BoxFit.cover,
+                  memCacheWidth: 480,
                   placeholder: (context, url) =>
                       const ColoredBox(color: AppTheme.placeholderColor),
                   errorWidget: (context, url, error) => const ColoredBox(
