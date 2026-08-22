@@ -1,15 +1,15 @@
 # DAViewer
 
 <p align="center">
-  <img src="docs/da_icon.png" alt="DAViewer" width="160" />
+  <img src="docs/icon.png" alt="DAViewer" width="160" />
 </p>
 
 **Language:** English · [中文](README.md)
 
-> DeviantArt abandoned their official app, and the community was left without a
-> good third-party client — so **DAViewer** exists. An open-source DeviantArt
-> client built on [DAKit](https://github.com/redtidev1918/dakit), bringing the
-> website's experience back to desktop and mobile.
+> DeviantArt has discontinued its official client app. DAViewer is an
+> open-source DeviantArt client built on
+> [DAKit](https://github.com/redtidev1918/dakit), providing the website's core
+> features as a native app for Android, macOS, and Windows.
 
 [![GitHub stars](https://img.shields.io/github/stars/redtidev1918/daviewer?style=flat&color=yellow)](https://github.com/redtidev1918/daviewer/stargazers)
 [![GitHub license](https://img.shields.io/github/license/redtidev1918/daviewer?style=flat)](LICENSE)
@@ -19,8 +19,7 @@
 
 ## Why
 
-- DeviantArt has **discontinued/abandoned** its official client app, and most
-  third-party tools are stale;
+- DeviantArt has discontinued its official client app;
 - The website has full functionality (personalized recommendations, galleries,
   tags, favourites, watch, download) but no native desktop/mobile experience;
 - This project combines the website's full capabilities with native interaction,

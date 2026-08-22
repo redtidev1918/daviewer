@@ -1,14 +1,14 @@
 # DAViewer
 
 <p align="center">
-  <img src="docs/da_icon.png" alt="DAViewer" width="160" />
+  <img src="docs/icon.png" alt="DAViewer" width="160" />
 </p>
 
 **语言 / Language:** 中文 · [English](README.en.md)
 
-> DeviantArt 官方放弃了他们的移动 App，社区没有一个像样的第三方客户端。
-> 于是有了 **DAViewer** —— 一个基于 [DAKit](https://github.com/redtidev1918/dakit) 的开源
-> DeviantArt 客户端，把官网体验原汁原味地带回桌面和手机。
+> DeviantArt 官方已停止维护其移动客户端。DAViewer 是一个基于
+> [DAKit](https://github.com/redtidev1918/dakit) 的开源 DeviantArt 客户端，
+> 面向 Android、macOS 与 Windows，以原生应用提供网页版的主要功能。
 
 [![GitHub stars](https://img.shields.io/github/stars/redtidev1918/daviewer?style=flat&color=yellow)](https://github.com/redtidev1918/daviewer/stargazers)
 [![GitHub license](https://img.shields.io/github/license/redtidev1918/daviewer?style=flat)](LICENSE)
@@ -18,7 +18,7 @@
 
 ## 为什么做这个项目
 
-- DeviantArt 官方 **已下架/停止维护** 其客户端 App，第三方工具也大多停更；
+- DeviantArt 官方已停止维护其客户端 App；
 - 网页版功能齐全（个性化推荐、画廊、标签、收藏、关注、下载），但缺少桌面/移动
   原生体验；
 - 本项目把网页版的完整能力 + 原生交互组合起来，开箱即用，无需自己注册 OAuth 应用。
