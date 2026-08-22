@@ -167,6 +167,7 @@ jobs:
         # Retry pub get to ride out pub.dev CDN propagation lag for freshly
         # published DAKit versions (a stale edge can briefly report them as
         # missing and fail the build).
+        shell: bash
         run: |
           for attempt in 1 2 3 4 5; do
             if flutter pub get; then
