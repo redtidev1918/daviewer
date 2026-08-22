@@ -145,14 +145,21 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildIdle(BuildContext context, AppStrings s) {
+    final theme = Theme.of(context);
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+          child: Text(s.popularTags, style: theme.textTheme.titleSmall),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
           child: Text(
-            s.popularTags,
-            style: Theme.of(context).textTheme.titleSmall,
+            s.popularTagsHint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
         Padding(
@@ -174,11 +181,19 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
         const Divider(),
         if (_history.isEmpty)
           Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              s.searchIdleHint,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+            padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
+            child: Column(
+              children: <Widget>[
+                Icon(Icons.search, size: 40, color: theme.colorScheme.outline),
+                const SizedBox(height: 12),
+                Text(
+                  s.searchIdleHint,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           )
         else ...[
