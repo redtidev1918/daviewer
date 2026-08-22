@@ -73,4 +73,23 @@ final class SearchHistoryStore {
       );
     }
   }
+
+  /// Removes a single query from history and returns the updated list.
+  static Future<List<String>> remove(String query) async {
+    try {
+      final history = await load();
+      history.remove(query);
+      final file = await _file();
+      await file.writeAsString(jsonEncode(history));
+      return history;
+    } on Object catch (error, stack) {
+      AppLogger.instance.warning(
+        'search',
+        'failed to remove history',
+        error,
+        stack,
+      );
+    }
+    return load();
+  }
 }

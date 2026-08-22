@@ -25,10 +25,20 @@ final class DownloadsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(downloadsProvider);
     final s = strings(ref.watch(appLanguageProvider));
+    final hasFinished = state.items.any((snapshot) => snapshot.isFinal);
     return Scaffold(
       appBar: AppBar(
         title: Text(s.downloads),
-        actions: const <Widget>[SettingsAction()],
+        actions: <Widget>[
+          if (hasFinished)
+            IconButton(
+              tooltip: s.clearCompleted,
+              onPressed: () =>
+                  ref.read(downloadsProvider.notifier).clearCompleted(),
+              icon: const Icon(Icons.delete_sweep_outlined),
+            ),
+          const SettingsAction(),
+        ],
       ),
       body: _buildBody(context, ref, state, s),
     );

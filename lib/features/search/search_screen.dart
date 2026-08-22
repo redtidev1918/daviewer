@@ -219,6 +219,14 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
             ListTile(
               leading: const Icon(Icons.history),
               title: Text(item),
+              trailing: IconButton(
+                tooltip: s.clear,
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () async {
+                  final updated = await SearchHistoryStore.remove(item);
+                  if (mounted) setState(() => _history = updated);
+                },
+              ),
               onTap: () {
                 _controller.text = item;
                 _submit(item);

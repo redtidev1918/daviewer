@@ -100,13 +100,30 @@ final class _MessageTile extends StatelessWidget {
         url: originator?.avatarUri?.toString(),
         username: username.isEmpty ? artwork?.author.username : username,
       ),
-      title: Text(
-        username.isEmpty ? s.unknownUser : '@$username',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-        ),
+      title: Row(
+        children: <Widget>[
+          if (message.isNew) ...[
+            Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
+          Expanded(
+            child: Text(
+              username.isEmpty ? s.unknownUser : '@$username',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: message.isNew ? FontWeight.w700 : FontWeight.w400,
+              ),
+            ),
+          ),
+        ],
       ),
       subtitle: Text(
         s.notificationTypeLabel(message.type) +
