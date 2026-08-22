@@ -11,25 +11,34 @@ import '../../core/l10n/app_strings.dart';
 /// Picks the single asset to display inline from an artwork's [media]:
 /// a playable video first, then an animation, then the largest resampled
 /// preview image (so the potentially huge original is never forced onto the
-/// inline cache), falling back to any image.
+/// inline cache), falling back to any image. Gated assets (premium/paid,
+/// blocked) are skipped when an accessible alternative exists, so paid content
+/// still renders its accessible thumbnail instead of a broken image.
 MediaAsset? selectDisplayAsset(List<MediaAsset> media) {
   if (media.isEmpty) return null;
-  final video = media.where((m) => m.kind == MediaKind.video).firstOrNull;
+  bool available(MediaAsset m) => m.availability == MediaAvailability.available;
+  final video = media
+      .where((m) => m.kind == MediaKind.video && available(m))
+      .firstOrNull;
   if (video != null && video.uri != null) return video;
   final animation = media
-      .where((m) => m.kind == MediaKind.animation)
+      .where((m) => m.kind == MediaKind.animation && available(m))
       .firstOrNull;
   if (animation != null && animation.uri != null) return animation;
-  return media
-          .where(
-            (m) => m.kind == MediaKind.image && m.role == MediaRole.preview,
-          )
-          .fold<MediaAsset?>(
-            null,
-            (best, m) =>
-                best == null || (m.width ?? 0) > (best.width ?? 0) ? m : best,
-          ) ??
-      media.where((m) => m.kind == MediaKind.image).firstOrNull;
+  final accessibleImage = media
+      .where(
+        (m) =>
+            m.kind == MediaKind.image &&
+            m.role == MediaRole.preview &&
+            available(m),
+      )
+      .fold<MediaAsset?>(
+        null,
+        (best, m) =>
+            best == null || (m.width ?? 0) > (best.width ?? 0) ? m : best,
+      );
+  if (accessibleImage != null) return accessibleImage;
+  return media.where((m) => m.kind == MediaKind.image).firstOrNull;
 }
 
 /// Renders an artwork's media: static images, animated GIFs, videos, and
@@ -140,6 +149,11 @@ final class MediaViewerState extends State<MediaViewer> {
   }
 
   Widget _pageWidget(MediaAsset asset, {String? heroTag}) {
+    // Gated content (premium/paid, blocked, deleted): show a clear placeholder
+    // instead of trying to load a URL that will 403 and render a broken image.
+    if (asset.availability != MediaAvailability.available) {
+      return _GatedPlaceholder(availability: asset.availability);
+    }
     final url = asset.uri?.toString();
     if (url == null) {
       return const ColoredBox(
@@ -160,6 +174,63 @@ final class MediaViewerState extends State<MediaViewer> {
       return Hero(tag: heroTag, child: child);
     }
     return child;
+  }
+}
+
+/// A placeholder for content the user cannot access (premium/paid, blocked, or
+/// deleted), showing the reason instead of a broken image.
+final class _GatedPlaceholder extends StatelessWidget {
+  const _GatedPlaceholder({required this.availability});
+
+  final MediaAvailability availability;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final s = strings(
+      ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(appLanguageProvider),
+    );
+    final label = switch (availability) {
+      MediaAvailability.purchaseRequired => s.availabilityPurchaseRequired,
+      MediaAvailability.restricted => s.availabilityRestricted,
+      MediaAvailability.unavailable => s.availabilityUnavailable,
+      MediaAvailability.loginRequired => s.availabilityLoginRequired,
+      MediaAvailability.missing => s.availabilityMissing,
+      MediaAvailability.available => '',
+    };
+    final icon = switch (availability) {
+      MediaAvailability.purchaseRequired => Icons.lock_outline,
+      MediaAvailability.restricted => Icons.visibility_off_outlined,
+      MediaAvailability.missing => Icons.delete_outline,
+      _ => Icons.block,
+    };
+    return AspectRatio(
+      aspectRatio: 1,
+      child: ColoredBox(
+        color: AppTheme.placeholderColor,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(icon, size: 48, color: scheme.onSurfaceVariant),
+            if (label.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 
