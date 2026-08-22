@@ -5,10 +5,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
 import 'core/diagnostics/app_logger.dart';
+import 'core/downloads/gallery_saver.dart';
 import 'core/runtime/app_runtime.dart';
 import 'core/runtime/runtime_provider.dart';
 
 String _globalProxyDirective = 'DIRECT';
+
+/// Kept alive for the whole process so completed image downloads are copied
+/// into the mobile gallery.
+// ignore: unused_element
+GallerySaver? _gallerySaver;
 
 final class _AppHttpOverrides extends HttpOverrides {
   @override
@@ -26,6 +32,7 @@ Future<void> main() async {
   logger.info('app', 'DAViewer starting');
 
   final runtime = await AppRuntime.create();
+  _gallerySaver = GallerySaver(runtime.transfers);
   _globalProxyDirective = runtime.proxyController?.directive ?? 'DIRECT';
   runtime.proxyController?.addListener(() {
     _globalProxyDirective = runtime.proxyController!.directive;

@@ -147,7 +147,25 @@ final originalFileProvider = FutureProvider.autoDispose
         );
       }
       final runtime = ref.watch(runtimeProvider);
-      return dataAccessFor(runtime).originalFile(artworkId);
+      try {
+        return await dataAccessFor(runtime).originalFile(artworkId);
+      } on DAKitException catch (error) {
+        // Transient failures (network / rate limit) keep bubbling up so the
+        // screen can offer a retry. Everything else means the download endpoint
+        // rejected this artwork (not downloadable, premium, blocked, deleted…)
+        // — surface it as an availability hint instead of a full-screen error.
+        if (error.kind == DAKitFailureKind.network ||
+            error.kind == DAKitFailureKind.rateLimit) {
+          rethrow;
+        }
+        debugPrint('[orig] download rejected: ${error.code}');
+        return MediaAsset(
+          id: '$artworkId:original',
+          kind: MediaKind.unknown,
+          role: MediaRole.original,
+          availability: MediaAvailability.unavailable,
+        );
+      }
     });
 
 /// The full author description as plain text. For web-feed items it comes from
