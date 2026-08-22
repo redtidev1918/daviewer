@@ -74,7 +74,7 @@ final class _WatchedAuthorsStrip extends ConsumerWidget {
     final authors = ref.watch(watchedAuthorsProvider);
     if (authors.isEmpty) return const SizedBox.shrink();
     return SizedBox(
-      height: 88,
+      height: 108,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
@@ -87,14 +87,15 @@ final class _WatchedAuthorsStrip extends ConsumerWidget {
   }
 }
 
-final class _WatchedAuthorAvatar extends StatelessWidget {
+final class _WatchedAuthorAvatar extends ConsumerWidget {
   const _WatchedAuthorAvatar({required this.author});
 
   final WatchedAuthor author;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final s = strings(ref.watch(appLanguageProvider));
     final uri = author.avatarUri?.toString();
     final fallback = CircleAvatar(
       child: Text(
@@ -106,7 +107,7 @@ final class _WatchedAuthorAvatar extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       onTap: () => context.push('/artist/${author.username}'),
       child: SizedBox(
-        width: 56,
+        width: 64,
         child: Column(
           children: <Widget>[
             if (uri == null || uri.isEmpty)
@@ -126,6 +127,15 @@ final class _WatchedAuthorAvatar extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              s.relativeTime(author.lastUpdate),
+              maxLines: 1,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontSize: 10,
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
