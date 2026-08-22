@@ -6,6 +6,7 @@ import '../../core/feed/artwork_feed_controller.dart';
 import 'app_empty_state.dart';
 import 'app_error_state.dart';
 import 'artwork_card.dart';
+import 'skeleton.dart';
 
 final class ArtworkFeedGrid extends StatelessWidget {
   const ArtworkFeedGrid({
@@ -35,7 +36,7 @@ final class ArtworkFeedGrid extends StatelessWidget {
               },
       );
     } else if (feed.items.isEmpty && feed.isLoading) {
-      body = const Center(child: CircularProgressIndicator());
+      body = const SkeletonGrid();
     } else if (feed.items.isEmpty) {
       body = AppEmptyState(message: emptyMessage);
     } else {
