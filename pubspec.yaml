@@ -36,7 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   dakit_core: ^0.1.6
   dakit_api: ^0.1.8
-  dakit_flutter: ^0.1.4
+  dakit_flutter: ^0.1.5
   flutter_riverpod: ^2.6.1
   go_router: ^17.5.0
   cached_network_image: ^3.4.1

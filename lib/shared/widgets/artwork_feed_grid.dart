@@ -1,3 +1,4 @@
+import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -51,24 +52,33 @@ final class ArtworkFeedGrid extends StatelessWidget {
         onAction: emptyOnAction,
       );
     } else {
-      body = GridView.builder(
+      // Masonry (waterfall) layout: cards render at their image's natural
+      // aspect ratio, which looks more like a modern image feed.
+      final width = MediaQuery.of(context).size.width;
+      final crossAxisCount = (width / 200).round().clamp(2, 4);
+      body = MasonryGridView.count(
         padding: const EdgeInsets.all(12),
         physics: const AlwaysScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 240,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 0.68,
-        ),
+        crossAxisCount: crossAxisCount,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
         itemCount: feed.items.length + (feed.isLoading ? 1 : 0),
         itemBuilder: (context, index) {
           if (index >= feed.items.length) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(),
+              ),
+            );
           }
           final artwork = feed.items[index];
-          return ArtworkCard(
-            artwork: artwork,
-            onTap: () => context.push('/artwork/${artwork.id}'),
+          return AspectRatio(
+            aspectRatio: artworkAspectRatio(artwork),
+            child: ArtworkCard(
+              artwork: artwork,
+              onTap: () => context.push('/artwork/${artwork.id}'),
+            ),
           );
         },
       );
@@ -80,7 +90,7 @@ final class ArtworkFeedGrid extends StatelessWidget {
         ? body
         : AppRefreshIndicator(
             onRefresh: onRefresh!,
-            child: body is GridView
+            child: body is ScrollView
                 ? body
                 : LayoutBuilder(
                     builder: (context, constraints) => SingleChildScrollView(
