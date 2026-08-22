@@ -118,6 +118,9 @@ final class AppStrings {
   String get artworkDetail =>
       _lang == AppLanguage.zh ? '作品详情' : 'Artwork detail';
   String get linkCopied => _lang == AppLanguage.zh ? '链接已复制' : 'Link copied';
+  String get copyLink => _lang == AppLanguage.zh ? '复制链接' : 'Copy link';
+  String get openInBrowser =>
+      _lang == AppLanguage.zh ? '在浏览器打开' : 'Open in browser';
   String get share => _lang == AppLanguage.zh ? '分享' : 'Share';
   String get favourite => _lang == AppLanguage.zh ? '收藏' : 'Favourite';
   String get unfavourite => _lang == AppLanguage.zh ? '取消收藏' : 'Unfavourite';

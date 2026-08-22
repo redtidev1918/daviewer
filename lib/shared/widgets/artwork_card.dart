@@ -1,8 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dakit_core/dakit_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/theme/app_theme.dart';
+import '../../core/l10n/app_strings.dart';
 
 final class ArtworkCard extends StatelessWidget {
   const ArtworkCard({required this.artwork, this.onTap, super.key});
@@ -24,6 +28,7 @@ final class ArtworkCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
+        onLongPress: () => _showCardMenu(context),
         child: Stack(
           fit: StackFit.expand,
           children: <Widget>[
@@ -163,6 +168,57 @@ final class ArtworkCard extends StatelessWidget {
                   ),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCardMenu(BuildContext context) {
+    final s = strings(
+      ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(appLanguageProvider),
+    );
+    final url = artwork.pageUri.toString();
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(Icons.visibility_outlined),
+              title: Text(s.viewDetail),
+              onTap: () {
+                Navigator.pop(context);
+                onTap?.call();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.copy_outlined),
+              title: Text(s.copyLink),
+              onTap: () async {
+                Navigator.pop(context);
+                await Clipboard.setData(ClipboardData(text: url));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(s.linkCopied)));
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.open_in_new),
+              title: Text(s.openInBrowser),
+              onTap: () {
+                Navigator.pop(context);
+                final uri = Uri.tryParse(url);
+                if (uri != null) {
+                  launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+            ),
           ],
         ),
       ),
