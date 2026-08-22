@@ -2,6 +2,7 @@ import 'package:dakit_core/dakit_core.dart';
 import 'package:dio/dio.dart';
 
 import 'html_text.dart';
+import 'wix_media.dart';
 
 /// Result of the web `dadeviation/init` endpoint: the OAuth UUID for a numeric
 /// deviation id plus the full description as plain text and any additional
@@ -156,28 +157,17 @@ final class DeviationInitFetcher {
         filetype.toLowerCase() == 'gif' || base.toLowerCase().endsWith('.gif');
     Uri? uri;
     if (isGif) {
-      uri = Uri.tryParse(_withToken(base, null, tokens));
+      uri = Uri.tryParse(withWixToken(base, null, tokens));
     } else {
-      Map<Object?, Object?>? best;
-      var bestWidth = -1;
-      for (final type in types) {
-        if (type is! Map) continue;
-        final transform = type['c'];
-        if (transform is! String || transform.isEmpty) continue;
-        final width = (type['w'] as num?)?.toInt() ?? 0;
-        if (width > bestWidth) {
-          bestWidth = width;
-          best = type;
-        }
-      }
+      final best = wixLargestImageType(types);
       if (best == null) {
-        uri = Uri.tryParse(_withToken(base, null, tokens));
+        uri = Uri.tryParse(withWixToken(base, null, tokens));
       } else {
         final transform = (best['c'] as String).replaceAll(
           '<prettyName>',
           pretty,
         );
-        uri = Uri.tryParse(_withToken('$base$transform', best, tokens));
+        uri = Uri.tryParse(withWixToken('$base$transform', best, tokens));
       }
     }
     if (uri == null) return null;
@@ -189,21 +179,6 @@ final class DeviationInitFetcher {
       uri: uri,
       mimeType: isGif ? 'image/gif' : null,
     );
-  }
-
-  static String _withToken(
-    String url,
-    Map<Object?, Object?>? type,
-    List<String> tokens,
-  ) {
-    if (tokens.isEmpty) return url;
-    final index = type?['r'];
-    final token = index is int && index >= 0 && index < tokens.length
-        ? tokens[index]
-        : tokens.first;
-    if (token.isEmpty) return url;
-    final separator = url.contains('?') ? '&' : '?';
-    return '$url${separator}token=$token';
   }
 
   static const String _userAgent =

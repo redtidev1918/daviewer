@@ -1,6 +1,8 @@
 import 'package:dakit_core/dakit_core.dart';
 import 'package:dio/dio.dart';
 
+import 'wix_media.dart';
+
 /// One page of the DeviantArt web `rfy/deviations` personalized feed.
 final class RfyPage {
   const RfyPage({required this.items, required this.nextCursor});
@@ -168,7 +170,7 @@ final class RfyFeedFetcher {
             kind: MediaKind.video,
             role: MediaRole.preview,
             availability: MediaAvailability.available,
-            uri: Uri.tryParse(_withToken(url, type, tokens)),
+            uri: Uri.tryParse(withWixToken(url, type, tokens)),
             width: (type['w'] as num?)?.toInt(),
             height: height,
             duration: seconds == null ? null : Duration(seconds: seconds),
@@ -200,14 +202,14 @@ final class RfyFeedFetcher {
       final isGif = filetype.toLowerCase() == 'gif';
       // Full-resolution file (animated GIF for `isGif`, otherwise the original
       // image) for download.
-      final fullUri = Uri.tryParse(_withToken(base, null, tokens));
+      final fullUri = Uri.tryParse(withWixToken(base, null, tokens));
 
       if (isGif) {
         // The resampled `types` for a GIF are static .jpg posters, so inline
         // display must use the animated `baseUri` (.gif) or the GIF never
         // animates.
         final gifType =
-            _typeNamed(types, 'fullview') ?? _largestImageType(types);
+            wixTypeNamed(types, 'fullview') ?? wixLargestImageType(types);
         assets.add(
           MediaAsset(
             id: '$id:display',
@@ -224,7 +226,7 @@ final class RfyFeedFetcher {
         // A display-size image (~largest resampled transform) for inline detail
         // rendering. The raw `baseUri` can be an enormous original (e.g. 8K),
         // which is heavy to decode inline — so it is reserved for download.
-        final display = _largestImageType(types);
+        final display = wixLargestImageType(types);
         final displayUri = _transformUri(base, pretty, tokens, types);
         if (displayUri != null) {
           assets.add(
@@ -261,31 +263,6 @@ final class RfyFeedFetcher {
     return List<MediaAsset>.unmodifiable(assets);
   }
 
-  static Map<Object?, Object?>? _typeNamed(List<Object?> types, String name) {
-    for (final type in types) {
-      if (type is Map && type['t'] == name) return type;
-    }
-    return null;
-  }
-
-  /// The largest resampled image type (the one with the biggest `w` and a `c`
-  /// transform). Used as the display-size image for the detail screen.
-  static Map<Object?, Object?>? _largestImageType(List<Object?> types) {
-    Map<Object?, Object?>? best;
-    var bestWidth = -1;
-    for (final type in types) {
-      if (type is! Map) continue;
-      final transform = type['c'];
-      if (transform is! String || transform.isEmpty) continue;
-      final width = (type['w'] as num?)?.toInt() ?? 0;
-      if (width > bestWidth) {
-        bestWidth = width;
-        best = type;
-      }
-    }
-    return best;
-  }
-
   /// Builds a Wix media URL `baseUri + <transform>?token=<jwt>`. When
   /// [targetWidth] is given it picks the resampled size closest to that width;
   /// when null it picks the largest resampled size. Falls back to the raw
@@ -314,28 +291,10 @@ final class RfyFeedFetcher {
       }
     }
     if (best == null) {
-      return Uri.tryParse(_withToken(base, null, tokens));
+      return Uri.tryParse(withWixToken(base, null, tokens));
     }
     final transform = (best['c'] as String).replaceAll('<prettyName>', pretty);
-    return Uri.tryParse(_withToken('$base$transform', best, tokens));
-  }
-
-  /// Appends the access token (from [type]'s `r` index, falling back to the
-  /// first token) to [url] as a query parameter. Returns [url] unchanged when
-  /// no token is available.
-  static String _withToken(
-    String url,
-    Map<Object?, Object?>? type,
-    List<String> tokens,
-  ) {
-    if (tokens.isEmpty) return url;
-    final index = type?['r'];
-    final token = index is int && index >= 0 && index < tokens.length
-        ? tokens[index]
-        : tokens.first;
-    if (token.isEmpty) return url;
-    final separator = url.contains('?') ? '&' : '?';
-    return '$url${separator}token=$token';
+    return Uri.tryParse(withWixToken('$base$transform', best, tokens));
   }
 
   static String _filenameFromUri(Uri uri, String pretty, String filetype) {
