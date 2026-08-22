@@ -58,7 +58,11 @@ final class DownloadsScreen extends ConsumerWidget {
             child: SizedBox(
               height: constraints.maxHeight,
               width: constraints.maxWidth,
-              child: AppEmptyState(message: s.noDownloads),
+              child: AppEmptyState(
+                message: s.noDownloads,
+                actionLabel: s.discover,
+                onAction: () => context.push('/search'),
+              ),
             ),
           ),
         ),

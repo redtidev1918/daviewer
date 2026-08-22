@@ -15,6 +15,8 @@ final class ArtworkFeedGrid extends StatelessWidget {
     required this.emptyMessage,
     this.onRefresh,
     this.onLoadMore,
+    this.emptyActionLabel,
+    this.emptyOnAction,
     super.key,
   });
 
@@ -22,6 +24,10 @@ final class ArtworkFeedGrid extends StatelessWidget {
   final String emptyMessage;
   final Future<void> Function()? onRefresh;
   final VoidCallback? onLoadMore;
+
+  /// Optional call-to-action shown when the feed is empty (e.g. "Discover").
+  final String? emptyActionLabel;
+  final VoidCallback? emptyOnAction;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +45,11 @@ final class ArtworkFeedGrid extends StatelessWidget {
     } else if (feed.items.isEmpty && feed.isLoading) {
       body = const SkeletonGrid();
     } else if (feed.items.isEmpty) {
-      body = AppEmptyState(message: emptyMessage);
+      body = AppEmptyState(
+        message: emptyMessage,
+        actionLabel: emptyActionLabel,
+        onAction: emptyOnAction,
+      );
     } else {
       body = GridView.builder(
         padding: const EdgeInsets.all(12),

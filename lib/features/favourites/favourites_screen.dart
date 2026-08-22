@@ -40,6 +40,8 @@ final class FavouritesScreen extends ConsumerWidget {
       body: ArtworkFeedGrid(
         feed: favourites,
         emptyMessage: s.noFavourites,
+        emptyActionLabel: s.discover,
+        emptyOnAction: () => context.push('/search'),
         onRefresh: () => ref.read(currentFavouritesProvider.notifier).refresh(),
         onLoadMore: () =>
             ref.read(currentFavouritesProvider.notifier).loadMore(),
