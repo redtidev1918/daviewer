@@ -2,6 +2,7 @@ import 'package:dakit_core/dakit_core.dart';
 import 'package:dio/dio.dart';
 
 import 'html_text.dart';
+import 'web_user_agent.dart';
 import 'wix_media.dart';
 
 /// Result of the web `dadeviation/init` endpoint: the OAuth UUID for a numeric
@@ -69,7 +70,7 @@ final class DeviationInitFetcher {
         headers: <String, dynamic>{
           'Accept': 'application/json',
           'Cookie': cookieHeader,
-          'User-Agent': _userAgent,
+          'User-Agent': webUserAgent,
         },
       ),
     );
@@ -155,21 +156,9 @@ final class DeviationInitFetcher {
 
     final isGif =
         filetype.toLowerCase() == 'gif' || base.toLowerCase().endsWith('.gif');
-    Uri? uri;
-    if (isGif) {
-      uri = Uri.tryParse(withWixToken(base, null, tokens));
-    } else {
-      final best = wixLargestImageType(types);
-      if (best == null) {
-        uri = Uri.tryParse(withWixToken(base, null, tokens));
-      } else {
-        final transform = (best['c'] as String).replaceAll(
-          '<prettyName>',
-          pretty,
-        );
-        uri = Uri.tryParse(withWixToken('$base$transform', best, tokens));
-      }
-    }
+    final uri = isGif
+        ? Uri.tryParse(withWixToken(base, null, tokens))
+        : wixResampledUrl(base, pretty, tokens, types);
     if (uri == null) return null;
     return MediaAsset(
       id: id,
@@ -180,10 +169,6 @@ final class DeviationInitFetcher {
       mimeType: isGif ? 'image/gif' : null,
     );
   }
-
-  static const String _userAgent =
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
-      'AppleWebKit/537.36 Chrome/126.0 Safari/537.36';
 }
 
 /// Fetches the full rich-text body of a journal (literature) deviation from the
@@ -219,7 +204,7 @@ final class JournalContentFetcher {
         headers: <String, dynamic>{
           'Accept': 'application/json',
           'Cookie': cookieHeader,
-          'User-Agent': _userAgent,
+          'User-Agent': webUserAgent,
         },
       ),
     );
@@ -234,8 +219,4 @@ final class JournalContentFetcher {
     if (markup == null || markup.trim().isEmpty) return null;
     return type == 'tiptap' ? tiptapToHtml(markup) : markup;
   }
-
-  static const String _userAgent =
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
-      'AppleWebKit/537.36 Chrome/126.0 Safari/537.36';
 }
