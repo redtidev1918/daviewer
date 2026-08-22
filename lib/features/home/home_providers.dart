@@ -18,7 +18,6 @@ final rfyFeedProvider =
     StateNotifierProvider<ArtworkFeedController, ArtworkFeedState>((ref) {
       final runtime = ref.watch(runtimeProvider);
       final webSession = ref.watch(webSessionProvider);
-      ref.watch(webSessionControllerProvider.select((web) => web.csrf));
       final fetcher = RfyFeedFetcher(runtime.dio!);
       final controller = ArtworkFeedController((request) async {
         final web = ref.read(webSessionControllerProvider);
@@ -56,6 +55,17 @@ final rfyFeedProvider =
           nextCursor: page.nextCursor,
         );
       });
+      // When the cold-start headless refresh rotates the CSRF, re-fetch
+      // SILENTLY (keep current items) instead of rebuilding the provider and
+      // flashing a skeleton in front of the user.
+      ref.listen<String>(
+        webSessionControllerProvider.select((web) => web.csrf),
+        (previous, next) {
+          if (previous != null && previous != next) {
+            controller.refreshSilently();
+          }
+        },
+      );
       return controller;
     });
 
