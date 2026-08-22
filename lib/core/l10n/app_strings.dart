@@ -84,6 +84,12 @@ final class AppStrings {
   String get loginSuccess => _lang == AppLanguage.zh ? '登录成功' : 'Signed in';
   String get noArtworks =>
       _lang == AppLanguage.zh ? '暂无作品' : 'No artworks found.';
+  String get noImage => _lang == AppLanguage.zh ? '暂无图片' : 'No image';
+  String get imageLoadFailed =>
+      _lang == AppLanguage.zh ? '图片加载失败' : 'Failed to load';
+  String get byPrefix => _lang == AppLanguage.zh ? '作者：' : 'by ';
+  String get recommendedTags =>
+      _lang == AppLanguage.zh ? '为你推荐' : 'Recommended for you';
   String get noDaily =>
       _lang == AppLanguage.zh ? '暂无每日推荐' : 'No daily deviations.';
   String get noWatched =>

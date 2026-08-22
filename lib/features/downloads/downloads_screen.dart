@@ -157,11 +157,14 @@ final class _DownloadTile extends ConsumerWidget {
                     label: Text(s.open),
                     onPressed: () => _openImage(context, snapshot.localPath!),
                   ),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.folder_open, size: 18),
-                    label: Text(s.openFolder),
-                    onPressed: () => _openFolder(snapshot.localPath!),
-                  ),
+                  // "Reveal in folder" only makes sense on desktop file
+                  // managers; mobile has no equivalent, so hide it there.
+                  if (!Platform.isAndroid && !Platform.isIOS)
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.folder_open, size: 18),
+                      label: Text(s.openFolder),
+                      onPressed: () => _openFolder(snapshot.localPath!),
+                    ),
                   if (artworkIdFromTransfer(snapshot.id) case final id?)
                     OutlinedButton.icon(
                       icon: const Icon(Icons.art_track, size: 18),

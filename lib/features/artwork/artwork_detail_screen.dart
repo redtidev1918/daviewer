@@ -252,11 +252,14 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     // above), never as an image with a bogus "original deleted" download row.
     final isJournal = artwork.pageUri.path.contains('/journal/');
     // When the original download is restricted (e.g. free limit reached),
-    // fall back to the full-size image in the media list so the user can
-    // still save it.
+    // fall back to a *downloadable* image in the media list so the user can
+    // still save it — never a gated (premium/restricted) one.
     final MediaAsset downloadable = original.canTransfer
         ? original
-        : media.where((m) => m.kind == MediaKind.image).firstOrNull ?? original;
+        : media
+                  .where((m) => m.kind == MediaKind.image && m.canTransfer)
+                  .firstOrNull ??
+              original;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -272,7 +275,7 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
         Text(artwork.title, style: Theme.of(context).textTheme.headlineSmall),
         TextButton(
           onPressed: () => context.push('/artist/${artwork.author.username}'),
-          child: Text('by ${artwork.author.username}'),
+          child: Text('${s.byPrefix}${artwork.author.username}'),
         ),
         const Divider(),
         if (isJournal &&
