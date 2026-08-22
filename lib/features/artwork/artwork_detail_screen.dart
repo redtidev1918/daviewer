@@ -55,8 +55,9 @@ final class _ArtworkDetailScreenState
       setState(() => _favourite = result.isFavourite);
     } on Object catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('$error')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyErrorMessage(error))),
+        );
       }
     } finally {
       if (mounted) setState(() => _favBusy = false);

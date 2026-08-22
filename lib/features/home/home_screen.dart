@@ -9,6 +9,7 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/auth/web_session_controller.dart';
 import '../../core/data/da_uri.dart';
 import '../../core/data/web_session.dart';
+import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
@@ -278,7 +279,7 @@ final class _DailyFeed extends ConsumerWidget {
         onRefresh: () => ref.refresh(dailyDeviationsProvider.future),
         child: _ScrollableFill(
           child: AppErrorState(
-            message: '$error',
+            message: friendlyErrorMessage(error),
             onRetry: () => ref.invalidate(dailyDeviationsProvider),
           ),
         ),
@@ -416,7 +417,9 @@ final class _ArtworkGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (error != null && items.isEmpty) {
-      return _ScrollableFill(child: AppErrorState(message: '$error'));
+      return _ScrollableFill(
+        child: AppErrorState(message: friendlyErrorMessage(error!)),
+      );
     }
     if (items.isEmpty && isLoading) {
       return const Center(child: CircularProgressIndicator());

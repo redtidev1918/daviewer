@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
+import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
 import 'artist_providers.dart';
 
@@ -57,7 +59,7 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
       if (mounted) setState(() => _watching = !_watching);
     } on Object catch (error) {
       if (mounted) {
-        final message = '$error';
+        final message = friendlyErrorMessage(error);
         final isForbidden =
             message.contains('403') ||
             message.contains('authorization') ||
@@ -114,7 +116,7 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
         ),
         body: profile.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stackTrace) => Center(child: Text('$error')),
+          error: (error, stackTrace) => AppErrorState(message: friendlyErrorMessage(error)),
           data: (profile) => Column(
             children: <Widget>[
               _ArtistHeader(profile: profile),
@@ -238,7 +240,7 @@ final class _JournalsView extends ConsumerWidget {
     final s = strings(ref.watch(appLanguageProvider));
     return journals.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => Center(child: Text('$error')),
+      error: (error, stackTrace) => AppErrorState(message: friendlyErrorMessage(error)),
       data: (items) {
         if (items.isEmpty) {
           return Center(child: Text(s.noJournals));
@@ -284,7 +286,7 @@ final class _FoldersView extends ConsumerWidget {
     final s = strings(ref.watch(appLanguageProvider));
     return folders.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => Center(child: Text('$error')),
+      error: (error, stackTrace) => AppErrorState(message: friendlyErrorMessage(error)),
       data: (items) {
         if (items.isEmpty) {
           return Center(child: Text(s.noFolders));

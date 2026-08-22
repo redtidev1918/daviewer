@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/diagnostics/error_text.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import 'app_empty_state.dart';
 import 'app_error_state.dart';
@@ -26,7 +27,7 @@ final class ArtworkFeedGrid extends StatelessWidget {
 
     if (feed.error != null && feed.items.isEmpty) {
       body = AppErrorState(
-        message: '${feed.error}',
+        message: friendlyErrorMessage(feed.error!),
         onRetry: onRefresh == null
             ? null
             : () {
