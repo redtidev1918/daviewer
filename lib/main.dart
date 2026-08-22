@@ -11,6 +11,12 @@ import 'core/runtime/runtime_provider.dart';
 
 String _globalProxyDirective = 'DIRECT';
 
+void _configureImageCache() {
+  final cache = PaintingBinding.instance.imageCache;
+  cache.maximumSize = 200;
+  cache.maximumSizeBytes = 64 << 20; // 64 MB
+}
+
 /// Kept alive for the whole process so completed downloads are moved into the
 /// public Downloads folder.
 // ignore: unused_element
@@ -27,6 +33,9 @@ final class _AppHttpOverrides extends HttpOverrides {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Cap the decoded-image cache: the default is 1000 images / ~100 MB, which
+  // makes long browsing sessions on low-RAM devices thrash and can OOM.
+  _configureImageCache();
   final logger = await AppLogger.initialize();
   installGlobalErrorHandlers(logger);
   logger.info('app', 'DAViewer starting');

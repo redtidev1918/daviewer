@@ -116,6 +116,7 @@ final class _MessageTile extends StatelessWidget {
                 width: 56,
                 height: 56,
                 fit: BoxFit.cover,
+                memCacheWidth: 120,
                 placeholder: (context, url) => const SizedBox(
                   width: 56,
                   height: 56,
@@ -162,6 +163,7 @@ final class _Avatar extends StatelessWidget {
     if (uri == null || uri.isEmpty) return fallback;
     return CachedNetworkImage(
       imageUrl: uri,
+      memCacheWidth: 120,
       imageBuilder: (context, imageProvider) =>
           CircleAvatar(backgroundImage: imageProvider),
       placeholder: (context, url) => fallback,
