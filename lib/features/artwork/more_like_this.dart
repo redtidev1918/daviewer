@@ -30,7 +30,10 @@ final class MoreLikeThisSection extends ConsumerWidget {
         height: 160,
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (error, stackTrace) => const SizedBox.shrink(),
+      error: (error, stackTrace) {
+        debugPrint('[moreLikeThis] $artworkId failed: $error');
+        return const SizedBox.shrink();
+      },
       data: (result) {
         final items = result.artworks;
         if (items.isEmpty) return const SizedBox.shrink();
