@@ -203,11 +203,38 @@ final class _LoginSyncBannerState extends State<_LoginSyncBanner> {
   }
 }
 
-final class _RfyFeed extends ConsumerWidget {
+final class _RfyFeed extends ConsumerStatefulWidget {
   const _RfyFeed();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_RfyFeed> createState() => _RfyFeedState();
+}
+
+final class _RfyFeedState extends ConsumerState<_RfyFeed>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Refresh the personalized feed when the app comes back to the foreground
+    // so it does not sit on a stale list indefinitely.
+    if (state == AppLifecycleState.resumed && mounted) {
+      ref.read(rfyFeedProvider.notifier).refresh();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final feed = ref.watch(rfyFeedProvider);
     final s = strings(ref.watch(appLanguageProvider));
     final oauthSignedIn = ref.watch(authControllerProvider).oauthSignedIn;
