@@ -3,6 +3,15 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.82（为 Suggested Collections 预留数据）
+
+### Changed
+
+- More Like This 的数据层升级为完整的 `MoreLikeThisResult`（相关作品 +
+  `featured_in_collections` + `suggested_collections`），一次请求即可为将来详情页的
+  收藏集区块提供数据，无需再改 DAKit 传输层（`dakit_core` 0.1.10 /
+  `dakit_api` 0.1.12）。当前界面仍只展示相关作品瀑布流。
+
 ## 0.2.81（More Like This 修复）
 
 ### Fixed

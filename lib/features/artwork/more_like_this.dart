@@ -31,7 +31,8 @@ final class MoreLikeThisSection extends ConsumerWidget {
         child: Center(child: CircularProgressIndicator()),
       ),
       error: (error, stackTrace) => const SizedBox.shrink(),
-      data: (items) {
+      data: (result) {
+        final items = result.artworks;
         if (items.isEmpty) return const SizedBox.shrink();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
