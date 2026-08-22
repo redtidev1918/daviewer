@@ -149,16 +149,12 @@ final originalFileProvider = FutureProvider.autoDispose
       final runtime = ref.watch(runtimeProvider);
       try {
         return await dataAccessFor(runtime).originalFile(artworkId);
-      } on DAKitException catch (error) {
-        // Transient failures (network / rate limit) keep bubbling up so the
-        // screen can offer a retry. Everything else means the download endpoint
-        // rejected this artwork (not downloadable, premium, blocked, deleted…)
-        // — surface it as an availability hint instead of a full-screen error.
-        if (error.kind == DAKitFailureKind.network ||
-            error.kind == DAKitFailureKind.rateLimit) {
-          rethrow;
-        }
-        debugPrint('[orig] download rejected: ${error.code}');
+      } on Object catch (error) {
+        // Never let a download-availability lookup take down the whole detail
+        // page. The download endpoint may reject an artwork (4xx), the server
+        // may be down (5xx), or the network may be unreachable — in all cases
+        // degrade to "not downloadable" so the artwork still renders.
+        debugPrint('[orig] download lookup failed: $error');
         return MediaAsset(
           id: '$artworkId:original',
           kind: MediaKind.unknown,
