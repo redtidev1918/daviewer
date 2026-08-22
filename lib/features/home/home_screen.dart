@@ -171,9 +171,22 @@ final class _RfyFeedState extends ConsumerState<_RfyFeed>
 
   @override
   Widget build(BuildContext context) {
-    final feed = ref.watch(rfyFeedProvider);
     final s = strings(ref.watch(appLanguageProvider));
     final oauthSignedIn = ref.watch(authControllerProvider).oauthSignedIn;
+    final web = ref.watch(webSessionControllerProvider);
+
+    // Being signed out is a navigation state, not a failed recommendation
+    // request. Do not even construct the auto-loading feed until both the web
+    // identity and CSRF token are ready.
+    if (!web.canLoadPersonalizedFeed) {
+      return LoginPrompt(
+        s: s,
+        message: oauthSignedIn ? s.webSessionExpired : null,
+        onLogin: () => context.push('/web-login'),
+      );
+    }
+
+    final feed = ref.watch(rfyFeedProvider);
     final needLogin = feed.error is WebLoginRequired;
 
     if (needLogin) {

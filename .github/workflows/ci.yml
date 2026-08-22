@@ -148,7 +148,7 @@ jobs:
             --entitlements macos/Runner/Release.entitlements \
             "$APP_PATH"
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-          lipo -verify_arch x86_64 arm64 "$APP_EXEC"
+          lipo "$APP_EXEC" -verify_arch x86_64 arm64
 
           codesign -d --entitlements :- "$APP_PATH" \
             > "$RUNNER_TEMP/daviewer-entitlements.txt" 2>&1

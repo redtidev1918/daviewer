@@ -25,7 +25,7 @@ final rfyFeedProvider =
         // The home feed is personalized; only fetch when the web session is
         // actually signed in, otherwise prompt for login instead of showing
         // anonymous recommendations.
-        if (csrf.isEmpty || !web.signedIn) {
+        if (!web.canLoadPersonalizedFeed) {
           throw const WebLoginRequired();
         }
         final cookieHeader = await webSession.cookieHeader();

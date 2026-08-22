@@ -70,6 +70,11 @@ this" shows a native retry action; retry waits for the headless web-session
 refresh to actually finish before resolving the id again instead of silently
 hiding the section.
 
+A fresh installation opens the unified sign-in screen directly. Personalized
+recommendations are not requested until both the web identity and CSRF session
+are ready, so signed-out state is never rendered as a feed error. OAuth errors
+remain on the sign-in screen with their cause and a retry action.
+
 ## Install
 
 Download the package for your platform from
