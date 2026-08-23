@@ -19,6 +19,7 @@ final class ArtworkFeedGrid extends ConsumerWidget {
     this.onLoadMore,
     this.emptyActionLabel,
     this.emptyOnAction,
+    this.errorMessage,
     super.key,
   });
 
@@ -31,13 +32,18 @@ final class ArtworkFeedGrid extends ConsumerWidget {
   final String? emptyActionLabel;
   final VoidCallback? emptyOnAction;
 
+  /// Optional feature-specific copy that keeps provider/protocol failures out
+  /// of the user interface. Raw errors remain available to the owning state
+  /// and diagnostics.
+  final String? errorMessage;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     Widget body;
 
     if (feed.error != null && feed.items.isEmpty) {
       body = AppErrorState(
-        message: friendlyErrorMessage(feed.error!),
+        message: errorMessage ?? friendlyErrorMessage(feed.error!),
         onRetry: onRefresh == null
             ? null
             : () {

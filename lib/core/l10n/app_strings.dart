@@ -99,8 +99,12 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '为你推荐' : 'Recommended for you';
   String get noDaily =>
       _lang == AppLanguage.zh ? '暂无每日推荐' : 'No daily deviations.';
-  String get noWatched =>
-      _lang == AppLanguage.zh ? '暂无关注动态' : 'No watched artwork.';
+  String get noWatched => _lang == AppLanguage.zh
+      ? '你还没有关注任何用户。关注喜欢的创作者后，他们的新作品会出现在这里。'
+      : 'You are not watching anyone yet. Follow creators to see their new artwork here.';
+  String get watchedFeedLoadFailure => _lang == AppLanguage.zh
+      ? '关注动态暂时无法加载，请稍后重试。'
+      : 'Your watched feed is temporarily unavailable. Try again later.';
   String get noFavourites =>
       _lang == AppLanguage.zh ? '暂无收藏' : 'No favourites.';
   String get noDownloads => _lang == AppLanguage.zh ? '暂无下载' : 'No downloads.';
@@ -395,6 +399,8 @@ final class AppStrings {
   String get users => _lang == AppLanguage.zh ? '用户' : 'Users';
   String get popularTags => _lang == AppLanguage.zh ? '热门标签' : 'Popular tags';
   String get discover => _lang == AppLanguage.zh ? '去发现' : 'Discover';
+  String get discoverArtists =>
+      _lang == AppLanguage.zh ? '发现并关注' : 'Find creators';
   String get popularTagsHint =>
       _lang == AppLanguage.zh ? '点击标签浏览该标签下的作品' : 'Tap a tag to browse it';
   String get searchIdleHint => _lang == AppLanguage.zh
@@ -410,19 +416,18 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '更多类似作品' : 'More like this';
   String get moreLikeThisLoadFailed =>
       _lang == AppLanguage.zh ? '更多类似作品加载失败' : 'Could not load similar artwork';
-  String get moreLikeThisLoading => _lang == AppLanguage.zh
-      ? '正在从网页和备用来源加载类似作品…'
-      : 'Loading similar artwork from the website and fallback source…';
+  String get moreLikeThisLoading =>
+      _lang == AppLanguage.zh ? '正在寻找更多类似作品…' : 'Finding more similar artwork…';
   String get noMoreLikeThis => _lang == AppLanguage.zh
-      ? '网页和备用来源当前都没有返回可显示的类似作品。'
-      : 'Neither the website nor the fallback source currently returned displayable suggestions.';
+      ? '暂时没有找到更多类似作品。你可以稍后再检查，推荐结果可能会更新。'
+      : 'No more similar artwork was found yet. Check again later as recommendations may update.';
   String get checkSuggestions =>
       _lang == AppLanguage.zh ? '检查更新' : 'Check again';
   String get moreLikeThisChecking =>
       _lang == AppLanguage.zh ? '正在检查…' : 'Checking…';
   String get moreLikeThisStillEmpty => _lang == AppLanguage.zh
-      ? '已重新检查，网页和备用来源仍没有返回可显示的类似作品。'
-      : 'Checked again; neither source returned displayable suggestions.';
+      ? '已检查最新推荐，目前没有新结果。'
+      : 'The latest recommendations were checked; there are no new results.';
   String get moreLikeThisUnchanged => _lang == AppLanguage.zh
       ? '已重新检查，当前类似作品没有变化。'
       : 'Checked again; suggestions are unchanged.';
@@ -442,8 +447,8 @@ final class AppStrings {
       ? 'DeviantArt 暂时不可用或限制了请求，作品详情本身不受影响。'
       : 'DeviantArt is temporarily unavailable or limiting requests. Artwork details still work.';
   String get moreLikeThisFormatFailure => _lang == AppLanguage.zh
-      ? 'DeviantArt 调整了页面结构，当前版本暂时无法读取相关推荐。'
-      : 'DeviantArt changed the page format, so this version cannot read suggestions yet.';
+      ? '相关推荐暂时加载不完整，稍后再试即可。作品详情不受影响。'
+      : 'Similar artwork did not finish loading. Try again later; artwork details are unaffected.';
   String get moreLikeThisUnknownFailure => _lang == AppLanguage.zh
       ? '相关推荐暂时不可用，作品详情本身仍可正常浏览。'
       : 'Suggestions are temporarily unavailable. Artwork details still work.';

@@ -51,17 +51,23 @@ Rules:
 
 ## Related-content state
 
-Website recommendation metadata can be injected after the initial HTML. A
-missing `currentBiMetadata` entry or missing normalized entities is therefore
-an inconclusive page state, not a confirmed empty recommendation set. An empty
-success is shown only when the website parse and official fallback both finish
-without errors.
+Website recommendation data has two supported server-rendered shapes: the
+current streamed `window.__RCACHE__.relatedContent` payload and the legacy
+normalized `window.__INITIAL_STATE__` metadata/entities. The streamed cache is
+preferred when complete, then parsing falls back to the legacy state. A missing
+`currentBiMetadata` entry or missing normalized entities is inconclusive, not a
+confirmed empty recommendation set. An empty success is shown only when the
+website parse and official fallback both finish without errors.
 
 Refreshing related content is one awaited operation. Existing cards remain
 visible during it, and completion must report one of three outcomes: changed,
 unchanged, or still empty. Source failures retain their network, session,
 service, or page-format classification instead of being masked by an empty
 fallback.
+
+Provider/parser names and raw exception messages are diagnostic data. User copy
+describes only the outcome and next action (checking, updated, unchanged, no
+result, sign in, check network, or try later).
 
 ## Gesture ownership
 

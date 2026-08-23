@@ -47,6 +47,19 @@ final class WebMoreLikeThisFetcher {
     String html, {
     required String deviationId,
   }) {
+    // DeviantArt's current server-rendered page streams related content into
+    // a dedicated React cache after the initial state script. Prefer that
+    // complete cache when present, while keeping the legacy normalized-state
+    // parser below for older pages and rollout variants.
+    if (html.contains('window.__RCACHE__ = JSON.parse(')) {
+      try {
+        return _parseRelatedCache(html, deviationId: deviationId);
+      } on FormatException {
+        // A partial streamed cache can coexist with a complete legacy state.
+        // Fall through instead of making either website rollout exclusive.
+      }
+    }
+
     final state = _initialState(html);
     final entities = state['@@entities'];
     final duperbrowse = state['@@DUPERBROWSE'];
@@ -126,11 +139,71 @@ final class WebMoreLikeThisFetcher {
     return List<Artwork>.unmodifiable(artworks);
   }
 
+  static List<Artwork> _parseRelatedCache(
+    String html, {
+    required String deviationId,
+  }) {
+    final cache = _jsonParseAssignment(
+      html,
+      marker: 'window.__RCACHE__ = JSON.parse(',
+      missingMessage: 'Missing DeviantArt related-content cache.',
+    );
+    final related = cache['relatedContent'];
+    final sections = related is Map ? related['relatedContent'] : null;
+    if (sections is! List) {
+      throw const FormatException(
+        'Missing DeviantArt related-content sections.',
+      );
+    }
+
+    final seen = <String>{deviationId};
+    final artworks = <Artwork>[];
+    var referencedArtwork = false;
+    for (final section in sections) {
+      if (section is! Map) continue;
+      final contentType = section['contentType'];
+      if (contentType != 'gallery' && contentType != 'recommended') continue;
+      final deviations = section['deviations'];
+      if (deviations is! List) continue;
+      for (final raw in deviations) {
+        if (raw is! Map) continue;
+        final rawId = raw['deviationId'] ?? raw['deviationid'];
+        final id = rawId?.toString() ?? '';
+        if (id.isEmpty || id == 'null' || id == deviationId) continue;
+        referencedArtwork = true;
+        if (!seen.add(id)) continue;
+        final artwork = RfyFeedFetcher.mapDeviation(
+          Map<Object?, Object?>.from(raw),
+        );
+        if (artwork.id.isNotEmpty && artwork.media.isNotEmpty) {
+          artworks.add(artwork);
+        }
+      }
+    }
+    if (referencedArtwork && artworks.isEmpty) {
+      throw const FormatException(
+        'Missing media in DeviantArt related-content cache.',
+      );
+    }
+    return List<Artwork>.unmodifiable(artworks);
+  }
+
   static Map<Object?, Object?> _initialState(String html) {
-    const marker = 'window.__INITIAL_STATE__ = JSON.parse(';
+    return _jsonParseAssignment(
+      html,
+      marker: 'window.__INITIAL_STATE__ = JSON.parse(',
+      missingMessage: 'Missing DeviantArt initial state.',
+    );
+  }
+
+  static Map<Object?, Object?> _jsonParseAssignment(
+    String html, {
+    required String marker,
+    required String missingMessage,
+  }) {
     final markerIndex = html.indexOf(marker);
     if (markerIndex < 0) {
-      throw const FormatException('Missing DeviantArt initial state.');
+      throw FormatException(missingMessage);
     }
     final literalStart = markerIndex + marker.length;
     final decoded = _decodeJavaScriptString(html, literalStart);
