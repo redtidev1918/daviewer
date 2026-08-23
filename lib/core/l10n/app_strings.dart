@@ -454,6 +454,8 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '更多 · $username' : 'More from $username';
   String get similarArtists =>
       _lang == AppLanguage.zh ? '相似画师' : 'Similar artists';
+  String get multiImageBadge => _lang == AppLanguage.zh ? '多图' : 'MULTI';
+  String get collectionBadge => _lang == AppLanguage.zh ? '收藏集' : 'COLLECTION';
   String get moreLikeThisLoadFailed =>
       _lang == AppLanguage.zh ? '更多类似作品加载失败' : 'Could not load similar artwork';
   String get moreLikeThisLoading =>

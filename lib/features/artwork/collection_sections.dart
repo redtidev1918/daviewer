@@ -179,18 +179,18 @@ final class _CollectionCard extends StatelessWidget {
                     color: Colors.black54,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      Icon(
+                      const Icon(
                         Icons.folder_outlined,
                         size: 13,
                         color: Colors.white,
                       ),
-                      SizedBox(width: 3),
+                      const SizedBox(width: 3),
                       Text(
-                        'COLLECTION',
-                        style: TextStyle(
+                        s.collectionBadge,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
