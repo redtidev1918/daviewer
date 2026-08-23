@@ -151,11 +151,30 @@ final class _DownloadTile extends ConsumerWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(
-                  _iconForState(snapshot.state),
-                  size: 20,
-                  color: _colorForState(snapshot.state, scheme),
-                ),
+                if (snapshot.state == TransferState.completed &&
+                    snapshot.localPath != null &&
+                    isImageFile(snapshot.localPath!))
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      File(snapshot.localPath!),
+                      width: 44,
+                      height: 44,
+                      fit: BoxFit.cover,
+                      cacheWidth: 132,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.image_outlined,
+                        size: 20,
+                        color: _colorForState(snapshot.state, scheme),
+                      ),
+                    ),
+                  )
+                else
+                  Icon(
+                    _iconForState(snapshot.state),
+                    size: 20,
+                    color: _colorForState(snapshot.state, scheme),
+                  ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(

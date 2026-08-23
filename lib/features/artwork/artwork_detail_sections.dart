@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +8,8 @@ import '../../shared/widgets/compact_tag_strip.dart';
 import '../../core/l10n/app_strings.dart';
 import 'rich_html.dart';
 
-/// The artwork title and author link.
+/// The artwork title and author link, with the author's avatar for a more
+/// scannable, social-style header.
 final class ArtworkHeader extends StatelessWidget {
   const ArtworkHeader({required this.artwork, required this.s, super.key});
 
@@ -16,15 +18,36 @@ final class ArtworkHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final author = artwork.author;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(artwork.title, style: Theme.of(context).textTheme.headlineSmall),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton(
-            onPressed: () => context.push('/artist/${artwork.author.username}'),
-            child: Text('${s.byPrefix}${artwork.author.username}'),
+        Text(artwork.title, style: theme.textTheme.headlineSmall),
+        const SizedBox(height: 8),
+        InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => context.push('/artist/${author.username}'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  foregroundImage: author.avatarUri == null
+                      ? null
+                      : CachedNetworkImageProvider(author.avatarUri.toString()),
+                  child: const Icon(Icons.person, size: 16),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${s.byPrefix}${author.username}',
+                  style: theme.textTheme.titleSmall,
+                ),
+              ],
+            ),
           ),
         ),
       ],
