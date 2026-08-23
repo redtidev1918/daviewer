@@ -444,6 +444,12 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '建议收藏集' : 'Suggested collections';
   String get collectionOpenOnWeb =>
       _lang == AppLanguage.zh ? '在网页查看收藏集' : 'Open collection on the web';
+  String get collectionEmpty => _lang == AppLanguage.zh
+      ? '这个收藏集还没有可显示的作品。'
+      : 'This collection has no artwork to show yet.';
+  String get collectionLoadFailed => _lang == AppLanguage.zh
+      ? '收藏集加载失败，请检查网络后重试。'
+      : 'Could not load the collection. Check your network and retry.';
   String get moreLikeThisLoadFailed =>
       _lang == AppLanguage.zh ? '更多类似作品加载失败' : 'Could not load similar artwork';
   String get moreLikeThisLoading =>
