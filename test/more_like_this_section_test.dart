@@ -12,8 +12,9 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('a website failure cannot be hidden by an empty official fallback', () {
     expect(
-      () => resolveOfficialMoreLikeThisFallback(
-        const MoreLikeThisResult(artworks: <Artwork>[]),
+      () => mergeMoreLikeThisResult(
+        official: const MoreLikeThisResult(artworks: <Artwork>[]),
+        webArtworks: const <Artwork>[],
         websiteError: const FormatException('partial page'),
       ),
       throwsA(isA<MoreLikeThisFailure>()),
@@ -21,11 +22,39 @@ void main() {
   });
 
   test('two successful empty sources remain a normal empty result', () {
-    final result = resolveOfficialMoreLikeThisFallback(
-      const MoreLikeThisResult(artworks: <Artwork>[]),
+    final result = mergeMoreLikeThisResult(
+      official: const MoreLikeThisResult(artworks: <Artwork>[]),
+      webArtworks: const <Artwork>[],
+      websiteError: null,
     );
 
     expect(result.artworks, isEmpty);
+  });
+
+  test('website artwork wins but official collections are kept', () {
+    final official = MoreLikeThisResult(
+      artworks: <Artwork>[_artwork('off', 'Official result')],
+      featuredInCollections: <CollectionWithDeviations>[
+        CollectionWithDeviations(
+          collection: CollectionSummary(
+            folderId: 111,
+            name: 'Curated',
+            owner: UserProfile(id: 'u', username: 'curator'),
+          ),
+          deviations: const <Artwork>[],
+        ),
+      ],
+    );
+
+    final result = mergeMoreLikeThisResult(
+      official: official,
+      webArtworks: <Artwork>[_artwork('web', 'Website result')],
+      websiteError: null,
+    );
+
+    expect(result.artworks.single.id, 'web');
+    expect(result.featuredInCollections, hasLength(1));
+    expect(result.featuredInCollections.single.collection.name, 'Curated');
   });
 
   testWidgets('an empty result stays user-facing and checks again', (
