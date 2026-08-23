@@ -105,3 +105,19 @@ recoverable after that commit has been observed.
   ad-hoc signed and must use the `macos-unsigned-preview` filename until stable
   Developer ID signing, Hardened Runtime, and notarization are configured.
 - Historical releases and tags are part of the project record and are retained.
+
+## App-local state
+
+Some state is deliberately kept client-side and never synced to DeviantArt:
+
+- **Notification read state** (`NotificationReadStore`): DeviantArt exposes no
+  public "mark read" endpoint, so the unread dot is a local overlay on top of
+  the server's `isNew` flag. It persists locally and does not pretend to sync.
+- **User preferences** (`core/settings/AppPreferences`): language and theme
+  mode are stored in a small JSON file under the application-support directory.
+  They are restored before the first frame so the app never flashes defaults.
+- **Theme mode** (`core/theme/ThemeModeController`): system / light / dark, fed
+  into the MaterialApp and persisted with the preferences above.
+
+These overlays must stay local: adding a "sync to server" behavior would cross
+into the official API boundary and belongs in DAKit, not in the app.
