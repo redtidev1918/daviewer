@@ -412,6 +412,25 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '更多类似作品加载失败' : 'Could not load similar artwork';
   String get noMoreLikeThis =>
       _lang == AppLanguage.zh ? '暂时没有找到类似作品' : 'No similar artwork found';
+  String get moreLikeThisRecovering => _lang == AppLanguage.zh
+      ? '相关推荐暂时中断，正在自动恢复…'
+      : 'Suggestions were interrupted. Recovering automatically…';
+  String get moreLikeThisNetworkFailure => _lang == AppLanguage.zh
+      ? '网络连接失败，自动重试后仍无法加载。请检查代理或网络。'
+      : 'The network failed after an automatic retry. Check your connection or proxy.';
+  String get moreLikeThisSessionFailure => _lang == AppLanguage.zh
+      ? 'DeviantArt 登录会话已失效，重新登录后即可恢复。'
+      : 'Your DeviantArt session expired. Sign in again to restore suggestions.';
+  String get moreLikeThisServiceFailure => _lang == AppLanguage.zh
+      ? 'DeviantArt 暂时不可用或限制了请求，作品详情本身不受影响。'
+      : 'DeviantArt is temporarily unavailable or limiting requests. Artwork details still work.';
+  String get moreLikeThisFormatFailure => _lang == AppLanguage.zh
+      ? 'DeviantArt 调整了页面结构，当前版本暂时无法读取相关推荐。'
+      : 'DeviantArt changed the page format, so this version cannot read suggestions yet.';
+  String get moreLikeThisUnknownFailure => _lang == AppLanguage.zh
+      ? '相关推荐暂时不可用，作品详情本身仍可正常浏览。'
+      : 'Suggestions are temporarily unavailable. Artwork details still work.';
+  String get reloadSuggestions => _lang == AppLanguage.zh ? '重新加载' : 'Reload';
 
   // --- OAuth configuration errors (developer-facing) ---
   String get oauthClientIdMissing => _lang == AppLanguage.zh

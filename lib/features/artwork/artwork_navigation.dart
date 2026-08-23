@@ -23,6 +23,21 @@ final class ArtworkBrowseSession {
 
   String? nextOf(String id) => _neighbor(id, 1);
 
+  ArtworkNavigationTarget? target(
+    String id,
+    ArtworkNavigationDirection direction,
+  ) {
+    final targetId = switch (direction) {
+      ArtworkNavigationDirection.previous => previousOf(id),
+      ArtworkNavigationDirection.next => nextOf(id),
+    };
+    if (targetId == null) return null;
+    return ArtworkNavigationTarget(
+      artworkId: targetId,
+      routeContext: ArtworkRouteContext(session: this, direction: direction),
+    );
+  }
+
   String? _neighbor(String id, int offset) {
     final index = ids.indexOf(id);
     if (index < 0) return null;
@@ -40,6 +55,51 @@ final class ArtworkBrowseSession {
   }
 }
 
+enum ArtworkNavigationDirection { previous, next }
+
+/// Route metadata for an artwork opened from a feed. The direction is null on
+/// the first open and is set for subsequent previous/next transitions.
+final class ArtworkRouteContext {
+  const ArtworkRouteContext({required this.session, this.direction});
+
+  final ArtworkBrowseSession session;
+  final ArtworkNavigationDirection? direction;
+
+  static ArtworkRouteContext? fromExtra(Object? extra) => switch (extra) {
+    final ArtworkRouteContext context => context,
+    final ArtworkBrowseSession session => ArtworkRouteContext(session: session),
+    _ => null,
+  };
+}
+
+final class ArtworkNavigationTarget {
+  const ArtworkNavigationTarget({
+    required this.artworkId,
+    required this.routeContext,
+  });
+
+  final String artworkId;
+  final ArtworkRouteContext routeContext;
+}
+
+/// Different artwork IDs must always produce different route keys. GoRouter's
+/// default page key identifies the route template (`/artwork/:id`), which can
+/// otherwise preserve a detail page's busy state across replacements.
+ValueKey<String> artworkPageKey(String artworkId) =>
+    ValueKey<String>('artwork:$artworkId');
+
+ValueKey<String> artworkRoutePageKey(
+  ValueKey<String> navigationKey,
+  String artworkId,
+) => ValueKey<String>('${navigationKey.value}:artwork:$artworkId');
+
+Offset artworkTransitionBegin(ArtworkNavigationDirection? direction) =>
+    switch (direction) {
+      ArtworkNavigationDirection.previous => const Offset(-0.18, 0),
+      ArtworkNavigationDirection.next => const Offset(0.18, 0),
+      null => const Offset(0, 0.025),
+    };
+
 /// Opens a detail page with the visible feed as its previous/next sequence and
 /// caches every item so numeric web IDs remain resolvable while swiping.
 void openArtworkFromList(
@@ -52,7 +112,9 @@ void openArtworkFromList(
   ref.read(artworkStoreProvider.notifier).putAll(items);
   context.push(
     '/artwork/${artwork.id}',
-    extra: ArtworkBrowseSession.fromArtworks(items),
+    extra: ArtworkRouteContext(
+      session: ArtworkBrowseSession.fromArtworks(items),
+    ),
   );
 }
 
@@ -77,6 +139,17 @@ final class ArtworkSwipeRegion extends StatefulWidget {
 
 final class _ArtworkSwipeRegionState extends State<ArtworkSwipeRegion> {
   double _distance = 0;
+  double _visualOffset = 0;
+  bool _dragging = false;
+
+  void _resetDrag() {
+    if (!mounted) return;
+    setState(() {
+      _distance = 0;
+      _visualOffset = 0;
+      _dragging = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,25 +158,43 @@ final class _ArtworkSwipeRegionState extends State<ArtworkSwipeRegion> {
     }
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
-      onHorizontalDragStart: (_) => _distance = 0,
-      onHorizontalDragUpdate: (details) => _distance += details.delta.dx,
-      onHorizontalDragCancel: () => _distance = 0,
+      onHorizontalDragStart: (_) {
+        setState(() {
+          _distance = 0;
+          _visualOffset = 0;
+          _dragging = true;
+        });
+      },
+      onHorizontalDragUpdate: (details) {
+        setState(() {
+          _distance += details.delta.dx;
+          _visualOffset = (_distance * 0.16).clamp(-36, 36);
+        });
+      },
+      onHorizontalDragCancel: _resetDrag,
       onHorizontalDragEnd: (details) {
         final velocity = details.primaryVelocity ?? 0;
         final threshold = (MediaQuery.sizeOf(context).width * 0.16).clamp(
           56.0,
           96.0,
         );
-        if ((_distance > threshold || velocity > 700) &&
-            widget.onPrevious != null) {
-          widget.onPrevious!();
-        } else if ((_distance < -threshold || velocity < -700) &&
-            widget.onNext != null) {
-          widget.onNext!();
-        }
-        _distance = 0;
+        final callback =
+            (_distance > threshold || velocity > 700) &&
+                widget.onPrevious != null
+            ? widget.onPrevious
+            : (_distance < -threshold || velocity < -700) &&
+                  widget.onNext != null
+            ? widget.onNext
+            : null;
+        _resetDrag();
+        callback?.call();
       },
-      child: widget.child,
+      child: AnimatedSlide(
+        duration: _dragging ? Duration.zero : const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
+        offset: Offset(_visualOffset / MediaQuery.sizeOf(context).width, 0),
+        child: widget.child,
+      ),
     );
   }
 }

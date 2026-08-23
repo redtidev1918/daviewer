@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -38,16 +38,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/web-login',
         builder: (context, state) => const WebLoginScreen(),
       ),
-      GoRoute(
-        path: '/artwork/:id',
-        builder: (context, state) => ArtworkDetailScreen(
-          key: state.pageKey,
-          artworkId: state.pathParameters['id']!,
-          browseSession: state.extra is ArtworkBrowseSession
-              ? state.extra! as ArtworkBrowseSession
-              : null,
-        ),
-      ),
+      GoRoute(path: '/artwork/:id', pageBuilder: artworkDetailPage),
       GoRoute(
         path: '/artist/:username',
         builder: (context, state) =>
@@ -154,6 +145,40 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(router.dispose);
   return router;
 });
+
+/// Builds an artwork route with a direction-aware shared-axis transition.
+/// Exposed for a router-level regression test of repeated replacements.
+Page<void> artworkDetailPage(BuildContext context, GoRouterState state) {
+  final artworkId = state.pathParameters['id']!;
+  final routeContext = ArtworkRouteContext.fromExtra(state.extra);
+  return CustomTransitionPage<void>(
+    key: artworkRoutePageKey(state.pageKey, artworkId),
+    transitionDuration: const Duration(milliseconds: 280),
+    reverseTransitionDuration: const Duration(milliseconds: 220),
+    child: ArtworkDetailScreen(
+      key: artworkPageKey(artworkId),
+      artworkId: artworkId,
+      browseSession: routeContext?.session,
+    ),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final entrance = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+      return FadeTransition(
+        opacity: Tween<double>(begin: 0.72, end: 1).animate(entrance),
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: artworkTransitionBegin(routeContext?.direction),
+            end: Offset.zero,
+          ).animate(entrance),
+          child: child,
+        ),
+      );
+    },
+  );
+}
 
 /// Keeps first-run authentication separate from authenticated feed loading.
 /// Exposed as a pure function so this critical route policy is regression

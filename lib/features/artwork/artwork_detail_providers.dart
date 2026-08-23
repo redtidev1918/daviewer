@@ -11,6 +11,7 @@ import '../../core/data/web_session.dart';
 import '../../core/data/web_more_like_this.dart';
 import '../../core/runtime/runtime_provider.dart';
 import 'artwork_store.dart';
+import 'more_like_this_failure.dart';
 
 /// True for the numeric ids used by the web `rfy` feed (the OAuth API only
 /// accepts UUIDs, e.g. `97B067C2-…`).
@@ -308,12 +309,9 @@ final moreLikeThisProvider = FutureProvider.autoDispose
         );
         return result;
       } on Object catch (officialError) {
-        if (websiteError != null) {
-          throw StateError(
-            'Both More Like This sources failed. '
-            'Website: $websiteError; OAuth: $officialError',
-          );
-        }
-        rethrow;
+        throw MoreLikeThisFailure(
+          websiteError: websiteError,
+          officialError: officialError,
+        );
       }
     });

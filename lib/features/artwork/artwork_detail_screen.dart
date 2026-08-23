@@ -76,6 +76,20 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant ArtworkDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.artworkId == widget.artworkId) return;
+    unawaited(_subscription?.cancel());
+    _subscription = null;
+    _transfer = null;
+    _downloading = false;
+    _favourite = false;
+    _favBusy = false;
+    _navigatingArtwork = false;
+    _reportedTransferFailure = null;
+  }
+
   Future<void> _toggleFavourite() async {
     if (_favBusy) return;
     setState(() => _favBusy = true);
@@ -220,12 +234,18 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
   void _navigateArtwork(int offset) {
     if (_navigatingArtwork) return;
     final session = widget.browseSession;
-    final id = offset < 0
-        ? session?.previousOf(widget.artworkId)
-        : session?.nextOf(widget.artworkId);
-    if (id == null) return;
+    final target = session?.target(
+      widget.artworkId,
+      offset < 0
+          ? ArtworkNavigationDirection.previous
+          : ArtworkNavigationDirection.next,
+    );
+    if (target == null) return;
     _navigatingArtwork = true;
-    context.replace('/artwork/$id', extra: session);
+    context.pushReplacement(
+      '/artwork/${target.artworkId}',
+      extra: target.routeContext,
+    );
   }
 
   @override
