@@ -1,4 +1,4 @@
-import 'package:dakit_core/dakit_core.dart';
+import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -196,25 +196,28 @@ final class ArtworkGrid extends ConsumerWidget {
       return ScrollableFill(child: AppEmptyState(message: emptyMessage));
     }
 
-    return GridView.builder(
+    return MasonryGridView.count(
       padding: const EdgeInsets.all(12),
       physics: const AlwaysScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 240,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 0.68,
+      crossAxisCount: (MediaQuery.of(context).size.width / 200).round().clamp(
+        2,
+        4,
       ),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
       itemCount: items.length,
       itemBuilder: (context, index) {
         final artwork = items[index];
-        return ArtworkCard(
-          artwork: artwork,
-          onTap: () => openArtworkFromList(
-            context,
-            ref,
-            artworks: items,
+        return AspectRatio(
+          aspectRatio: artworkAspectRatio(artwork),
+          child: ArtworkCard(
             artwork: artwork,
+            onTap: () => openArtworkFromList(
+              context,
+              ref,
+              artworks: items,
+              artwork: artwork,
+            ),
           ),
         );
       },

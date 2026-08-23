@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -61,7 +62,27 @@ final class HomeScreen extends ConsumerWidget {
             if (oauthSignedIn)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Center(child: Text(auth.account?.username ?? '')),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
+                        foregroundImage: auth.account?.avatarUri == null
+                            ? null
+                            : CachedNetworkImageProvider(
+                                auth.account!.avatarUri.toString(),
+                              ),
+                        child: const Icon(Icons.person, size: 14),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(auth.account?.username ?? ''),
+                    ],
+                  ),
+                ),
               )
             else
               Padding(
