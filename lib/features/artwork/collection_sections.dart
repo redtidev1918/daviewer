@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/theme/app_theme.dart';
 import '../../core/l10n/app_strings.dart';
@@ -15,11 +14,10 @@ import 'collection_contents_screen.dart';
 /// themselves when empty.
 ///
 /// Each card is clearly a collection (folder badge + name + owner), and tapping
-/// opens its deviations natively when the preview already carries them, falling
-/// back to the web for the rest. The full-contents path is abstracted behind
-/// `CollectionContentsSource` so a verified reverse-engineered (or future
-/// official) implementation can replace the preview/browser behavior without
-/// touching this UI.
+/// opens it natively: the preview deviations render instantly while the screen
+/// loads the collection's full contents in the background. The full-contents
+/// path is abstracted behind `CollectionContentsSource` so a future official
+/// implementation can replace the web-scraping source without touching this UI.
 final class FeaturedInCollectionsSection extends ConsumerWidget {
   const FeaturedInCollectionsSection({required this.artworkId, super.key});
 
@@ -233,23 +231,18 @@ Uri? _collectionCover(CollectionWithDeviations group) {
   return null;
 }
 
-/// Opens the collection: natively when the preview already carries its
-/// deviations, otherwise on the web using the numeric folder id.
+/// Opens the collection natively. The preview deviations render instantly while
+/// the screen loads the full contents in the background; if that fails, the
+/// screen falls back to its preview items and an "open on the web" action.
 void _openCollection(BuildContext context, CollectionWithDeviations group) {
-  if (group.deviations.isNotEmpty) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => CollectionContentsScreen(
-          title: group.collection.name,
-          artworks: group.deviations,
-        ),
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => CollectionContentsScreen(
+        title: group.collection.name,
+        folderId: group.collection.folderId,
+        username: group.collection.owner.username,
+        initialArtworks: group.deviations,
       ),
-    );
-    return;
-  }
-  final username = group.collection.owner.username;
-  final uri = Uri.parse(
-    'https://www.deviantart.com/$username/favourites/${group.collection.folderId}',
+    ),
   );
-  launchUrl(uri, mode: LaunchMode.externalApplication);
 }

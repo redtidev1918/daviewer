@@ -1,47 +1,115 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/l10n/app_strings.dart';
+import '../../shared/widgets/app_empty_state.dart';
+import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/artwork_card.dart';
+import 'collection_contents_provider.dart';
 
-/// A simple native view of a collection's deviations. Used when the "More Like
-/// This" preview already carries the collection's deviations; the full-contents
-/// source (web reverse-engineering) plugs in behind the same screen later.
-final class CollectionContentsScreen extends StatelessWidget {
+/// A native view of a favourites collection's deviations.
+///
+/// The "More Like This" preview only carries a few of a collection's
+/// deviations, so this screen also loads the full contents in the background
+/// (via [collectionContentsProvider]) and swaps them in once ready. The preview
+/// deviations render instantly while that fetch is in flight, and the "open on
+/// the web" fallback remains for collections that cannot be loaded natively.
+final class CollectionContentsScreen extends ConsumerStatefulWidget {
   const CollectionContentsScreen({
     required this.title,
-    required this.artworks,
+    required this.folderId,
+    required this.username,
+    this.initialArtworks = const <Artwork>[],
     super.key,
   });
 
   final String title;
-  final List<Artwork> artworks;
+  final int folderId;
+  final String username;
+
+  /// The deviations already known from the "More Like This" preview (may be
+  /// empty). Shown immediately while the full contents load.
+  final List<Artwork> initialArtworks;
+
+  @override
+  ConsumerState<CollectionContentsScreen> createState() =>
+      _CollectionContentsScreenState();
+}
+
+class _CollectionContentsScreenState
+    extends ConsumerState<CollectionContentsScreen> {
+  CollectionContentsKey get _key => CollectionContentsKey(
+    folderId: widget.folderId,
+    username: widget.username,
+  );
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final crossAxisCount = (width / 200).round().clamp(2, 4);
+    final async = ref.watch(collectionContentsProvider(_key));
+    final s = strings(ref.watch(appLanguageProvider));
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Text(widget.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        bottom: async.isLoading
+            ? const PreferredSize(
+                preferredSize: Size.fromHeight(2),
+                child: LinearProgressIndicator(minHeight: 2),
+              )
+            : null,
       ),
-      body: MasonryGridView.count(
-        padding: const EdgeInsets.all(12),
-        crossAxisCount: crossAxisCount,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        itemCount: artworks.length,
-        itemBuilder: (context, index) {
-          final artwork = artworks[index];
-          return AspectRatio(
-            aspectRatio: artworkAspectRatio(artwork),
-            child: ArtworkCard(
-              artwork: artwork,
-              onTap: () => context.push('/artwork/${artwork.id}'),
-            ),
-          );
-        },
+      body: async.when(
+        data: (artworks) => artworks.isEmpty
+            ? AppEmptyState(
+                message: s.collectionEmpty,
+                icon: Icons.folder_outlined,
+                actionLabel: s.collectionOpenOnWeb,
+                onAction: _openOnWeb,
+              )
+            : _grid(artworks),
+        loading: () => widget.initialArtworks.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : _grid(widget.initialArtworks),
+        error: (_, _) => widget.initialArtworks.isEmpty
+            ? AppErrorState(
+                message: s.collectionLoadFailed,
+                onRetry: () => ref.invalidate(collectionContentsProvider(_key)),
+              )
+            : _grid(widget.initialArtworks),
       ),
     );
+  }
+
+  Widget _grid(List<Artwork> artworks) {
+    final width = MediaQuery.of(context).size.width;
+    final crossAxisCount = (width / 200).round().clamp(2, 4);
+    return MasonryGridView.count(
+      padding: const EdgeInsets.all(12),
+      crossAxisCount: crossAxisCount,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      itemCount: artworks.length,
+      itemBuilder: (context, index) {
+        final artwork = artworks[index];
+        return AspectRatio(
+          aspectRatio: artworkAspectRatio(artwork),
+          child: ArtworkCard(
+            artwork: artwork,
+            onTap: () => context.push('/artwork/${artwork.id}'),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openOnWeb() {
+    final uri = Uri.parse(
+      'https://www.deviantart.com/${widget.username.toLowerCase()}'
+      '/favourites/${widget.folderId}',
+    );
+    return launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }

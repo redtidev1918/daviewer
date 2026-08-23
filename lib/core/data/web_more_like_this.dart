@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dakit_core/dakit_core.dart';
 import 'package:dio/dio.dart';
 
+import 'html_state.dart';
 import 'rfy_feed.dart';
 import 'web_http.dart';
 
@@ -143,7 +144,7 @@ final class WebMoreLikeThisFetcher {
     String html, {
     required String deviationId,
   }) {
-    final cache = _jsonParseAssignment(
+    final cache = jsonParseAssignment(
       html,
       marker: 'window.__RCACHE__ = JSON.parse(',
       missingMessage: 'Missing DeviantArt related-content cache.',
@@ -189,100 +190,11 @@ final class WebMoreLikeThisFetcher {
   }
 
   static Map<Object?, Object?> _initialState(String html) {
-    return _jsonParseAssignment(
+    return jsonParseAssignment(
       html,
       marker: 'window.__INITIAL_STATE__ = JSON.parse(',
       missingMessage: 'Missing DeviantArt initial state.',
     );
-  }
-
-  static Map<Object?, Object?> _jsonParseAssignment(
-    String html, {
-    required String marker,
-    required String missingMessage,
-  }) {
-    final markerIndex = html.indexOf(marker);
-    if (markerIndex < 0) {
-      throw FormatException(missingMessage);
-    }
-    final literalStart = markerIndex + marker.length;
-    final decoded = _decodeJavaScriptString(html, literalStart);
-    final state = jsonDecode(decoded);
-    if (state is! Map) {
-      throw const FormatException('Unexpected DeviantArt initial state.');
-    }
-    return state;
-  }
-
-  /// Decodes one JavaScript string literal. DeviantArt currently emits `\'`
-  /// inside a double-quoted literal, which is valid JavaScript but invalid JSON,
-  /// so feeding the outer literal directly to [jsonDecode] is not sufficient.
-  /// No code is evaluated here.
-  static String _decodeJavaScriptString(String source, int start) {
-    if (start >= source.length ||
-        (source.codeUnitAt(start) != 0x22 &&
-            source.codeUnitAt(start) != 0x27)) {
-      throw const FormatException('Missing initial-state string literal.');
-    }
-    final quote = source.codeUnitAt(start);
-    final result = StringBuffer();
-    var index = start + 1;
-    while (index < source.length) {
-      final code = source.codeUnitAt(index++);
-      if (code == quote) return result.toString();
-      if (code != 0x5c) {
-        result.writeCharCode(code);
-        continue;
-      }
-      if (index >= source.length) break;
-      final escaped = source.codeUnitAt(index++);
-      switch (escaped) {
-        case 0x62: // b
-          result.writeCharCode(0x08);
-        case 0x66: // f
-          result.writeCharCode(0x0c);
-        case 0x6e: // n
-          result.writeCharCode(0x0a);
-        case 0x72: // r
-          result.writeCharCode(0x0d);
-        case 0x74: // t
-          result.writeCharCode(0x09);
-        case 0x76: // v
-          result.writeCharCode(0x0b);
-        case 0x0a: // JavaScript line continuation
-          break;
-        case 0x0d:
-          if (index < source.length && source.codeUnitAt(index) == 0x0a) {
-            index++;
-          }
-        case 0x78: // xNN
-          result.writeCharCode(_hexEscape(source, index, 2));
-          index += 2;
-        case 0x75: // uNNNN
-          result.writeCharCode(_hexEscape(source, index, 4));
-          index += 4;
-        default:
-          // Includes escaped quote, apostrophe, slash, and backslash. JS also
-          // permits identity escapes; preserving the escaped character matches
-          // browser string-literal semantics for this data container.
-          result.writeCharCode(escaped);
-      }
-    }
-    throw const FormatException('Unterminated initial-state string literal.');
-  }
-
-  static int _hexEscape(String source, int start, int length) {
-    if (start + length > source.length) {
-      throw const FormatException('Truncated initial-state escape.');
-    }
-    final value = int.tryParse(
-      source.substring(start, start + length),
-      radix: 16,
-    );
-    if (value == null) {
-      throw const FormatException('Invalid initial-state escape.');
-    }
-    return value;
   }
 
   static bool _isDeviantArtHost(String host) {
