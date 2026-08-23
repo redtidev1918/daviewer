@@ -94,6 +94,9 @@ final class _FullScreenImageViewerState
   @override
   Widget build(BuildContext context) {
     final s = strings(ref.watch(appLanguageProvider));
+    final canSwipeArtwork =
+        !_zoomed &&
+        (widget.onPreviousArtwork != null || widget.onNextArtwork != null);
     Widget image = Image(
       image: widget.imageProvider,
       fit: BoxFit.contain,
@@ -138,17 +141,16 @@ final class _FullScreenImageViewerState
         behavior: HitTestBehavior.opaque,
         onDoubleTapDown: (details) => _doubleTap = details,
         onDoubleTap: _toggleZoom,
-        onHorizontalDragStart:
-            !_zoomed &&
-                (widget.onPreviousArtwork != null ||
-                    widget.onNextArtwork != null)
+        onHorizontalDragStart: canSwipeArtwork
             ? (_) => _horizontalDrag = 0
             : null,
-        onHorizontalDragUpdate: !_zoomed
+        onHorizontalDragUpdate: canSwipeArtwork
             ? (details) => _horizontalDrag += details.delta.dx
             : null,
-        onHorizontalDragCancel: () => _horizontalDrag = 0,
-        onHorizontalDragEnd: !_zoomed ? _finishHorizontalDrag : null,
+        onHorizontalDragCancel: canSwipeArtwork
+            ? () => _horizontalDrag = 0
+            : null,
+        onHorizontalDragEnd: canSwipeArtwork ? _finishHorizontalDrag : null,
         child: InteractiveViewer(
           transformationController: _transformation,
           minScale: 1,
