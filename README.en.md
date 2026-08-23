@@ -28,10 +28,11 @@ Download the package for your platform from
   Silicon build; unzip and drag to Applications)
 - **Windows**: `DAViewer-<version>-windows.zip` (unzip and run `DAViewer.exe`)
 
-> **⚠️ macOS unsigned preview:** The macOS artifact has no Apple Developer ID
-> signature and has not been notarized by Apple; Keychain may ask for your Mac
-> login password. macOS receives that password; DAViewer never reads it. Only
-> use the original asset from this repository's Release page.
+> **A note on the macOS build:** this build isn't signed with an Apple Developer
+> certificate yet, so macOS may flag it on first launch — right-click the app
+> and choose Open to proceed. Keychain may also ask for your Mac password once;
+> that prompt is handled by macOS and DAViewer never reads or stores it.
+> Everything else works like a normal app.
 
 ## Screenshots
 
@@ -201,7 +202,7 @@ WebView is unavailable.
 - **DAViewer has no account of its own**: you sign in with your DeviantArt account — the app never registers an account or stores a password.
 - **Forgot your password?** Use the "Forgot Password" link on the login page, or tap "?" → "Forgot password" in the app's login screen to open the reset page in your browser.
 - **Register an account**: tap "?" → "Register a DeviantArt account" in the app's login screen to open the sign-up page in your browser.
-- **macOS unsigned-preview Keychain prompt**: an ad-hoc-signed app's identity can change between builds, so macOS may ask for the Mac login password on first sign-in or after an upgrade. The password field belongs to macOS and DAViewer never reads it; the app only accesses its own stored DeviantArt OAuth token. The macOS package remains explicitly labelled as an unsigned preview until Developer ID signing and notarization are in place.
+- **macOS Keychain prompt**: on first sign-in or after an upgrade, macOS may ask for your Mac login password once (because the app isn't developer-signed yet). That prompt belongs to macOS and DAViewer never reads the password — it only accesses the DeviantArt token it saved for you.
 
 ## Contributing
 

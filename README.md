@@ -25,9 +25,10 @@
   （同时支持 Intel 与 Apple Silicon；解压后拖入「应用程序」）
 - **Windows**：`DAViewer-<版本>-windows.zip`（解压后运行 `DAViewer.exe`）
 
-> **⚠️ macOS 未签名测试版 / unsigned preview**：macOS 产物没有 Apple Developer ID
-> 签名，也没有经过 Apple 公证；钥匙串可能要求 Mac 登录密码。该密码由 macOS 接收，
-> DAViewer 不会读取。只应使用本仓库 Release 的原始文件。
+> **关于 macOS 版本的说明**：该版本尚未申请 Apple 开发者签名，首次打开时系统可能提示
+> 「已阻止来自未验证开发者的 App」，此时右键点 App 图标选「打开」即可；个别情况下钥匙串
+> 也可能询问一次 Mac 登录密码，该密码由 macOS 系统处理，DAViewer 不会读取或保存。
+> 除此之外与普通应用无异，可放心使用。
 
 ## 截图预览
 
@@ -171,7 +172,7 @@ App 里存在两条独立的登录态：
 - **DAViewer 没有自己的账号**：你登录的是 DeviantArt 官方账号，应用不额外注册账号、不保存密码。
 - **忘记密码**：登录页有「Forgot Password」链接；也可以在应用登录页点右上角「?」→「找回密码」，在系统浏览器打开重置页面。
 - **注册账号**：应用登录页右上角「?」→「注册 DeviantArt 账号」，在系统浏览器打开注册页。
-- **macOS 未签名测试版的「钥匙串」提示**：临时签名的应用身份可能随版本变化，首次登录或升级后，macOS 可能弹出「DAViewer 想要使用钥匙串中的机密信息」并要求输入 Mac 登录密码。该输入框属于 macOS 系统，DAViewer 不会读取密码；App 只访问自己保存的 DeviantArt OAuth 令牌。正式 Developer ID 签名与公证完成前，macOS 包会一直明确标记为未签名测试版。
+- **macOS 的「钥匙串」提示**：首次登录或升级后，macOS 偶尔会询问一次 Mac 登录密码（因为应用暂未申请开发者签名）。这是 macOS 自己的确认框，DAViewer 不会读取密码，只访问它为你保存的 DeviantArt 登录令牌。
 
 ## 贡献
 
