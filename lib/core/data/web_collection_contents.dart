@@ -8,10 +8,17 @@ import 'web_http.dart';
 
 /// One page of a DeviantArt favourites collection.
 final class CollectionContentsPage {
-  const CollectionContentsPage({required this.items, required this.hasMore});
+  const CollectionContentsPage({
+    required this.items,
+    required this.hasMore,
+    this.coverUri,
+  });
 
   final List<Artwork> items;
   final bool hasMore;
+
+  /// The collection's own cover image (from its `thumb`), when available.
+  final Uri? coverUri;
 }
 
 /// Fetches the full contents of a public DeviantArt favourites collection given
@@ -45,6 +52,7 @@ final class WebCollectionContentsFetcher {
     required String cookieHeader,
     required String csrfToken,
     int offset = 0,
+    int limit = 24,
   }) async {
     final response = await _dio.get<Object?>(
       _jsonEndpoint.toString(),
@@ -53,13 +61,39 @@ final class WebCollectionContentsFetcher {
         'type': 'collection',
         'folderid': folderId,
         'offset': offset,
-        'limit': 24,
+        'limit': limit,
         'mature_content': true,
         'csrf_token': csrfToken,
       },
       options: webSessionOptions(cookieHeader),
     );
     return parseJsonPage(response.data);
+  }
+
+  /// Fetches only the collection's cover image, using a single lightweight
+  /// first page. Used as a fallback when the "More Like This" preview did not
+  /// carry a collection cover.
+  Future<Uri?> fetchCover({
+    required int folderId,
+    required String username,
+    required String cookieHeader,
+    required String csrfToken,
+  }) async {
+    final page = csrfToken.isNotEmpty
+        ? await fetchJsonPage(
+            folderId: folderId,
+            username: username,
+            cookieHeader: cookieHeader,
+            csrfToken: csrfToken,
+            limit: 1,
+          )
+        : await fetchPage(
+            folderId: folderId,
+            username: username,
+            cookieHeader: cookieHeader,
+            page: 1,
+          );
+    return page.coverUri;
   }
 
   /// Fetches every page through the JSON endpoint (offset pagination).
@@ -133,8 +167,8 @@ final class WebCollectionContentsFetcher {
   }
 
   /// Parses a `gallection/contents` JSON response: `results` (the same web
-  /// deviation shape as the `rfy` feed, mapped by [RfyFeedFetcher.mapDeviation])
-  /// plus the `hasMore` flag.
+  /// deviation shape as the `rfy` feed, mapped by [RfyFeedFetcher.mapDeviation]),
+  /// the `hasMore` flag, and the collection's own cover (`gallection.thumb`).
   static CollectionContentsPage parseJsonPage(Object? data) {
     if (data is! Map) {
       throw const FormatException('Unexpected collection contents shape.');
@@ -153,14 +187,16 @@ final class WebCollectionContentsFetcher {
         items.add(artwork);
       }
     }
+    final gallection = data['gallection'];
     return CollectionContentsPage(
       items: List<Artwork>.unmodifiable(items),
       hasMore: data['hasMore'] == true,
+      coverUri: _thumbImage(gallection is Map ? gallection['thumb'] : null),
     );
   }
 
-  /// Extracts a folder page's deviations and `hasMore` flag from its
-  /// server-rendered `window.__INITIAL_STATE__`.
+  /// Extracts a folder page's deviations, `hasMore` flag, and the folder's own
+  /// cover from its server-rendered `window.__INITIAL_STATE__`.
   static CollectionContentsPage parsePage(String html) {
     final state = jsonParseAssignment(
       html,
@@ -176,33 +212,70 @@ final class WebCollectionContentsFetcher {
       if (entry is! Map) continue;
       final modules = entry['modules'];
       if (modules is! Map) continue;
+      Object? foldersResults;
+      Object? folderDeviations;
       for (final module in modules.values) {
         if (module is! Map) continue;
         final moduleData = module['moduleData'];
         if (moduleData is! Map) continue;
-        final folderDeviations = moduleData['folderDeviations'];
-        if (folderDeviations is! Map) continue;
-        final rawDeviations = folderDeviations['deviations'];
-        if (rawDeviations is! List) continue;
-        final items = <Artwork>[];
-        for (final raw in rawDeviations) {
-          if (raw is! Map) continue;
-          final artwork = RfyFeedFetcher.mapDeviation(
-            Map<Object?, Object?>.from(raw),
-          );
-          // Journals and other media-less entries have no thumbnail to render
-          // in the image grid, mirroring the related-content filter.
-          if (artwork.id.isNotEmpty && artwork.media.isNotEmpty) {
-            items.add(artwork);
-          }
+        if (moduleData['folders'] is Map) {
+          foldersResults = (moduleData['folders'] as Map)['results'];
         }
-        return CollectionContentsPage(
-          items: List<Artwork>.unmodifiable(items),
-          hasMore: folderDeviations['hasMore'] == true,
-        );
+        if (moduleData['folderDeviations'] is Map) {
+          folderDeviations = moduleData['folderDeviations'];
+        }
       }
+      if (folderDeviations is! Map) continue;
+      final rawDeviations = folderDeviations['deviations'];
+      if (rawDeviations is! List) continue;
+      final items = <Artwork>[];
+      for (final raw in rawDeviations) {
+        if (raw is! Map) continue;
+        final artwork = RfyFeedFetcher.mapDeviation(
+          Map<Object?, Object?>.from(raw),
+        );
+        // Journals and other media-less entries have no thumbnail to render
+        // in the image grid, mirroring the related-content filter.
+        if (artwork.id.isNotEmpty && artwork.media.isNotEmpty) {
+          items.add(artwork);
+        }
+      }
+      return CollectionContentsPage(
+        items: List<Artwork>.unmodifiable(items),
+        hasMore: folderDeviations['hasMore'] == true,
+        coverUri: _folderCover(foldersResults, folderDeviations['folderId']),
+      );
     }
     throw const FormatException('Missing DeviantArt folder deviations.');
+  }
+
+  /// The first image of a deviation-shaped `thumb` object, if any.
+  static Uri? _thumbImage(Object? thumb) {
+    if (thumb is! Map) return null;
+    final artwork = RfyFeedFetcher.mapDeviation(
+      Map<Object?, Object?>.from(thumb),
+    );
+    for (final media in artwork.media) {
+      if (media.kind == MediaKind.image && media.uri != null) {
+        return media.uri;
+      }
+    }
+    return null;
+  }
+
+  /// The cover of the folder whose id matches [targetFolderId] within the
+  /// server-rendered `folders` module.
+  static Uri? _folderCover(Object? foldersResults, Object? targetFolderId) {
+    if (foldersResults is! List) return null;
+    for (final folder in foldersResults) {
+      if (folder is! Map) continue;
+      if (targetFolderId != null && folder['folderId'] != targetFolderId) {
+        continue;
+      }
+      final cover = _thumbImage(folder['thumb']);
+      if (cover != null) return cover;
+    }
+    return null;
   }
 }
 

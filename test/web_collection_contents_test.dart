@@ -64,6 +64,20 @@ void main() {
     expect(page.items.first.media, isNotEmpty);
   });
 
+  test('extracts the collection cover from the JSON response', () {
+    final page = WebCollectionContentsFetcher.parseJsonPage(<String, Object?>{
+      'hasMore': false,
+      'results': <Object?>[],
+      'gallection': <String, Object?>{
+        'folderId': 1161139,
+        'thumb': _deviation(99, 'Cover'),
+      },
+    });
+
+    expect(page.coverUri, isNotNull);
+    expect(page.coverUri.toString(), contains('work-99'));
+  });
+
   test('throws FormatException when JSON results are missing', () {
     expect(
       () => WebCollectionContentsFetcher.parseJsonPage(<String, Object?>{

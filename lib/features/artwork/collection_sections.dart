@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/app_theme.dart';
 import '../../core/l10n/app_strings.dart';
 import 'artwork_detail_providers.dart';
+import 'collection_contents_provider.dart';
 import 'collection_contents_screen.dart';
 
 /// "Featured in" / "Suggested" collections, shown as a compact horizontal rail
@@ -90,16 +91,50 @@ final class _CollectionRail extends StatelessWidget {
   }
 }
 
-final class _CollectionCard extends StatelessWidget {
+final class _CollectionCard extends ConsumerStatefulWidget {
   const _CollectionCard({required this.group, required this.s});
 
   final CollectionWithDeviations group;
   final AppStrings s;
 
   @override
+  ConsumerState<_CollectionCard> createState() => _CollectionCardState();
+}
+
+final class _CollectionCardState extends ConsumerState<_CollectionCard> {
+  Uri? _fetchedCover;
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeFetchCover();
+  }
+
+  /// When the "More Like This" preview carried no cover, resolve one lazily
+  /// from the collection's own `gallection/contents` thumbnail.
+  Future<void> _maybeFetchCover() async {
+    if (_collectionCover(widget.group) != null) return;
+    try {
+      final cover = await ref.read(
+        collectionCoverProvider(
+          CollectionContentsKey(
+            folderId: widget.group.collection.folderId,
+            username: widget.group.collection.owner.username,
+          ),
+        ).future,
+      );
+      if (mounted) setState(() => _fetchedCover = cover);
+    } on Object {
+      // The provider already returns null on failure; keep the placeholder.
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final group = widget.group;
+    final s = widget.s;
     final collection = group.collection;
-    final cover = _collectionCover(group);
+    final cover = _collectionCover(group) ?? _fetchedCover;
     return SizedBox(
       width: 168,
       child: Card(
