@@ -220,9 +220,11 @@ final class _CollectionPlaceholder extends StatelessWidget {
   }
 }
 
-/// The first static image among the collection's preview deviations, used as
-/// the card cover.
+/// The collection's own cover image (when the provider supplied one), falling
+/// back to the first static image among its preview deviations.
 Uri? _collectionCover(CollectionWithDeviations group) {
+  final cover = group.collection.coverUri;
+  if (cover != null) return cover;
   for (final artwork in group.deviations) {
     for (final media in artwork.media) {
       if (media.kind == MediaKind.image && media.uri != null) return media.uri;
