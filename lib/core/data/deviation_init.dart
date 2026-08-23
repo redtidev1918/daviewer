@@ -67,7 +67,13 @@ final class DeviationInitFetcher {
       },
       options: webSessionOptions(cookieHeader),
     );
-    final data = response.data;
+    return parseInit(response.data);
+  }
+
+  /// Parses a `dadeviation/init` response body into a [DeviationInit]. Extracted
+  /// from [fetch] so the parser is unit-testable against a captured snapshot
+  /// without a live web session.
+  static DeviationInit parseInit(Object? data) {
     if (data is! Map) {
       throw const FormatException('Unexpected deviation init shape.');
     }
@@ -75,6 +81,7 @@ final class DeviationInitFetcher {
     if (deviation is! Map) {
       throw const FormatException('Missing deviation in init response.');
     }
+    final deviationId = '${deviation['deviationId'] ?? ''}';
     final extended = deviation['extended'];
     final uuid = extended is Map ? extended['deviationUuid'] as String? : null;
     if (uuid == null || uuid.isEmpty) {
