@@ -42,6 +42,20 @@ final artistFoldersProvider = FutureProvider.autoDispose
       return page.items;
     });
 
+/// The artist's favourites collections (folders). DeviantArt lets an artist
+/// organize their favourites into categories just like their gallery folders;
+/// this surfaces those collections so they can be browsed natively.
+final artistFavouriteFoldersProvider = FutureProvider.autoDispose
+    .family<List<ArtworkFolder>, String>((ref, username) async {
+      final runtime = ref.watch(runtimeProvider);
+      final page = await OfficialFolderRepository(runtime.transport!)
+          .collectionFolders(
+            username: username,
+            options: const FolderQueryOptions(calculateSize: true),
+          );
+      return page.items;
+    });
+
 /// The artist's journal posts (articles), via the official
 /// `user/profile/posts` endpoint filtered to `/journal/` entries.
 final artistJournalsProvider = FutureProvider.autoDispose
@@ -80,7 +94,7 @@ final artistJournalsProvider = FutureProvider.autoDispose
       return items;
     });
 
-/// The contents of one gallery folder.
+/// The contents of one gallery or collection (favourites) folder.
 final folderContentsProvider = StateNotifierProvider.autoDispose
     .family<ArtworkFeedController, ArtworkFeedState, FolderRequest>((
       ref,
@@ -88,27 +102,40 @@ final folderContentsProvider = StateNotifierProvider.autoDispose
     ) {
       final runtime = ref.watch(runtimeProvider);
       final controller = ArtworkFeedController((page) {
-        return OfficialFolderRepository(runtime.transport!).galleryContents(
-          request.folderId,
-          username: request.username,
-          request: page,
-        );
+        final repository = OfficialFolderRepository(runtime.transport!);
+        return request.kind == FolderKind.collection
+            ? repository.collectionContents(
+                request.folderId,
+                username: request.username,
+                request: page,
+              )
+            : repository.galleryContents(
+                request.folderId,
+                username: request.username,
+                request: page,
+              );
       });
       return controller;
     });
 
 final class FolderRequest {
-  const FolderRequest({required this.username, required this.folderId});
+  const FolderRequest({
+    required this.username,
+    required this.folderId,
+    this.kind = FolderKind.gallery,
+  });
 
   final String username;
   final String folderId;
+  final FolderKind kind;
 
   @override
   bool operator ==(Object other) =>
       other is FolderRequest &&
       other.username == username &&
-      other.folderId == folderId;
+      other.folderId == folderId &&
+      other.kind == kind;
 
   @override
-  int get hashCode => Object.hash(username, folderId);
+  int get hashCode => Object.hash(username, folderId, kind);
 }

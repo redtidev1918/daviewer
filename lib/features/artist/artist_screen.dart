@@ -113,6 +113,7 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
               Tab(text: s.favourites),
               Tab(text: s.journal),
               Tab(text: s.folders),
+              Tab(text: s.collections),
             ],
           ),
         ),
@@ -152,6 +153,10 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                     ),
                     JournalsView(username: widget.username),
                     FoldersView(username: widget.username),
+                    FoldersView(
+                      username: widget.username,
+                      kind: FolderKind.collection,
+                    ),
                   ],
                 ),
               ),
