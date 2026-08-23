@@ -146,7 +146,10 @@ final class _RfyFeed extends ConsumerStatefulWidget {
 }
 
 final class _RfyFeedState extends ConsumerState<_RfyFeed>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void initState() {
     super.initState();
@@ -171,6 +174,7 @@ final class _RfyFeedState extends ConsumerState<_RfyFeed>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // required by AutomaticKeepAliveClientMixin
     final s = strings(ref.watch(appLanguageProvider));
     final oauthSignedIn = ref.watch(authControllerProvider).oauthSignedIn;
     final web = ref.watch(webSessionControllerProvider);

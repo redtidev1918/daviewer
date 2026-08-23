@@ -74,11 +74,21 @@ final class _LoginSyncBannerState extends State<LoginSyncBanner> {
 }
 
 /// The official "daily deviations" feed (OAuth).
-final class DailyFeed extends ConsumerWidget {
+final class DailyFeed extends ConsumerStatefulWidget {
   const DailyFeed({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DailyFeed> createState() => _DailyFeedState();
+}
+
+final class _DailyFeedState extends ConsumerState<DailyFeed>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context); // required by AutomaticKeepAliveClientMixin
     final auth = ref.watch(authControllerProvider);
     final s = strings(ref.watch(appLanguageProvider));
     if (!auth.oauthSignedIn) {
