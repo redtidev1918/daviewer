@@ -46,3 +46,32 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Secrets, signing material and local state (defense in depth).
+# The android/.gitignore covers the default Android locations; these global
+# patterns also catch keystores/certs/env files placed anywhere else.
+.env
+.env.*
+*.env
+!.env.example
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.p8
+key.properties
+local.properties
+*.pem
+*.cer
+*.crt
+*.key
+*.mobileprovision
+*.provisionprofile
+secrets/
+credentials/
+private/
+auth_tokens/
+session.json
+**/session.json
+*.session
+*.git-credentials

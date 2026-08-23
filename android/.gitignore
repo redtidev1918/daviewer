@@ -13,3 +13,5 @@ key.properties
 **/*.keystore
 **/*.jks
 **/*.p12
+**/*.pfx
+**/*.p8
