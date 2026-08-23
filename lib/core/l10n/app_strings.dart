@@ -136,6 +136,10 @@ final class AppStrings {
   String get language => _lang == AppLanguage.zh ? '语言' : 'Language';
   String get chinese => _lang == AppLanguage.zh ? '中文' : '中文 (Chinese)';
   String get english => _lang == AppLanguage.zh ? '英文' : 'English';
+  String get appearance => _lang == AppLanguage.zh ? '外观' : 'Appearance';
+  String get themeSystem => _lang == AppLanguage.zh ? '跟随系统' : 'System';
+  String get themeLight => _lang == AppLanguage.zh ? '浅色' : 'Light';
+  String get themeDark => _lang == AppLanguage.zh ? '深色' : 'Dark';
   String get proxy => _lang == AppLanguage.zh ? '网络代理' : 'Proxy';
   String get diagnostics => _lang == AppLanguage.zh ? '日志与诊断' : 'Diagnostics';
   String get downloadOriginal =>

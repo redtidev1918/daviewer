@@ -9,6 +9,7 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/auth/auth_state.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
+import '../../core/theme/theme_mode_provider.dart';
 
 const String _githubUrl = 'https://github.com/redtidev1918/daviewer';
 const String _releasesUrl = 'https://github.com/redtidev1918/daviewer/releases';
@@ -27,6 +28,7 @@ final class SettingsScreen extends ConsumerWidget {
     final runtime = ref.watch(runtimeProvider);
     final proxy = runtime.proxyController;
     final language = ref.watch(appLanguageProvider);
+    final themeMode = ref.watch(themeModeProvider);
     final s = strings(language);
     final signedIn = auth.status == AuthStatus.signedIn;
 
@@ -47,6 +49,14 @@ final class SettingsScreen extends ConsumerWidget {
                 ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showLanguagePicker(context, ref, language),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.brightness_6_outlined),
+                title: Text(s.appearance),
+                subtitle: Text(_themeModeLabel(themeMode, s)),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showThemePicker(context, ref, themeMode),
               ),
               const Divider(height: 1),
               ListTile(
@@ -142,6 +152,38 @@ final class SettingsScreen extends ConsumerWidget {
                 Navigator.pop(context);
               },
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showThemePicker(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeMode current,
+  ) {
+    final s = strings(ref.read(appLanguageProvider));
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            for (final entry in <(ThemeMode, String)>[
+              (ThemeMode.system, s.themeSystem),
+              (ThemeMode.light, s.themeLight),
+              (ThemeMode.dark, s.themeDark),
+            ])
+              ListTile(
+                leading: Icon(_themeModeIcon(entry.$1)),
+                title: Text(entry.$2),
+                trailing: current == entry.$1 ? const Icon(Icons.check) : null,
+                onTap: () {
+                  ref.read(themeModeProvider.notifier).set(entry.$1);
+                  Navigator.pop(context);
+                },
+              ),
           ],
         ),
       ),
@@ -281,3 +323,15 @@ final class _AccountHeader extends StatelessWidget {
     );
   }
 }
+
+String _themeModeLabel(ThemeMode mode, AppStrings s) => switch (mode) {
+  ThemeMode.system => s.themeSystem,
+  ThemeMode.light => s.themeLight,
+  ThemeMode.dark => s.themeDark,
+};
+
+IconData _themeModeIcon(ThemeMode mode) => switch (mode) {
+  ThemeMode.system => Icons.brightness_auto_outlined,
+  ThemeMode.light => Icons.light_mode_outlined,
+  ThemeMode.dark => Icons.dark_mode_outlined,
+};
