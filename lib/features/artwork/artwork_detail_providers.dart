@@ -424,3 +424,31 @@ final moreFromArtistProvider = FutureProvider.autoDispose
         return const <Artwork>[];
       }
     });
+
+/// Artists whose work appears in the "More Like This" set — DeviantArt's
+/// recommendation engine surfaces similar artists through their artwork, so the
+/// authors of the related deviations are the honest "similar artists" signal.
+final similarArtistsProvider = FutureProvider.autoDispose
+    .family<List<UserProfile>, String>((ref, artworkId) async {
+      final seed = await ref.watch(artworkDetailProvider(artworkId).future);
+      final related = await ref.watch(moreLikeThisProvider(artworkId).future);
+      return similarArtistsFrom(
+        seedAuthor: seed.author,
+        related: related.artworks,
+      );
+    });
+
+/// De-duplicated authors of [related] artworks, excluding [seedAuthor].
+List<UserProfile> similarArtistsFrom({
+  required UserProfile seedAuthor,
+  required Iterable<Artwork> related,
+}) {
+  final seen = <String>{seedAuthor.username};
+  final artists = <UserProfile>[];
+  for (final artwork in related) {
+    final author = artwork.author;
+    if (author.username.isEmpty || !seen.add(author.username)) continue;
+    artists.add(author);
+  }
+  return List<UserProfile>.unmodifiable(artists);
+}

@@ -93,15 +93,16 @@ with an "open on the web" fallback.
 works, read from the official `gallery/{username}` first page. This is the
 cleanly available "artist discovery" path.
 
-**Similar artists (Suggested Deviants)** is intentionally not implemented yet.
-DeviantArt has no public similar-artists endpoint (the official API only offers
-`browse/morelikethis`, which returns deviations and collections). The website
-marks the feature with a `currentBiMetadata` section of `type: "artist"` but
-streams the actual list post-hydration from an undocumented BI recommendation
-endpoint, so it is not present in `__INITIAL_STATE__`, `__RCACHE__`, or
-`dadeviation/init`. Any implementation must therefore reverse-engineer that
-stream (web-session Cookie/CSRF), not extend the official API surface; DAKit
-must stay free of that private contract.
+**Similar artists** (`SimilarArtistsSection`): DeviantArt has no public
+similar-artists endpoint — the official API only offers `browse/morelikethis`
+(deviations + collections), and the website's `biMetadata` `type: "artist"` hint
+is BI tracking (the author's account type), not a recommendation payload. The
+real "similar deviants" list streams post-hydration from an undocumented
+endpoint (absent from `__INITIAL_STATE__`, `__RCACHE__`, and `dadeviation/init`).
+DAViewer therefore derives similar artists from the "More Like This" artwork
+authors (`similarArtistsFrom`): artists whose work the recommendation engine
+surfaced as related are the honest equivalent. A future dedicated source would
+be a web-session reverse-engineering effort and must stay out of DAKit.
 
 ## Gesture ownership
 
