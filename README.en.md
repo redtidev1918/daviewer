@@ -17,22 +17,21 @@
 [![Platforms](https://img.shields.io/badge/platform-Android%20%7C%20macOS%20%7C%20Windows-blue?style=flat)](https://github.com/redtidev1918/daviewer/releases)
 [![Flutter](https://img.shields.io/badge/Flutter-3.47.1-blue?style=flat&logo=flutter)](https://flutter.dev)
 
-## Contents
+## Install
 
-- [Screenshots](#screenshots)
-- [Why](#why)
-- [Features](#features)
-- [Relationship with DAKit](#relationship-with-dakit)
-- [Install](#install)
-- [Before you start](#before-you-start)
-- [Run](#run)
-- [Proxy](#proxy)
-- [Build & release](#build--release)
-- [Project structure](#project-structure)
-- [Home & sign-in state](#home--sign-in-state)
-- [Login FAQ](#login-faq)
-- [Contributing](#contributing)
-- [Notes](#notes)
+Download the package for your platform from
+[Releases](https://github.com/redtidev1918/daviewer/releases):
+
+- **Android**: `DAViewer-<version>.apk`
+- **macOS 12+ unsigned preview**:
+  `DAViewer-<version>-macos-unsigned-preview.zip` (universal Intel and Apple
+  Silicon build; unzip and drag to Applications)
+- **Windows**: `DAViewer-<version>-windows.zip` (unzip and run `DAViewer.exe`)
+
+> **⚠️ macOS unsigned preview:** The macOS artifact has no Apple Developer ID
+> signature and has not been notarized by Apple; Keychain may ask for your Mac
+> login password. macOS receives that password; DAViewer never reads it. Only
+> use the original asset from this repository's Release page.
 
 ## Screenshots
 
@@ -43,6 +42,20 @@
     <td align="center"><img src="docs/screenshots/related_works.jpg" width="200" /><br /><sub>Related works</sub></td>
   </tr>
 </table>
+
+## Contents
+
+- [Why](#why)
+- [Features](#features)
+- [Relationship with DAKit](#relationship-with-dakit)
+- [Before you start](#before-you-start)
+- [Run](#run)
+- [Proxy](#proxy)
+- [Build & release](#build--release)
+- [Home & sign-in state](#home--sign-in-state)
+- [Login FAQ](#login-faq)
+- [Contributing](#contributing)
+- [Notes](#notes)
 
 ## Why
 
@@ -96,26 +109,6 @@ dependencies:
 First sign-in commits the web Cookie/CSRF session before OAuth; signed-out state
 is normal onboarding, not a feed error. See
 [Architecture](docs/architecture.md) for the full data flow and boundaries.
-
-## Install
-
-Download the package for your platform from
-[Releases](https://github.com/redtidev1918/daviewer/releases):
-
-- **Android**: `DAViewer-<version>.apk`
-- **macOS 12+ unsigned preview**:
-  `DAViewer-<version>-macos-unsigned-preview.zip` (universal Intel and Apple
-  Silicon build; unzip and drag to Applications)
-- **Windows**: `DAViewer-<version>-windows.zip` (unzip and run `DAViewer.exe`)
-
-> **⚠️ macOS unsigned preview:** This bundle has no Apple Developer ID signature
-> and has not been notarized by Apple; it only carries an ad-hoc signature for
-> bundle-integrity checks. Gatekeeper may block its first launch, and macOS
-> Keychain may request the Mac login password when the app signs in or changes
-> build identity after an upgrade. macOS receives that password; DAViewer never
-> reads or receives it. Only use the original asset from this repository's
-> Release page, and do not install this preview if those system prompts are not
-> acceptable.
 
 ## Before you start
 
@@ -180,41 +173,6 @@ flutter build windows --release      # Windows app
 Signing, the pinned toolchain (AGP / Gradle / Kotlin / flutter_inappwebview), and
 the macOS unsigned-preview contract are detailed in
 [Build notes](docs/build.md).
-
-## Project structure
-
-```text
-lib/
-  main.dart                    App entry, proxy injection, ProviderScope
-  app/                         AppShell, theme, router
-  core/
-    auth/                      Sign-in state, session restore, logout, WebView OAuth bridge
-    data/                      Unified data access layer (official API + web fallback)
-    diagnostics/               File logging, global error capture
-    feed/                      Paged feed controller
-    l10n/                      Chinese/English strings and language state
-    network/                   Proxy detection, open-in-browser, dynamic proxy Dio
-    runtime/                   DAKit composition root
-    search/                    Search history persistence
-  features/
-    web_login/                 Web-session commit and OAuth login page
-    home/                      Home (native For you / Daily feeds)
-    watched/                   Watched feed (first-class "following" tab + avatar strip)
-    search/                    Search
-    artwork/                   Artwork detail, media playback, download, favourite
-    artist/                    Artist profile, gallery, favourites, watch
-    favourites/                Current account favourites
-    watching/                  Watched users list
-    downloads/                 Download list
-    settings/                  Settings, proxy, language, logs, about
-    diagnostics/               Log & diagnostics page
-    splash/                    Splash screen
-  shared/widgets/              Shared artwork card, empty/error states
-android/
-macos/
-windows/
-test/
-```
 
 ## Home & sign-in state
 
