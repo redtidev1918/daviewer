@@ -47,12 +47,51 @@ void main() {
     );
   });
 
+  test('parses a gallection/contents JSON page', () {
+    final page = WebCollectionContentsFetcher.parseJsonPage(<String, Object?>{
+      'hasMore': true,
+      'nextOffset': 24,
+      'estimatedTotal': 284,
+      'results': <Object?>[
+        _deviation(10, 'Json result'),
+        _deviation(11, 'Another result'),
+      ],
+    });
+
+    expect(page.hasMore, isTrue);
+    expect(page.items.map((artwork) => artwork.id), <String>['10', '11']);
+    expect(page.items.first.author.username, 'ArtistOne');
+    expect(page.items.first.media, isNotEmpty);
+  });
+
+  test('throws FormatException when JSON results are missing', () {
+    expect(
+      () => WebCollectionContentsFetcher.parseJsonPage(<String, Object?>{
+        'hasMore': false,
+      }),
+      throwsFormatException,
+    );
+  });
+
   const liveHtmlPath = String.fromEnvironment('DA_COLLECTION_HTML');
   if (liveHtmlPath.isNotEmpty) {
     test('parses a captured live favourites folder page', () {
       final page = WebCollectionContentsFetcher.parsePage(
         File(liveHtmlPath).readAsStringSync(),
       );
+
+      expect(page.items, isNotEmpty);
+      expect(page.items.first.id, '819241297');
+      expect(page.items.first.title, 'Purple sad');
+      expect(page.items.first.author.username, 'elsevilla');
+    });
+  }
+
+  const liveJsonPath = String.fromEnvironment('DA_COLLECTION_JSON');
+  if (liveJsonPath.isNotEmpty) {
+    test('parses a captured live gallection/contents JSON response', () {
+      final data = jsonDecode(File(liveJsonPath).readAsStringSync());
+      final page = WebCollectionContentsFetcher.parseJsonPage(data);
 
       expect(page.items, isNotEmpty);
       expect(page.items.first.id, '819241297');

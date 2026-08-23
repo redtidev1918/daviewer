@@ -44,7 +44,7 @@ feature code.
 | Personalized feed | `rfy_feed.dart` | `_puppy/dabrowse/networkbar/rfy/deviations` | Cookie + CSRF | sign-in prompt | `mapDeviation` via `web_more_like_this_test.dart` (no live snapshot — needs a logged-in capture) |
 | Numeric→UUID + description | `deviation_init.dart` | `_puppy/dadeviation/init` | Cookie + CSRF | tags via `deviation/metadata` | `deviation_init_test.dart` (`DA_DEVIATION_INIT_JSON`) |
 | Related artwork | `web_more_like_this.dart` | artwork page `__INITIAL_STATE__` / `__RCACHE__` | none (public) | official `browse/morelikethis` | `web_more_like_this_test.dart` (`DA_MORE_LIKE_THIS_HTML`) |
-| Collection full contents | `web_collection_contents.dart` | `deviantart.com/{user}/favourites/{id}?page=N` `__INITIAL_STATE__` | none (public) | preview deviations + open-on-web | `web_collection_contents_test.dart` (`DA_COLLECTION_HTML`) |
+| Collection full contents | `web_collection_contents.dart` | `_puppy/dashared/gallection/contents` (JSON), fallback `deviantart.com/{user}/favourites/{id}?page=N` | Cookie + CSRF (JSON) / none (SSR) | preview deviations + open-on-web | `web_collection_contents_test.dart` (`DA_COLLECTION_JSON`, `DA_COLLECTION_HTML`) |
 
 Shared, non-endpoint helpers (no separate fallback, tested directly):
 

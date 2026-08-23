@@ -81,13 +81,14 @@ result, sign in, check network, or try later).
 
 **Collection full contents** (`WebCollectionContentsFetcher`): the official API
 only accepts a UUID `folderid`, while the preview exposes a numeric id, so there
-is no official full-contents path. DAViewer reads the same server-rendered page
-the website serves — `deviantart.com/{username}/favourites/{folderId}?page=N` —
-whose `window.__INITIAL_STATE__` embeds the folder's deviations with full Wix
-media descriptors. These pages are public, so no login is required. The mapping
-reuses `RfyFeedFetcher.mapDeviation` (the shared web-deviation shape). The UI
-shows the preview deviations instantly and swaps in the full list when ready,
-with an "open on the web" fallback.
+is no official full-contents path. DAViewer reads the website's own
+`_puppy/dashared/gallection/contents` JSON endpoint when a web session (Cookie +
+CSRF) is available, falling back to the server-rendered page
+(`deviantart.com/{username}/favourites/{folderId}?page=N`, which is public and
+needs no session) otherwise. Both carry the same deviation shape, so the mapping
+reuses `RfyFeedFetcher.mapDeviation`. The UI shows the preview deviations
+instantly and swaps in the full list when ready, with an "open on the web"
+fallback.
 
 **More from this artist** (`MoreFromArtistSection`): the author's other recent
 works, read from the official `gallery/{username}` first page. This is the
