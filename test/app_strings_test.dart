@@ -73,7 +73,9 @@ void main() {
     );
     expect(zh.deleteFinishedDownloadsFailed('无权限'), '删除失败：无权限');
     expect(en.moreLikeThisLoadFailed, 'Could not load similar artwork');
-    expect(zh.noMoreLikeThis, '暂时没有找到类似作品');
+    expect(zh.noMoreLikeThis, contains('网页和备用来源'));
+    expect(zh.checkSuggestions, '检查更新');
+    expect(zh.moreLikeThisStillEmpty, contains('已重新检查'));
     expect(zh.reloadSuggestions, '重新加载');
     expect(en.moreLikeThisNetworkFailure, contains('network'));
     expect(zh.moreLikeThisSessionFailure, contains('登录会话'));

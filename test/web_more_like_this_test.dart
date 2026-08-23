@@ -30,13 +30,14 @@ void main() {
     expect(artworks, hasLength(2));
   });
 
-  test('returns empty when the page has no metadata for this artwork', () {
-    final artworks = WebMoreLikeThisFetcher.parseInitialState(
-      _fixtureHtml(),
-      deviationId: '404',
+  test('missing page metadata is inconclusive instead of a false empty', () {
+    expect(
+      () => WebMoreLikeThisFetcher.parseInitialState(
+        _fixtureHtml(),
+        deviationId: '404',
+      ),
+      throwsFormatException,
     );
-
-    expect(artworks, isEmpty);
   });
 
   const liveHtmlPath = String.fromEnvironment('DA_MORE_LIKE_THIS_HTML');

@@ -64,7 +64,12 @@ final class WebMoreLikeThisFetcher {
     final metadataText =
         metadataById[deviationId] ?? metadataById[int.tryParse(deviationId)];
     if (metadataText is! String || metadataText.isEmpty) {
-      return const <Artwork>[];
+      // The browser can hydrate this block after the initial HTML arrives.
+      // Missing metadata is therefore inconclusive, not proof that there are
+      // no recommendations. Surface it so the caller can retry/fall back.
+      throw const FormatException(
+        'Missing recommendation metadata for this artwork.',
+      );
     }
     final metadata = jsonDecode(metadataText);
     if (metadata is! List) {
@@ -109,6 +114,14 @@ final class WebMoreLikeThisFetcher {
       if (artwork.id.isNotEmpty && artwork.media.isNotEmpty) {
         artworks.add(artwork);
       }
+    }
+    if (ids.isNotEmpty && artworks.isEmpty) {
+      // References without their normalized entities are another partially
+      // hydrated page state. Treating this as a real empty result hides website
+      // recommendations that appear once the browser finishes loading.
+      throw const FormatException(
+        'Missing normalized recommendation entities.',
+      );
     }
     return List<Artwork>.unmodifiable(artworks);
   }

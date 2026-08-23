@@ -32,6 +32,8 @@ final class _MoreLikeThisSectionState
   String? _autoRetriedFor;
   String? _loggedFailure;
   bool _recovering = false;
+  bool _lastCheckWasEmpty = false;
+  List<Artwork> _lastItems = const <Artwork>[];
 
   @override
   void didUpdateWidget(covariant MoreLikeThisSection oldWidget) {
@@ -40,17 +42,30 @@ final class _MoreLikeThisSectionState
     _autoRetriedFor = null;
     _loggedFailure = null;
     _recovering = false;
+    _lastCheckWasEmpty = false;
+    _lastItems = const <Artwork>[];
   }
 
   @override
   Widget build(BuildContext context) {
     final s = strings(ref.watch(appLanguageProvider));
     final related = ref.watch(moreLikeThisProvider(widget.artworkId));
+    final currentItems = related.valueOrNull?.artworks;
+    if (currentItems != null && currentItems.isNotEmpty) {
+      _lastItems = currentItems;
+    }
+
+    // A refresh must not blank an already useful recommendation grid. Keep
+    // the last successful items visible and show only a small inline progress
+    // indicator until the replacement result is known.
+    if ((related.isLoading || _recovering) && _lastItems.isNotEmpty) {
+      return _buildItems(s, _lastItems, refreshing: true);
+    }
 
     return related.when(
-      loading: () => const SizedBox(
-        height: 160,
-        child: Center(child: CircularProgressIndicator()),
+      loading: () => _RecoveryStatus(
+        message: s.moreLikeThisLoading,
+        title: s.moreLikeThis,
       ),
       error: (error, _) {
         _logFailure(error);
@@ -59,7 +74,8 @@ final class _MoreLikeThisSectionState
             : classifyMoreLikeThisFailure(<Object?>[error]);
         final canRecoverAutomatically =
             kind == MoreLikeThisFailureKind.network ||
-            kind == MoreLikeThisFailureKind.session;
+            kind == MoreLikeThisFailureKind.session ||
+            kind == MoreLikeThisFailureKind.pageFormat;
         if (canRecoverAutomatically && _autoRetriedFor != widget.artworkId) {
           _scheduleAutomaticRetry();
           return _RecoveryStatus(
@@ -114,6 +130,7 @@ final class _MoreLikeThisSectionState
       data: (result) {
         final items = result.artworks;
         if (items.isEmpty) {
+          _lastItems = const <Artwork>[];
           AppLogger.instance.warning(
             'moreLikeThis',
             'empty related result for ${widget.artworkId}',
@@ -121,45 +138,79 @@ final class _MoreLikeThisSectionState
           return _RelatedStatus(
             title: s.moreLikeThis,
             icon: Icons.auto_awesome_outlined,
-            message: s.noMoreLikeThis,
+            message: _lastCheckWasEmpty
+                ? s.moreLikeThisStillEmpty
+                : s.noMoreLikeThis,
+            progress: _recovering,
+            action: TextButton.icon(
+              onPressed: _recovering ? null : _manualRetry,
+              icon: const Icon(Icons.refresh),
+              label: Text(
+                _recovering ? s.moreLikeThisChecking : s.checkSuggestions,
+              ),
+            ),
           );
         }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              s.moreLikeThis,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            MasonryGridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final artwork = items[index];
-                return AspectRatio(
-                  aspectRatio: artworkAspectRatio(artwork),
-                  child: ArtworkCard(
-                    artwork: artwork,
-                    onTap: () => openArtworkFromList(
-                      context,
-                      ref,
-                      artworks: items,
-                      artwork: artwork,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        );
+        _lastItems = items;
+        return _buildItems(s, items);
       },
     );
   }
+
+  Widget _buildItems(
+    AppStrings s,
+    List<Artwork> items, {
+    bool refreshing = false,
+  }) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: <Widget>[
+      Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              s.moreLikeThis,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          IconButton(
+            tooltip: refreshing ? s.moreLikeThisChecking : s.checkSuggestions,
+            visualDensity: VisualDensity.compact,
+            onPressed: refreshing ? null : _manualRetry,
+            icon: refreshing
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh, size: 20),
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      MasonryGridView.count(
+        crossAxisCount: 2,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        itemCount: items.length,
+        itemBuilder: (context, index) {
+          final artwork = items[index];
+          return AspectRatio(
+            aspectRatio: artworkAspectRatio(artwork),
+            child: ArtworkCard(
+              artwork: artwork,
+              onTap: () => openArtworkFromList(
+                context,
+                ref,
+                artworks: items,
+                artwork: artwork,
+              ),
+            ),
+          );
+        },
+      ),
+    ],
+  );
 
   void _logFailure(Object error) {
     final signature = '$error';
@@ -177,19 +228,41 @@ final class _MoreLikeThisSectionState
     _autoRetriedFor = widget.artworkId;
     _recovering = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _retry();
-      if (mounted) setState(() => _recovering = false);
+      try {
+        await _retry();
+      } on Object {
+        // The rebuilt provider owns and presents the classified error.
+      } finally {
+        if (mounted) setState(() => _recovering = false);
+      }
     });
   }
 
   Future<void> _manualRetry() async {
     if (_recovering) return;
+    final s = strings(ref.read(appLanguageProvider));
+    final previousIds = _lastItems.map((item) => item.id).toList();
     setState(() => _recovering = true);
-    await _retry();
-    if (mounted) setState(() => _recovering = false);
+    try {
+      final result = await _retry();
+      if (!mounted) return;
+      final currentIds = result.artworks.map((item) => item.id).toList();
+      final message = currentIds.isEmpty
+          ? s.moreLikeThisStillEmpty
+          : _sameIds(previousIds, currentIds)
+          ? s.moreLikeThisUnchanged
+          : s.moreLikeThisUpdated(currentIds.length);
+      _lastCheckWasEmpty = currentIds.isEmpty;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    } on Object {
+      // The provider exposes a source-specific error and recovery action.
+    } finally {
+      if (mounted) setState(() => _recovering = false);
+    }
   }
 
-  Future<void> _retry() async {
+  Future<MoreLikeThisResult> _retry() async {
     // Numeric web-feed ids need a current web CSRF token before they can be
     // resolved to the UUID accepted by the official endpoint. Await the real
     // headless refresh completion, then invalidate the whole resolution chain.
@@ -206,11 +279,22 @@ final class _MoreLikeThisSectionState
         stackTrace,
       );
     }
-    if (!mounted) return;
+    if (!mounted) {
+      return const MoreLikeThisResult(artworks: <Artwork>[]);
+    }
     ref.invalidate(deviationInitProvider(widget.artworkId));
     ref.invalidate(artworkUuidProvider(widget.artworkId));
     ref.invalidate(moreLikeThisProvider(widget.artworkId));
+    return ref.read(moreLikeThisProvider(widget.artworkId).future);
   }
+}
+
+bool _sameIds(List<String> previous, List<String> current) {
+  if (previous.length != current.length) return false;
+  for (var index = 0; index < previous.length; index++) {
+    if (previous[index] != current[index]) return false;
+  }
+  return true;
 }
 
 final class _RecoveryStatus extends StatelessWidget {

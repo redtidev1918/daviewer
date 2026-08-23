@@ -352,7 +352,12 @@ final moreLikeThisProvider = FutureProvider.autoDispose
           '[moreLikeThis] OAuth source returned ${result.artworks.length} '
           'items for $uuid',
         );
-        return result;
+        return resolveOfficialMoreLikeThisFallback(
+          result,
+          websiteError: websiteError,
+        );
+      } on MoreLikeThisFailure {
+        rethrow;
       } on Object catch (officialError) {
         throw MoreLikeThisFailure(
           websiteError: websiteError,
@@ -360,3 +365,17 @@ final moreLikeThisProvider = FutureProvider.autoDispose
         );
       }
     });
+
+/// An empty fallback is authoritative only when the website source also
+/// completed successfully. If the website failed or was only partially
+/// hydrated, returning an empty success would falsely tell the user that no
+/// recommendations exist even though the browser may be showing them.
+MoreLikeThisResult resolveOfficialMoreLikeThisFallback(
+  MoreLikeThisResult result, {
+  Object? websiteError,
+}) {
+  if (result.artworks.isEmpty && websiteError != null) {
+    throw MoreLikeThisFailure(websiteError: websiteError, officialError: null);
+  }
+  return result;
+}

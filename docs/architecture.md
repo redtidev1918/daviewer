@@ -49,6 +49,20 @@ Rules:
 4. A hydration failure may hide that optional section, but must not make the
    artwork detail page unusable.
 
+## Related-content state
+
+Website recommendation metadata can be injected after the initial HTML. A
+missing `currentBiMetadata` entry or missing normalized entities is therefore
+an inconclusive page state, not a confirmed empty recommendation set. An empty
+success is shown only when the website parse and official fallback both finish
+without errors.
+
+Refreshing related content is one awaited operation. Existing cards remain
+visible during it, and completion must report one of three outcomes: changed,
+unchanged, or still empty. Source failures retain their network, session,
+service, or page-format classification instead of being masked by an empty
+fallback.
+
 ## Gesture ownership
 
 Artwork browsing and image panning share horizontal movement, so ownership is

@@ -43,9 +43,10 @@
   with seeking and retry; cached GIFs and rich-text images with progress,
   placeholders, and retry
 - **Related content**: native "More like this" results matching the current
-  website, with the official API retained as a fallback; a real empty result is
-  not presented as an error, while network, session, service, and page-format
-  failures are explained separately and recoverable failures retry once
+  website, with the official API retained as a fallback; inconclusive empty
+  pages recover automatically, confirmed empty results explain both sources,
+  and refresh keeps current cards visible before reporting updated, unchanged,
+  or still-empty results
 - **Tags**: one compact horizontal tag row across detail, search, and tag
   screens; sparse watched-feed entries hydrate tags from official artwork
   metadata, and later feed refreshes cannot overwrite that complete data
