@@ -12,7 +12,10 @@ import '../../core/runtime/runtime_provider.dart';
 
 const String _githubUrl = 'https://github.com/redtidev1918/daviewer';
 const String _releasesUrl = 'https://github.com/redtidev1918/daviewer/releases';
-const String versionLabel = '0.2.93';
+const String versionLabel = String.fromEnvironment(
+  'FLUTTER_BUILD_NAME',
+  defaultValue: 'development',
+);
 
 final class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});

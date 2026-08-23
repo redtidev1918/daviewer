@@ -245,29 +245,27 @@ jobs:
       - name: Generate release notes
         id: notes
         run: |
-          # Collect commit messages since the previous tag for the changelog.
-          PREV_TAG="$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo '')"
-          if [ -n "$PREV_TAG" ]; then
-            CHANGELOG="$(git log --oneline "$PREV_TAG"..HEAD)"
-          else
-            CHANGELOG="$(git log --oneline -1 HEAD)"
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v version="$VERSION" '
+            $0 ~ "^## " version "([ （(]|$)" { found=1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > release_notes.md
+
+          if [ ! -s release_notes.md ]; then
+            echo "::warning::CHANGELOG.md has no section for $VERSION; using commit summaries."
+            PREV_TAG="$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)"
+            {
+              echo "## 变更 / Changes"
+              echo
+              if [ -n "$PREV_TAG" ]; then
+                git log --oneline "$PREV_TAG"..HEAD
+              else
+                git log --oneline -1 HEAD
+              fi | sed 's/^/- /'
+            } > release_notes.md
           fi
-          {
-            echo "## 变更 / Changes"
-            echo
-            echo "$CHANGELOG" | sed 's/^/- /'
-          } > release_notes.md
-      - name: Delete old releases (keep only latest)
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set +e
-          for tag in $(gh release list --json tagName --jq '.[].tagName'); do
-            if [ "$tag" != "${GITHUB_REF_NAME}" ]; then
-              echo "Deleting old release: $tag"
-              gh release delete "$tag" --yes --cleanup-tag || true
-            fi
-          done
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
