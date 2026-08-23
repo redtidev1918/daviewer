@@ -78,9 +78,9 @@ Download the package for your platform from
   (adjacent images prefetched); pinch zoom; paged multi-image works
 - **Media**: shared image zoom; highest-quality video with seeking and retry;
   GIF badge + cached rich-text images with loading progress
-- **Related content**: native "More like this", featured/suggested collections
-  (openable in full), and "More from this artist" on the detail page, with clear
-  empty and failure states
+- **Related content**: native "More like this", similar artists,
+  featured/suggested collections (openable in full), and "More from this
+  artist" on the detail page, with clear empty and failure states
 - **Tags**: one compact tag row across detail, search, and tag screens, with
   automatic tag hydration from official metadata
 - **Artist**: profile (including bio), gallery, **custom sub-galleries

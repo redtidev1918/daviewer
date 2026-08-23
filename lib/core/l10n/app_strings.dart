@@ -452,6 +452,8 @@ final class AppStrings {
       : 'Could not load the collection. Check your network and retry.';
   String moreFromArtist(String username) =>
       _lang == AppLanguage.zh ? '更多 · $username' : 'More from $username';
+  String get similarArtists =>
+      _lang == AppLanguage.zh ? '相似画师' : 'Similar artists';
   String get moreLikeThisLoadFailed =>
       _lang == AppLanguage.zh ? '更多类似作品加载失败' : 'Could not load similar artwork';
   String get moreLikeThisLoading =>

@@ -26,6 +26,7 @@ import 'media_viewer.dart';
 import 'collection_sections.dart';
 import 'more_from_artist.dart';
 import 'more_like_this.dart';
+import 'similar_artists.dart';
 
 final class ArtworkDetailScreen extends ConsumerStatefulWidget {
   const ArtworkDetailScreen({
@@ -479,6 +480,7 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
           const Divider(),
           MoreFromArtistSection(artworkId: widget.artworkId),
           MoreLikeThisSection(artworkId: widget.artworkId),
+          SimilarArtistsSection(artworkId: widget.artworkId),
           FeaturedInCollectionsSection(artworkId: widget.artworkId),
           SuggestedCollectionsSection(artworkId: widget.artworkId),
         ],
