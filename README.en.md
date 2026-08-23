@@ -23,14 +23,14 @@ Download the package for your platform from
 [Releases](https://github.com/redtidev1918/daviewer/releases):
 
 - **Android**: `DAViewer-<version>.apk`
-- **macOS 12+ unsigned preview**:
+- **macOS 12+ preview**:
   `DAViewer-<version>-macos-unsigned-preview.zip` (universal Intel and Apple
   Silicon build; unzip and drag to Applications)
 - **Windows**: `DAViewer-<version>-windows.zip` (unzip and run `DAViewer.exe`)
 
-> **A note on the macOS build:** this build isn't signed with an Apple Developer
-> certificate yet, so macOS may flag it on first launch — right-click the app
-> and choose Open to proceed. Keychain may also ask for your Mac password once;
+> **A note on the macOS build:** this preview isn't part of the Apple Developer
+> Program yet, so macOS may ask you to confirm on first launch — right-click the
+> app and choose Open to proceed. Keychain may ask for your Mac password once;
 > that prompt is handled by macOS and DAViewer never reads or stores it.
 > Everything else works like a normal app.
 
@@ -203,7 +203,7 @@ WebView is unavailable.
 - **DAViewer has no account of its own**: you sign in with your DeviantArt account — the app never registers an account or stores a password.
 - **Forgot your password?** Use the "Forgot Password" link on the login page, or tap "?" → "Forgot password" in the app's login screen to open the reset page in your browser.
 - **Register an account**: tap "?" → "Register a DeviantArt account" in the app's login screen to open the sign-up page in your browser.
-- **macOS Keychain prompt**: on first sign-in or after an upgrade, macOS may ask for your Mac login password once (because the app isn't developer-signed yet). That prompt belongs to macOS and DAViewer never reads the password — it only accesses the DeviantArt token it saved for you.
+- **macOS Keychain prompt**: on first sign-in or after an upgrade, macOS may ask for your Mac login password once (a normal macOS confirmation for apps outside the App Store). That prompt belongs to macOS and DAViewer never reads the password — it only accesses the DeviantArt token it saved for you.
 
 ## Contributing
 
