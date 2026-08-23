@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
+import '../../shared/widgets/relative_time_text.dart';
 import '../home/home_feeds.dart';
 import '../home/home_providers.dart';
 
@@ -134,9 +135,11 @@ final class _WatchedAuthorAvatar extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 2),
-            Text(
-              s.relativeTime(author.lastUpdate),
+            RelativeTimeText(
+              time: author.lastUpdate,
+              format: s.relativeTime,
               maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelSmall?.copyWith(
                 fontSize: 10,
                 color: theme.colorScheme.onSurfaceVariant,
