@@ -16,9 +16,9 @@ void main() {
     var fetches = 0;
     final result = await resolveOfficialArtworkTags(
       _artwork('a', tags: const <String>['cat']),
-      fetchDetail: () async {
+      fetchTags: () async {
         fetches++;
-        return _artwork('a', tags: const <String>['unused']);
+        return const <String>['unused'];
       },
     );
 
@@ -27,16 +27,13 @@ void main() {
     expect(fetches, 0);
   });
 
-  test('empty watched-feed tags hydrate from the artwork detail', () async {
+  test('empty watched-feed tags hydrate from deviation metadata', () async {
     var fetches = 0;
     final result = await resolveOfficialArtworkTags(
       _artwork('watched-id'),
-      fetchDetail: () async {
+      fetchTags: () async {
         fetches++;
-        return _artwork(
-          'watched-id',
-          tags: const <String>['portrait', 'digitalart'],
-        );
+        return const <String>['portrait', 'digitalart'];
       },
     );
 
@@ -50,9 +47,9 @@ void main() {
     final result = await resolveOfficialArtworkTags(
       _artwork('tagless'),
       alreadyResolved: true,
-      fetchDetail: () async {
+      fetchTags: () async {
         fetches++;
-        return _artwork('tagless');
+        return const <String>[];
       },
     );
 
@@ -64,7 +61,7 @@ void main() {
   test('tag hydration failure leaves the detail page usable', () async {
     final result = await resolveOfficialArtworkTags(
       _artwork('watched-id'),
-      fetchDetail: () => Future<Artwork>.error(StateError('offline')),
+      fetchTags: () => Future<List<String>>.error(StateError('offline')),
     );
 
     expect(result.tags, isEmpty);

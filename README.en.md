@@ -47,8 +47,8 @@
   not presented as an error, while network, session, service, and page-format
   failures are explained separately and recoverable failures retry once
 - **Tags**: one compact horizontal tag row across detail, search, and tag
-  screens; sparse watched-feed entries hydrate tags from canonical artwork
-  detail, and later feed refreshes cannot overwrite that complete data
+  screens; sparse watched-feed entries hydrate tags from official artwork
+  metadata, and later feed refreshes cannot overwrite that complete data
 - **Artist**: profile (including the artist's bio), gallery, **custom
   sub-galleries (folders)**, favourites, watch
 - **Social**: favourite artworks (with favourite state), watch/unwatch artists,
@@ -70,16 +70,17 @@ dependencies:
 ```yaml
 dependencies:
   dakit_core: ^0.1.11
-  dakit_api: ^0.1.16
+  dakit_api: ^0.1.17
   dakit_flutter: ^0.1.8
 ```
 
 The boundary is explicit: OAuth, official API mapping, domain models, and
 background transfers live in DAKit; website-personalized feeds, current website
 recommendations, sparse-data hydration, and native page interaction live in
-DAViewer. Upstream lists may omit detail-only fields, so the app's shared
-artwork cache preserves hydrated data instead of allowing a later refresh to
-downgrade it. See [Architecture](docs/architecture.md) for the full data flow.
+DAViewer. Upstream lists may omit detail-only fields; DAKit's
+`deviation/metadata` adapter supplies official tag metadata, while the app's
+shared artwork cache prevents later sparse refreshes from downgrading it. See
+[Architecture](docs/architecture.md) for the full data flow.
 First sign-in commits the web Cookie/CSRF before OAuth; signed-out state remains
 normal onboarding, not a feed error.
 

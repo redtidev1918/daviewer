@@ -26,16 +26,17 @@ ArtworkStore.putAll
         ↓
 feed card → detail route → artworkDetailProvider
                             ↓ missing detail-only field
-                    canonical artworkById
+                  deviation/metadata adapter
                             ↓
                     ArtworkStore.setTags
 ```
 
-List endpoints may legally omit fields such as tags. An empty list therefore
-does not prove that a work is tagless until the canonical detail endpoint has
-been queried. `ArtworkStore` records that resolution separately, including a
-confirmed empty result, and preserves hydrated tags when a later feed refresh
-contains a sparse object.
+List endpoints may legally omit fields such as tags, and `deviation/{id}` does
+not reliably add them back. An empty list therefore does not prove that a work
+is tagless until the dedicated `deviation/metadata` endpoint confirms it.
+`ArtworkStore` records that resolution separately, including a confirmed empty
+result, and preserves hydrated tags when a later feed refresh contains a sparse
+object.
 
 Rules:
 

@@ -3,6 +3,21 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.95（关注流标签根因修复）
+
+### Fixed
+
+- 修正 0.2.94 的错误数据假设：`deviation/{id}` 并不可靠返回标签，关注动态的精简
+  作品现在改从官方 `deviation/metadata` 端点补全标签，因此不再出现“测试通过但真实
+  详情仍无标签”。
+- 标签补全失败仍保持详情页可用且允许下次重试；官方确认无标签的作品会被缓存，避免
+  每次进入详情都重复请求。
+
+### Changed
+
+- 上游 `dakit_api 0.1.17` 新增 `OfficialArtworkMetadataRepository.tags`，DaViewer
+  直接复用 SDK 能力，不再在 App 中维护重复的端点解析逻辑。
+
 ## 0.2.94（关注流标签与移动端缩放）
 
 ### Fixed
