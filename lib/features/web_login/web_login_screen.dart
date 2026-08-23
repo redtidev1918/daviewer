@@ -255,6 +255,12 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     });
 
     return Scaffold(
+      // Keep the WebView full-size when the keyboard appears. Letting the
+      // Scaffold shrink on viewInsets forces the embedded platform view to
+      // resize in lockstep with the keyboard animation, which drops frames on
+      // Android. With this off, the keyboard overlays the page and the web
+      // form scrolls its focused field into view on its own.
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(s.webLogin),
         actions: <Widget>[
@@ -315,7 +321,9 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                 ),
                 initialSettings: InAppWebViewSettings(
                   javaScriptEnabled: true,
-                  transparentBackground: true,
+                  // Opaque: a transparent platform view uses a slower
+                  // composition path and makes the keyboard animation heavier.
+                  transparentBackground: false,
                 ),
                 onWebViewCreated: (controller) {
                   _controller = controller;
@@ -390,7 +398,13 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                   _recoveringHttp403 = false;
                 },
                 onProgressChanged: (controller, progress) {
-                  if (mounted) setState(() => _progress = progress / 100);
+                  // onProgressChanged fires continuously while loading; each
+                  // setState rebuilds the whole Scaffold, so only rebuild on
+                  // meaningful progress steps.
+                  final value = progress / 100;
+                  if (mounted && (value - _progress).abs() >= 0.02) {
+                    setState(() => _progress = value);
+                  }
                 },
               ),
             ),
