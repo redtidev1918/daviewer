@@ -46,7 +46,15 @@ final class ArtworkCard extends ConsumerWidget {
     final image = media.where((m) => m.kind == MediaKind.image).firstOrNull;
     final thumbnail = image ?? media.firstOrNull;
     final hasVideo = media.any((m) => m.kind == MediaKind.video);
-    final hasAnimation = media.any((m) => m.kind == MediaKind.animation);
+    // Animated GIFs are mapped as image assets with an `image/gif` MIME type
+    // (or a `.gif` URL), not always as MediaKind.animation — cover all three
+    // so the badge shows for every GIF work in the feed.
+    final hasGif = media.any(
+      (m) =>
+          m.kind == MediaKind.animation ||
+          m.mimeType == 'image/gif' ||
+          (m.uri?.path.toLowerCase().endsWith('.gif') ?? false),
+    );
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -76,18 +84,21 @@ final class ArtworkCard extends ConsumerWidget {
                 color: AppTheme.placeholderColor,
                 child: Icon(Icons.image_outlined),
               ),
-            // Title + author overlaid on a bottom gradient.
+            // Title + author overlaid on a light bottom gradient. The title is
+            // semi-transparent so a long title never hides the artwork; the
+            // lighter gradient keeps the card looking airy instead of a solid
+            // dark block.
             Positioned(
               left: 0,
               right: 0,
               bottom: 0,
               child: Container(
-                padding: const EdgeInsets.fromLTRB(10, 28, 10, 10),
+                padding: const EdgeInsets.fromLTRB(10, 24, 10, 8),
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: <Color>[Colors.transparent, Colors.black87],
+                    colors: <Color>[Colors.transparent, Colors.black45],
                   ),
                 ),
                 child: Column(
@@ -98,8 +109,8 @@ final class ArtworkCard extends ConsumerWidget {
                       artwork.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.92),
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         height: 1.25,
@@ -139,7 +150,7 @@ final class ArtworkCard extends ConsumerWidget {
                   color: Colors.white70,
                 ),
               ),
-            if (hasAnimation)
+            if (hasGif)
               Positioned(
                 top: 6,
                 left: 6,
