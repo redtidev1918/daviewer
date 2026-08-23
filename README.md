@@ -20,9 +20,9 @@
 
 <table align="center">
   <tr>
-    <td align="center"><img src="docs/screenshots/home_feed.png" width="200" /><br /><sub>首页推荐</sub></td>
-    <td align="center"><img src="docs/screenshots/artwork_detail.png" width="200" /><br /><sub>作品详情</sub></td>
-    <td align="center"><img src="docs/screenshots/related_works.png" width="200" /><br /><sub>相关推荐</sub></td>
+    <td align="center"><img src="docs/screenshots/home_feed.jpg" width="200" /><br /><sub>首页推荐</sub></td>
+    <td align="center"><img src="docs/screenshots/artwork_detail.jpg" width="200" /><br /><sub>作品详情</sub></td>
+    <td align="center"><img src="docs/screenshots/related_works.jpg" width="200" /><br /><sub>相关推荐</sub></td>
   </tr>
 </table>
 
