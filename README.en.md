@@ -19,14 +19,13 @@
 
 ## Screenshots
 
-<p align="center">
-  <img src="docs/screenshots/01.png" width="170" />
-  <img src="docs/screenshots/02.png" width="170" />
-  <img src="docs/screenshots/03.png" width="170" />
-  <img src="docs/screenshots/04.png" width="170" />
-  <img src="docs/screenshots/05.png" width="170" />
-  <img src="docs/screenshots/06.png" width="170" />
-</p>
+<table align="center">
+  <tr>
+    <td align="center"><img src="docs/screenshots/home_feed.png" width="200" /><br /><sub>Home feed</sub></td>
+    <td align="center"><img src="docs/screenshots/artwork_detail.png" width="200" /><br /><sub>Artwork detail</sub></td>
+    <td align="center"><img src="docs/screenshots/related_works.png" width="200" /><br /><sub>Related works</sub></td>
+  </tr>
+</table>
 
 ## Why
 
