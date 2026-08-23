@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/foundation.dart';
@@ -8,10 +7,9 @@ import 'package:flutter/foundation.dart';
 /// are discoverable outside the app's private directory — without duplicating
 /// the file or requesting a gallery permission.
 ///
-/// Android is excluded: scoped storage (API 29+) does not let the app read back
-/// a file moved into public Downloads via MediaStore, so the downloads page
-/// could not preview it (`FileImage` fails). Keeping Android downloads in
-/// app-private storage keeps preview and deletion working.
+/// On Android, `dakit_flutter` 0.1.9 keeps an app-readable private copy while
+/// exposing the shared copy, so in-app preview keeps working under scoped
+/// storage.
 final class SharedStorageSaver {
   SharedStorageSaver(this._transfers) {
     _subscription = _transfers.updates.listen(_onUpdate);
@@ -30,7 +28,6 @@ final class SharedStorageSaver {
   }
 
   Future<void> _move(String id) async {
-    if (!kIsWeb && Platform.isAndroid) return;
     try {
       final path = await _transfers.moveToSharedStorage(
         id,
