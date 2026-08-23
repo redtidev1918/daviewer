@@ -11,15 +11,24 @@ import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/skeleton.dart';
 import 'artist_providers.dart';
 
-/// The artist's gallery folders (sub-galleries).
+/// The artist's gallery folders (sub-galleries) or favourites collections.
 final class FoldersView extends ConsumerWidget {
-  const FoldersView({required this.username, super.key});
+  const FoldersView({
+    required this.username,
+    this.kind = FolderKind.gallery,
+    super.key,
+  });
 
   final String username;
+  final FolderKind kind;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final folders = ref.watch(artistFoldersProvider(username));
+    final folders = ref.watch(
+      kind == FolderKind.collection
+          ? artistFavouriteFoldersProvider(username)
+          : artistFoldersProvider(username),
+    );
     final s = strings(ref.watch(appLanguageProvider));
     return folders.when(
       loading: () => const SkeletonList(),
@@ -27,7 +36,11 @@ final class FoldersView extends ConsumerWidget {
           AppErrorState(message: friendlyErrorMessage(error)),
       data: (items) {
         if (items.isEmpty) {
-          return Center(child: Text(s.noFolders));
+          return Center(
+            child: Text(
+              kind == FolderKind.collection ? s.noCollections : s.noFolders,
+            ),
+          );
         }
         return GridView.builder(
           padding: const EdgeInsets.all(12),
@@ -54,7 +67,9 @@ final class FoldersView extends ConsumerWidget {
                 ?.uri;
             return InkWell(
               onTap: () => context.push(
-                '/artist/$username/folder/${folder.id}?name=${Uri.encodeComponent(folder.name)}',
+                '/artist/$username/folder/${folder.id}'
+                '?name=${Uri.encodeComponent(folder.name)}'
+                '&kind=${kind == FolderKind.collection ? 'collection' : 'gallery'}',
               ),
               child: Card(
                 clipBehavior: Clip.antiAlias,

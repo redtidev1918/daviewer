@@ -404,8 +404,11 @@ final class AppStrings {
   String get watchStateOff => _lang == AppLanguage.zh ? '关注' : 'Watch';
   String get journal => _lang == AppLanguage.zh ? '文章' : 'Journal';
   String get folders => _lang == AppLanguage.zh ? '画集' : 'Folders';
+  String get collections => _lang == AppLanguage.zh ? '收藏夹' : 'Collections';
   String get noJournals => _lang == AppLanguage.zh ? '暂无文章' : 'No journals';
   String get noFolders => _lang == AppLanguage.zh ? '暂无画集' : 'No folders';
+  String get noCollections =>
+      _lang == AppLanguage.zh ? '暂无收藏夹' : 'No collections';
   String get emptyFolderBadge => _lang == AppLanguage.zh ? '空画集' : 'Empty';
   String folderArtworkCount(int count) =>
       _lang == AppLanguage.zh ? '$count 作品' : '$count artworks';

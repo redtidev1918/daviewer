@@ -1,3 +1,4 @@
+import 'package:dakit_flutter/dakit_flutter.dart' hide Page;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -57,6 +58,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             username: state.pathParameters['username']!,
             folderId: state.pathParameters['folderId']!,
             folderName: state.uri.queryParameters['name'] ?? s.folder,
+            kind: state.uri.queryParameters['kind'] == 'collection'
+                ? FolderKind.collection
+                : FolderKind.gallery,
           );
         },
       ),
