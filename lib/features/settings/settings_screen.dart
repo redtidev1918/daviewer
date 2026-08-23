@@ -385,7 +385,11 @@ Future<void> _checkUpdates(
           .showSnackBar(SnackBar(content: Text(s.upToDate)));
       return;
     }
-    final newer = _compareVersions(latest, versionLabel) > 0;
+    // Only compare when both sides are plain semver; a `development` build has
+    // no release number to compare against, so just show the latest + download.
+    final currentIsVersion = RegExp(r'^\d+(\.\d+)*$').hasMatch(versionLabel);
+    final newer =
+        currentIsVersion && _compareVersions(latest, versionLabel) > 0;
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -393,7 +397,9 @@ Future<void> _checkUpdates(
         content: Text(
           newer
               ? s.newVersionAvailable('v$latest')
-              : '${s.upToDate}（$versionLabel）',
+              : currentIsVersion
+              ? '${s.upToDate}（$versionLabel）'
+              : s.newVersionAvailable('v$latest'),
         ),
         actions: <Widget>[
           TextButton(

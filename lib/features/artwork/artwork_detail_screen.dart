@@ -90,7 +90,10 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
       if (id == null) continue;
       final neighbor = store[id];
       if (neighbor == null) continue;
-      final uri = selectDisplayAsset(neighbor.media)?.uri;
+      // Prefetch only a static image; feeding a video URL to the image codec
+      // would fail (and waste a download). Video neighbours load their own
+      // poster when opened.
+      final uri = _displayImageUri(neighbor.media);
       if (uri == null) continue;
       unawaited(
         precacheImage(
@@ -99,6 +102,21 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
         ),
       );
     }
+  }
+
+  /// The largest available preview image in [media], or null when the artwork
+  /// is video/animation-only (there is no static image to prefetch).
+  Uri? _displayImageUri(List<MediaAsset> media) {
+    MediaAsset? best;
+    for (final asset in media) {
+      if (asset.kind != MediaKind.image ||
+          asset.availability != MediaAvailability.available ||
+          asset.uri == null) {
+        continue;
+      }
+      if (best == null || (asset.width ?? 0) > (best.width ?? 0)) best = asset;
+    }
+    return best?.uri;
   }
 
   @override
