@@ -20,6 +20,8 @@
 - Release 说明改为读取当前版本的 CHANGELOG 章节，并保留历史 Release/标签；缺少章节
   时才回退到提交摘要。
 - 重写中英文数据边界、代理、测试和发布文档，补充稀疏数据合并与缩放手势所有权约束。
+- macOS 产物明确改名为 `macos-unsigned-preview`，安装说明与 Release 顶部同步提示其
+  未使用 Apple Developer ID、未公证，以及系统钥匙串可能要求 Mac 登录密码。
 
 ### Removed
 

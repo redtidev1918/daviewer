@@ -61,14 +61,15 @@ OAuth；未登录是正常引导状态，不会被当成推荐加载错误。
 从 [Releases](https://github.com/redtidev1918/daviewer/releases) 下载对应平台的安装包：
 
 - **Android**：`DAViewer-<版本>.apk`
-- **macOS 12+**：`DAViewer-<版本>-macos.zip`（同时支持 Intel 与 Apple Silicon；
-  解压后拖入「应用程序」）
+- **macOS 12+ 未签名测试版**：`DAViewer-<版本>-macos-unsigned-preview.zip`
+  （同时支持 Intel 与 Apple Silicon；解压后拖入「应用程序」）
 - **Windows**：`DAViewer-<版本>-windows.zip`（解压后运行 `DAViewer.exe`）
 
-> 注意：macOS 包通过完整签名校验和真实启动测试，但目前没有 Apple Developer ID
-> 签名与公证。首次打开请右键应用选择「打开」；如果系统仍拦截，请到
-> 「系统设置 → 隐私与安全性」选择「仍要打开」。不要在来源不明的副本上绕过
-> Gatekeeper。
+> **⚠️ macOS 未签名测试版：** 当前包没有 Apple Developer ID 签名，也没有经过 Apple
+> 公证；内部只有用于校验包完整性的 ad-hoc 签名。首次打开可能被 Gatekeeper 拦截，
+> 登录或升级后访问 OAuth 令牌时，macOS 钥匙串也可能要求输入 Mac 登录密码。该密码由
+> macOS 系统接收，DAViewer 不会读取或获得密码。只应使用本仓库 Release 的原始文件；
+> 如果不能接受这些系统提示，请不要安装此测试版。
 
 ## 使用前准备
 
@@ -136,9 +137,9 @@ Release APK 始终使用 upload keystore 签名（来自 CI 的 `KEYSTORE_B64` /
 `KEYSTORE_PROPERTIES` secret）；本地无 `android/key.properties` 时 release 构建会
 直接报错，避免误用 debug 签名导致「无法覆盖安装」的签名不一致问题。
 
-macOS CI 会重新应用仓库中的 Release 权限、验证包内签名与双架构，并实际启动应用
-至少 8 秒。当前发布包仍是临时签名；要做到下载后无需任何首次运行确认，还需要配置
-Apple Developer ID Application 证书并完成 Apple 公证。
+macOS CI 会重新应用仓库中的 Release 权限、验证 ad-hoc 签名与双架构，并实际启动应用
+至少 8 秒。产物始终以 `macos-unsigned-preview` 命名；只有配置 Apple Developer ID
+Application 证书、Hardened Runtime 与 Apple 公证后，才能移除该标记。
 
 ### 一键发布（推荐）
 
@@ -229,7 +230,7 @@ App 里存在两条独立的登录态：
 - **注册不需要谷歌邮箱**：DeviantArt 支持任意邮箱注册，登录页也提供 Google / Apple 一键登录。
 - **忘记密码**：登录页有「Forgot Password」链接；也可以在应用登录页点右上角「?」→「找回密码」，在系统浏览器打开重置页面。
 - **注册账号**：应用登录页右上角「?」→「注册 DeviantArt 账号」，在系统浏览器打开注册页。
-- **macOS 的「钥匙串」提示**：首次登录时 macOS 可能弹窗「DAViewer 想要使用钥匙串中的机密信息」。DAViewer 只在应用自己的默认私有钥匙串组保存登录 DeviantArt 后获得的 OAuth 令牌，不声明共享钥匙串组，也不读取或保存浏览器密码、Wi-Fi 密码等其它机密。该项显示名称为「DAViewer」。
+- **macOS 未签名测试版的「钥匙串」提示**：临时签名的应用身份可能随版本变化，因此首次登录或升级后，macOS 可能弹出「DAViewer 想要使用钥匙串中的机密信息」并要求 Mac 登录密码。输入框属于 macOS 系统，DAViewer 不会读取密码；App 只访问自己保存的 DeviantArt OAuth 令牌。正式 Developer ID 签名与公证完成前，macOS 包会一直明确标记为未签名测试版。
 
 ## 贡献
 

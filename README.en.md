@@ -89,15 +89,19 @@ Download the package for your platform from
 [Releases](https://github.com/redtidev1918/daviewer/releases):
 
 - **Android**: `DAViewer-<version>.apk`
-- **macOS 12+**: `DAViewer-<version>-macos.zip` (universal Intel and Apple
+- **macOS 12+ unsigned preview**:
+  `DAViewer-<version>-macos-unsigned-preview.zip` (universal Intel and Apple
   Silicon build; unzip and drag to Applications)
 - **Windows**: `DAViewer-<version>-windows.zip` (unzip and run `DAViewer.exe`)
 
-> Note: the macOS bundle passes signature-integrity and real launch checks, but
-> it is not yet signed with an Apple Developer ID or notarized. On first launch,
-> right-click the app and choose Open. If macOS still blocks it, use Open Anyway
-> in System Settings → Privacy & Security. Never bypass Gatekeeper for a copy
-> obtained from an untrusted source.
+> **⚠️ macOS unsigned preview:** This bundle has no Apple Developer ID signature
+> and has not been notarized by Apple; it only carries an ad-hoc signature for
+> bundle-integrity checks. Gatekeeper may block its first launch, and macOS
+> Keychain may request the Mac login password when the app signs in or changes
+> build identity after an upgrade. macOS receives that password; DAViewer never
+> reads or receives it. Only use the original asset from this repository's
+> Release page, and do not install this preview if those system prompts are not
+> acceptable.
 
 ## Before you start
 
@@ -167,9 +171,10 @@ notes come from the matching `CHANGELOG.md` section, and historical releases
 and tags are retained.
 
 The macOS CI job reapplies the checked-in release entitlements, verifies the
-bundle signature and both CPU architectures, and keeps the built app running
-for an eight-second launch smoke test. The artifact remains ad-hoc signed until
-Developer ID Application credentials and Apple notarization are configured.
+ad-hoc signature and both CPU architectures, and keeps the built app running
+for an eight-second launch smoke test. The artifact is always named
+`macos-unsigned-preview`; that marker can only be removed after Developer ID
+Application signing, Hardened Runtime, and Apple notarization are configured.
 
 The release APK is always signed with the upload keystore (from the CI
 `KEYSTORE_B64` / `KEYSTORE_PROPERTIES` secrets); a release build without a local
@@ -271,7 +276,7 @@ WebView is unavailable.
 - **You don't need a Google email to register**: DeviantArt accepts any email, and the login page also offers one-click Google / Apple sign-in.
 - **Forgot your password?** Use the "Forgot Password" link on the login page, or tap "?" → "Forgot password" in the app's login screen to open the reset page in your browser.
 - **Register an account**: tap "?" → "Register a DeviantArt account" in the app's login screen to open the sign-up page in your browser.
-- **macOS "Keychain" prompt**: on first sign-in macOS may show a Keychain confirmation. DAViewer stores only the DeviantArt OAuth token in the app's default private Keychain group; it declares no shared Keychain group and never reads or stores browser passwords, Wi-Fi passwords, or other secrets. The item is named "DAViewer".
+- **macOS unsigned-preview Keychain prompt**: an ad-hoc-signed app's identity can change between builds, so macOS may ask for the Mac login password on first sign-in or after an upgrade. The password field belongs to macOS and DAViewer never reads it; the app only accesses its own stored DeviantArt OAuth token. The macOS package remains explicitly labelled as an unsigned preview until Developer ID signing and notarization are in place.
 
 ## Contributing
 
