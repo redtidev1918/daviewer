@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../settings/app_preferences.dart';
 
 /// Supported UI languages.
 enum AppLanguage { zh, en }
@@ -6,9 +10,12 @@ enum AppLanguage { zh, en }
 /// A minimal localization controller. UI strings live in [AppStrings], which
 /// selects a language based on [AppLanguageController.current].
 final class AppLanguageController extends StateNotifier<AppLanguage> {
-  AppLanguageController() : super(AppLanguage.zh);
+  AppLanguageController([super.state = AppLanguage.zh]);
 
-  void set(AppLanguage language) => state = language;
+  void set(AppLanguage language) {
+    state = language;
+    unawaited(AppPreferences.saveLanguage(language.name));
+  }
 }
 
 final appLanguageProvider =

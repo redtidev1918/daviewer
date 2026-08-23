@@ -6,8 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/app.dart';
 import 'core/diagnostics/app_logger.dart';
 import 'core/downloads/shared_storage_saver.dart';
+import 'core/l10n/app_strings.dart';
 import 'core/runtime/app_runtime.dart';
 import 'core/runtime/runtime_provider.dart';
+import 'core/settings/app_preferences.dart';
+import 'core/theme/theme_mode_provider.dart';
 
 String _globalProxyDirective = 'DIRECT';
 
@@ -47,9 +50,30 @@ Future<void> main() async {
     _globalProxyDirective = runtime.proxyController!.directive;
   });
   HttpOverrides.global = _AppHttpOverrides();
+
+  // Restore persisted preferences so language and theme survive a restart
+  // without flashing the defaults.
+  final preferences = await AppPreferences.load();
+  final initialLanguage = preferences['language'] == 'en'
+      ? AppLanguage.en
+      : AppLanguage.zh;
+  final initialThemeMode = switch (preferences['themeMode']) {
+    'light' => ThemeMode.light,
+    'dark' => ThemeMode.dark,
+    _ => ThemeMode.system,
+  };
+
   runApp(
     ProviderScope(
-      overrides: <Override>[runtimeProvider.overrideWithValue(runtime)],
+      overrides: <Override>[
+        runtimeProvider.overrideWithValue(runtime),
+        appLanguageProvider.overrideWith(
+          (ref) => AppLanguageController(initialLanguage),
+        ),
+        themeModeProvider.overrideWith(
+          (ref) => ThemeModeController(initialThemeMode),
+        ),
+      ],
       child: const DAViewerApp(),
     ),
   );

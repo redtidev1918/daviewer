@@ -1,12 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The user-selected theme mode (system / light / dark). In-memory only, like
-/// the language choice; it defaults to following the system theme.
-final class ThemeModeController extends StateNotifier<ThemeMode> {
-  ThemeModeController() : super(ThemeMode.system);
+import '../settings/app_preferences.dart';
 
-  void set(ThemeMode mode) => state = mode;
+/// The user-selected theme mode (system / light / dark), persisted across
+/// launches and defaulting to following the system theme.
+final class ThemeModeController extends StateNotifier<ThemeMode> {
+  ThemeModeController([super.state = ThemeMode.system]);
+
+  void set(ThemeMode mode) {
+    state = mode;
+    unawaited(AppPreferences.saveThemeMode(mode.name));
+  }
 }
 
 final themeModeProvider = StateNotifierProvider<ThemeModeController, ThemeMode>(
