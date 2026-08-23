@@ -71,12 +71,12 @@ Download the package for your platform from
   public client id, no OAuth app registration needed)
 - **Recommendations**: the home "For you" tab is the website's personalized feed
   (`rfy/deviations`), matching the website
-- **Search**: keyword search + history + paste a DeviantArt link to jump straight
-  to an artwork or artist
-- **Artwork detail**: swipe or top-bar buttons to browse previous/next works;
-  pinch zoom; paged multi-image works
+- **Search**: live search (results as you type) + history + paste a DeviantArt
+  link to jump straight to an artwork or artist
+- **Artwork detail**: swipe or top-bar buttons to browse previous/next works
+  (adjacent images prefetched); pinch zoom; paged multi-image works
 - **Media**: shared image zoom; highest-quality video with seeking and retry;
-  cached GIFs and rich-text images with loading progress
+  GIF badge + cached rich-text images with loading progress
 - **Related content**: native "More like this" on the detail page, with clear
   empty and failure states
 - **Tags**: one compact tag row across detail, search, and tag screens, with
@@ -84,10 +84,12 @@ Download the package for your platform from
 - **Artist**: profile (including bio), gallery, **custom sub-galleries
   (folders)**, favourites, watch
 - **Social**: favourite (with state), watch/unwatch, watched-user list,
-  notifications
-- **Download**: real-time original-file permission check; explains login,
-  purchase, quota, or creator restrictions and falls back to the highest-quality
-  preview; open file/folder and delete confirmation
+  notifications (unread dot + local mark-as-read)
+- **Download**: real-time original-file permission check; thumbnail previews;
+  explains login, purchase, quota, or creator restrictions and falls back to the
+  highest-quality preview; open file/folder and delete confirmation
+- **Appearance & settings**: light / dark / system theme; persisted language and
+  theme; clear cache; check for updates
 - **Bilingual**: Chinese / English toggle
 - **Proxy**: auto-detect the system proxy + manual configuration (required in
   mainland China)
