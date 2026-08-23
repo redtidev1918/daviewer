@@ -33,15 +33,19 @@
   (`rfy/deviations`), matching the website
 - **Search**: keyword search + history + paste a DeviantArt link to jump straight
   to an artwork or artist
-- **Artwork detail**: preserves the originating feed so a horizontal swipe or
-  top-bar button opens the previous/next work; full-screen images switch works
-  only at 1× zoom, while zoomed gestures pan; multi-image works page internally
-  first and switch work only after another swipe beyond the first/last page
+- **Artwork detail**: preserves the originating feed for uninterrupted
+  previous/next browsing by swipe or top-bar buttons; the page follows the
+  gesture and transitions in its navigation direction instead of flashing;
+  full-screen images switch works only at 1× zoom, while zoomed gestures pan;
+  multi-image works page internally first and switch work only after another
+  swipe beyond the first/last page
 - **Media**: shared double-tap/pinch image zoom; highest-quality video selection
   with seeking and retry; cached GIFs and rich-text images with progress,
   placeholders, and retry
 - **Related content**: native "More like this" results matching the current
-  website, with the official API retained as a fallback
+  website, with the official API retained as a fallback; a real empty result is
+  not presented as an error, while network, session, service, and page-format
+  failures are explained separately and recoverable failures retry once
 - **Tags**: one compact horizontal tag row across detail, search, and tag
   screens; related tags collapse while the artwork feed scrolls down
 - **Artist**: profile (including the artist's bio), gallery, **custom
