@@ -6,8 +6,7 @@ import 'html_state.dart';
 import 'rfy_feed.dart';
 import 'web_http.dart';
 
-/// One page of a DeviantArt favourites collection, read from the
-/// server-rendered folder page.
+/// One page of a DeviantArt favourites collection.
 final class CollectionContentsPage {
   const CollectionContentsPage({required this.items, required this.hasMore});
 
@@ -20,19 +19,74 @@ final class CollectionContentsPage {
 ///
 /// The official OAuth API only accepts a UUID `folderid` for `collections/…`,
 /// while the "More Like This" preview only exposes the numeric id
-/// (`CollectionSummary.folderId`). There is no official numeric-id path, so
-/// this fetcher reads the same data the website itself renders: the
-/// `deviantart.com/{username}/favourites/{folderId}?page=N` page embeds the
-/// folder's deviations (full Wix media descriptors) in `window.__INITIAL_STATE__`.
+/// (`CollectionSummary.folderId`). There is no official numeric-id path, so this
+/// fetcher reads the same private `gallection/contents` endpoint the website
+/// uses (`_puppy/dashared/gallection/contents`), which returns clean JSON and is
+/// far lighter than the server-rendered page.
 ///
-/// These favourites folder pages are public, so no web session is required; the
-/// optional [cookieHeader] is forwarded for consistency with the other web
-/// fetchers and for any folder gated behind a login.
+/// That endpoint needs a web-session Cookie + CSRF token (an anonymous
+/// deviantart.com visit also supplies both). When no session is available, it
+/// falls back to the server-rendered favourites page
+/// (`deviantart.com/{username}/favourites/{folderId}?page=N`), whose
+/// `window.__INITIAL_STATE__` embeds the same deviation shape.
 final class WebCollectionContentsFetcher {
   const WebCollectionContentsFetcher(this._dio);
 
   final Dio _dio;
 
+  static final Uri _jsonEndpoint = Uri.parse(
+    'https://www.deviantart.com/_puppy/dashared/gallection/contents',
+  );
+
+  /// Fetches one page via the lightweight `gallection/contents` JSON endpoint.
+  Future<CollectionContentsPage> fetchJsonPage({
+    required int folderId,
+    required String username,
+    required String cookieHeader,
+    required String csrfToken,
+    int offset = 0,
+  }) async {
+    final response = await _dio.get<Object?>(
+      _jsonEndpoint.toString(),
+      queryParameters: <String, dynamic>{
+        'username': username.toLowerCase(),
+        'type': 'collection',
+        'folderid': folderId,
+        'offset': offset,
+        'limit': 24,
+        'mature_content': true,
+        'csrf_token': csrfToken,
+      },
+      options: webSessionOptions(cookieHeader),
+    );
+    return parseJsonPage(response.data);
+  }
+
+  /// Fetches every page through the JSON endpoint (offset pagination).
+  Future<List<Artwork>> fetchAllJson({
+    required int folderId,
+    required String username,
+    required String cookieHeader,
+    required String csrfToken,
+  }) async {
+    final all = <Artwork>[];
+    var offset = 0;
+    while (offset < 20000) {
+      final result = await fetchJsonPage(
+        folderId: folderId,
+        username: username,
+        cookieHeader: cookieHeader,
+        csrfToken: csrfToken,
+        offset: offset,
+      );
+      all.addAll(result.items);
+      if (!result.hasMore || result.items.isEmpty) break;
+      offset += 24;
+    }
+    return List<Artwork>.unmodifiable(all);
+  }
+
+  /// Fetches one page via the server-rendered favourites page (session-free).
   Future<CollectionContentsPage> fetchPage({
     required int folderId,
     required String username,
@@ -55,8 +109,8 @@ final class WebCollectionContentsFetcher {
     return parsePage(html);
   }
 
-  /// Fetches every page of the collection, in website order. A safety cap
-  /// keeps a malformed `hasMore` from looping forever.
+  /// Fetches every page through the server-rendered page, in website order. A
+  /// safety cap keeps a malformed `hasMore` from looping forever.
   Future<List<Artwork>> fetchAll({
     required int folderId,
     required String username,
@@ -78,10 +132,35 @@ final class WebCollectionContentsFetcher {
     return List<Artwork>.unmodifiable(all);
   }
 
+  /// Parses a `gallection/contents` JSON response: `results` (the same web
+  /// deviation shape as the `rfy` feed, mapped by [RfyFeedFetcher.mapDeviation])
+  /// plus the `hasMore` flag.
+  static CollectionContentsPage parseJsonPage(Object? data) {
+    if (data is! Map) {
+      throw const FormatException('Unexpected collection contents shape.');
+    }
+    final rawResults = data['results'];
+    if (rawResults is! List) {
+      throw const FormatException('Missing collection results.');
+    }
+    final items = <Artwork>[];
+    for (final raw in rawResults) {
+      if (raw is! Map) continue;
+      final artwork = RfyFeedFetcher.mapDeviation(
+        Map<Object?, Object?>.from(raw),
+      );
+      if (artwork.id.isNotEmpty && artwork.media.isNotEmpty) {
+        items.add(artwork);
+      }
+    }
+    return CollectionContentsPage(
+      items: List<Artwork>.unmodifiable(items),
+      hasMore: data['hasMore'] == true,
+    );
+  }
+
   /// Extracts a folder page's deviations and `hasMore` flag from its
-  /// server-rendered `window.__INITIAL_STATE__`, mapping them back to the
-  /// standard DAKit [Artwork] model (same web deviation shape as the `rfy`
-  /// feed, so [RfyFeedFetcher.mapDeviation] is reused).
+  /// server-rendered `window.__INITIAL_STATE__`.
   static CollectionContentsPage parsePage(String html) {
     final state = jsonParseAssignment(
       html,
@@ -127,18 +206,34 @@ final class WebCollectionContentsFetcher {
   }
 }
 
-/// The web-scraping implementation of [CollectionContentsSource]. Kept behind
-/// the interface so a future official (UUID-based) implementation can replace
-/// it without touching the collection UI.
+/// The web implementation of [CollectionContentsSource]. Kept behind the
+/// interface so a future official (UUID-based) implementation can replace it
+/// without touching the collection UI.
 final class WebCollectionContentsSource implements CollectionContentsSource {
-  const WebCollectionContentsSource(this._dio, {required this.cookieHeader});
+  const WebCollectionContentsSource(
+    this._dio, {
+    required this.cookieHeader,
+    required this.csrfToken,
+  });
 
   final Dio _dio;
   final String cookieHeader;
+  final String csrfToken;
 
   @override
   Future<List<Artwork>> contents(int folderId, String username) {
-    return WebCollectionContentsFetcher(_dio).fetchAll(
+    final fetcher = WebCollectionContentsFetcher(_dio);
+    // Prefer the lightweight JSON endpoint when a web session (Cookie + CSRF)
+    // is available; fall back to the session-free server-rendered page.
+    if (csrfToken.isNotEmpty) {
+      return fetcher.fetchAllJson(
+        folderId: folderId,
+        username: username,
+        cookieHeader: cookieHeader,
+        csrfToken: csrfToken,
+      );
+    }
+    return fetcher.fetchAll(
       folderId: folderId,
       username: username,
       cookieHeader: cookieHeader,
