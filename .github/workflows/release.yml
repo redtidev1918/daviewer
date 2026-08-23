@@ -2,7 +2,7 @@ name: Release
 
 # One-click release: bumps the version, commits it, and pushes a `v*` tag.
 # The existing tag-triggered CI (ci.yml) then builds the signed APK + macOS
-# app and publishes the GitHub release.
+# unsigned preview + Windows app and publishes the GitHub release.
 #
 # Why a PAT: pushes made with the default GITHUB_TOKEN do NOT trigger other
 # workflows (anti-recursion), so the tag push would never start the build.

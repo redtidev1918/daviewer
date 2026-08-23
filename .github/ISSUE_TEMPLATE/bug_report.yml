@@ -19,7 +19,10 @@ body:
     id: platform
     attributes:
       label: Platform
-      options: [Android, macOS, Windows]
+      options:
+        - Android
+        - macOS (unsigned preview)
+        - Windows
     validations:
       required: true
   - type: textarea

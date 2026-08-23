@@ -81,5 +81,6 @@ recoverable after that commit has been observed.
   that section as the GitHub Release body.
 - CI analyzes, checks formatting, tests, and builds Android, macOS, and Windows.
 - Android releases require the configured upload keystore. macOS artifacts are
-  ad-hoc signed until Developer ID signing and notarization are configured.
+  ad-hoc signed and must use the `macos-unsigned-preview` filename until stable
+  Developer ID signing, Hardened Runtime, and notarization are configured.
 - Historical releases and tags are part of the project record and are retained.

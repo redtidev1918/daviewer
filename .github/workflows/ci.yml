@@ -174,12 +174,12 @@ jobs:
         run: |
           VERSION="$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d+ -f1)"
           cd build/macos/Build/Products/Release
-          zip -r -y "DAViewer-$VERSION-macos.zip" DAViewer.app
+          zip -r -y "DAViewer-$VERSION-macos-unsigned-preview.zip" DAViewer.app
       - name: Upload macOS app
         uses: actions/upload-artifact@v7
         with:
           name: daviewer-macos
-          path: build/macos/Build/Products/Release/DAViewer-*-macos.zip
+          path: build/macos/Build/Products/Release/DAViewer-*-macos-unsigned-preview.zip
           if-no-files-found: error
 
   build-windows:
@@ -251,12 +251,20 @@ jobs:
             $0 ~ "^## " version "([ （(]|$)" { found=1; next }
             found && /^## / { exit }
             found { print }
-          ' CHANGELOG.md > release_notes.md
+          ' CHANGELOG.md > release_notes_section.md
 
-          if [ ! -s release_notes.md ]; then
+          if [ -s release_notes_section.md ]; then
+            {
+              echo "> ⚠️ **macOS 未签名测试版 / unsigned preview:** macOS 产物没有 Apple Developer ID 签名，也没有经过 Apple 公证；钥匙串可能要求 Mac 登录密码。该密码由 macOS 接收，DAViewer 不会读取。"
+              echo
+              cat release_notes_section.md
+            } > release_notes.md
+          else
             echo "::warning::CHANGELOG.md has no section for $VERSION; using commit summaries."
             PREV_TAG="$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)"
             {
+              echo "> ⚠️ **macOS 未签名测试版 / unsigned preview:** macOS 产物没有 Apple Developer ID 签名，也没有经过 Apple 公证；钥匙串可能要求 Mac 登录密码。该密码由 macOS 接收，DAViewer 不会读取。"
+              echo
               echo "## 变更 / Changes"
               echo
               if [ -n "$PREV_TAG" ]; then
