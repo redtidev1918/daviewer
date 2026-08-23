@@ -23,6 +23,7 @@ import 'download_section.dart';
 import 'download_reason.dart';
 import 'favourite_actions.dart';
 import 'media_viewer.dart';
+import 'collection_sections.dart';
 import 'more_like_this.dart';
 
 final class ArtworkDetailScreen extends ConsumerStatefulWidget {
@@ -476,6 +477,8 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
           ],
           const Divider(),
           MoreLikeThisSection(artworkId: widget.artworkId),
+          FeaturedInCollectionsSection(artworkId: widget.artworkId),
+          SuggestedCollectionsSection(artworkId: widget.artworkId),
         ],
       ),
     );
