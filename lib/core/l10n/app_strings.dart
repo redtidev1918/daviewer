@@ -147,6 +147,17 @@ final class AppStrings {
   String get themeSystem => _lang == AppLanguage.zh ? '跟随系统' : 'System';
   String get themeLight => _lang == AppLanguage.zh ? '浅色' : 'Light';
   String get themeDark => _lang == AppLanguage.zh ? '深色' : 'Dark';
+  String get clearCache => _lang == AppLanguage.zh ? '清除缓存' : 'Clear cache';
+  String get cacheCleared =>
+      _lang == AppLanguage.zh ? '缓存已清除' : 'Cache cleared';
+  String get checkUpdates =>
+      _lang == AppLanguage.zh ? '检查更新' : 'Check for updates';
+  String get upToDate => _lang == AppLanguage.zh ? '已是最新版本' : 'Up to date';
+  String newVersionAvailable(String version) => _lang == AppLanguage.zh
+      ? '发现新版本 $version'
+      : 'New version $version available';
+  String get downloadUpdate => _lang == AppLanguage.zh ? '去下载' : 'Download';
+  String get markAllRead => _lang == AppLanguage.zh ? '全部已读' : 'Mark all read';
   String get proxy => _lang == AppLanguage.zh ? '网络代理' : 'Proxy';
   String get diagnostics => _lang == AppLanguage.zh ? '日志与诊断' : 'Diagnostics';
   String get downloadOriginal =>

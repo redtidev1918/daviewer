@@ -16,6 +16,7 @@ dependencies:
   dakit_core: ^0.1.11
   dakit_flutter: ^0.1.9
   dio: ^5.11.0
+  flutter_cache_manager: ^3.4.2
   flutter_html: ^3.0.0
   flutter_inappwebview: 6.1.5
   flutter_riverpod: ^2.6.1

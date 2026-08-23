@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dakit_core/dakit_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -81,6 +82,23 @@ final class SettingsScreen extends ConsumerWidget {
                 subtitle: Text(s.viewLogs),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/settings/diagnostics'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _SettingsCard(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.cleaning_services_outlined),
+                title: Text(s.clearCache),
+                onTap: () => _clearCache(context, s),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.system_update_outlined),
+                title: Text(s.checkUpdates),
+                subtitle: const Text('DAViewer · $versionLabel'),
+                onTap: () => _checkUpdates(context, ref, s),
               ),
             ],
           ),
@@ -335,3 +353,82 @@ IconData _themeModeIcon(ThemeMode mode) => switch (mode) {
   ThemeMode.light => Icons.light_mode_outlined,
   ThemeMode.dark => Icons.dark_mode_outlined,
 };
+
+Future<void> _clearCache(BuildContext context, AppStrings s) async {
+  PaintingBinding.instance.imageCache.clear();
+  PaintingBinding.instance.imageCache.clearLiveImages();
+  await DefaultCacheManager().emptyCache();
+  if (context.mounted) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(s.cacheCleared)));
+  }
+}
+
+Future<void> _checkUpdates(
+  BuildContext context,
+  WidgetRef ref,
+  AppStrings s,
+) async {
+  final dio = ref.read(runtimeProvider).dio;
+  if (dio == null) return;
+  try {
+    final response = await dio.get<Object?>(
+      'https://api.github.com/repos/redtidev1918/daviewer/releases/latest',
+    );
+    final data = response.data;
+    final latest = data is Map && data['tag_name'] is String
+        ? (data['tag_name'] as String).replaceFirst(RegExp('^v'), '')
+        : null;
+    if (!context.mounted) return;
+    if (latest == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(s.upToDate)));
+      return;
+    }
+    final newer = _compareVersions(latest, versionLabel) > 0;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(s.checkUpdates),
+        content: Text(
+          newer
+              ? s.newVersionAvailable('v$latest')
+              : '${s.upToDate}（$versionLabel）',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(s.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              launchUrl(
+                Uri.parse(_releasesUrl),
+                mode: LaunchMode.externalApplication,
+              );
+            },
+            child: Text(s.downloadUpdate),
+          ),
+        ],
+      ),
+    );
+  } on Object {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(s.upToDate)));
+    }
+  }
+}
+
+int _compareVersions(String a, String b) {
+  final av = a.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+  final bv = b.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+  final length = av.length > bv.length ? av.length : bv.length;
+  for (var i = 0; i < length; i++) {
+    final x = i < av.length ? av[i] : 0;
+    final y = i < bv.length ? bv[i] : 0;
+    if (x != y) return x - y;
+  }
+  return 0;
+}
