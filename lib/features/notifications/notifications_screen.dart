@@ -12,6 +12,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/app_refresh_indicator.dart';
+import '../../shared/widgets/relative_time_text.dart';
 import '../../shared/widgets/scrollable_fill.dart';
 import '../../shared/widgets/skeleton.dart';
 import 'notifications_providers.dart';
@@ -134,8 +135,9 @@ final class _MessageTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(
-            s.relativeTime(message.postedAt),
+          RelativeTimeText(
+            time: message.postedAt,
+            format: s.relativeTime,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
