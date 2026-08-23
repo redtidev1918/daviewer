@@ -188,8 +188,11 @@ final class _DownloadTile extends ConsumerWidget {
             ],
             if (snapshot.localPath != null) ...[
               const SizedBox(height: 8),
+              // Android keeps downloads in app-private storage (see
+              // SharedStorageSaver), so show a friendly label instead of the
+              // raw app-private path.
               Text(
-                snapshot.localPath!,
+                Platform.isAndroid ? s.storedInApp : snapshot.localPath!,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall,
