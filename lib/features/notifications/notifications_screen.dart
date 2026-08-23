@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dakit_core/dakit_core.dart';
 import 'package:flutter/material.dart';
@@ -15,16 +17,49 @@ import '../../shared/widgets/app_refresh_indicator.dart';
 import '../../shared/widgets/relative_time_text.dart';
 import '../../shared/widgets/scrollable_fill.dart';
 import '../../shared/widgets/skeleton.dart';
+import 'notification_read_store.dart';
 import 'notifications_providers.dart';
 
 /// The user's DeviantArt notifications (message center). Each entry shows
 /// *which user* triggered the notification (the originator), what they did,
-/// and the affected artwork.
-final class NotificationsScreen extends ConsumerWidget {
+/// and the affected artwork. Tapping a notification dismisses its unread dot
+/// locally; "mark all read" dismisses every current dot.
+final class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
+}
+
+final class _NotificationsScreenState
+    extends ConsumerState<NotificationsScreen> {
+  Set<String> _readIds = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(
+      NotificationReadStore.load().then((ids) {
+        if (mounted) setState(() => _readIds = ids);
+      }),
+    );
+  }
+
+  Future<void> _markRead(String id) async {
+    if (!_readIds.add(id)) return;
+    setState(() {});
+    unawaited(NotificationReadStore.add(id));
+  }
+
+  Future<void> _markAllRead(Iterable<ProviderMessage> items) async {
+    final ids = items.map((message) => message.id).where((id) => id.isNotEmpty);
+    final updated = await NotificationReadStore.addAll(ids);
+    if (mounted) setState(() => _readIds = updated);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final s = strings(ref.watch(appLanguageProvider));
     final auth = ref.watch(authControllerProvider);
     if (auth.status != AuthStatus.signedIn) {
@@ -39,9 +74,20 @@ final class NotificationsScreen extends ConsumerWidget {
       );
     }
     final messages = ref.watch(notificationsProvider);
+    final items = messages.valueOrNull ?? const <ProviderMessage>[];
 
     return Scaffold(
-      appBar: AppBar(title: Text(s.notifications)),
+      appBar: AppBar(
+        title: Text(s.notifications),
+        actions: <Widget>[
+          if (items.isNotEmpty)
+            IconButton(
+              tooltip: s.markAllRead,
+              onPressed: () => _markAllRead(items),
+              icon: const Icon(Icons.done_all),
+            ),
+        ],
+      ),
       body: messages.when(
         loading: () => const SkeletonList(),
         error: (error, stackTrace) => AppRefreshIndicator(
@@ -71,8 +117,12 @@ final class NotificationsScreen extends ConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               itemCount: items.length,
               separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) =>
-                  _MessageTile(message: items[index], s: s),
+              itemBuilder: (context, index) => _MessageTile(
+                message: items[index],
+                s: s,
+                isRead: _readIds.contains(items[index].id),
+                onTap: () => _markRead(items[index].id),
+              ),
             ),
           );
         },
@@ -82,10 +132,17 @@ final class NotificationsScreen extends ConsumerWidget {
 }
 
 final class _MessageTile extends StatelessWidget {
-  const _MessageTile({required this.message, required this.s});
+  const _MessageTile({
+    required this.message,
+    required this.s,
+    required this.isRead,
+    required this.onTap,
+  });
 
   final ProviderMessage message;
   final AppStrings s;
+  final bool isRead;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +151,7 @@ final class _MessageTile extends StatelessWidget {
     final artwork = message.artwork;
     final username = originator?.username ?? '';
     final thumbnail = artwork?.media.firstOrNull;
+    final showNew = message.isNew && !isRead;
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -103,7 +161,7 @@ final class _MessageTile extends StatelessWidget {
       ),
       title: Row(
         children: <Widget>[
-          if (message.isNew) ...[
+          if (showNew) ...[
             Container(
               width: 8,
               height: 8,
@@ -120,7 +178,7 @@ final class _MessageTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: message.isNew ? FontWeight.w700 : FontWeight.w400,
+                fontWeight: showNew ? FontWeight.w700 : FontWeight.w400,
               ),
             ),
           ),
@@ -171,6 +229,7 @@ final class _MessageTile extends StatelessWidget {
         ],
       ),
       onTap: () {
+        onTap();
         if (artwork != null) {
           context.push('/artwork/${artwork.id}');
         } else if (originator != null && originator.username.isNotEmpty) {
