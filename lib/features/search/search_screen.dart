@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -31,11 +33,13 @@ final class SearchScreen extends ConsumerStatefulWidget {
 
 final class _SearchScreenState extends ConsumerState<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
+  Timer? _debounce;
   String _query = '';
   int _mode = 0; // 0 = artworks, 1 = users
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -51,8 +55,26 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
         return;
       }
     }
+    _debounce?.cancel();
     setState(() => _query = query);
     ref.read(searchHistoryProvider.notifier).add(query);
+  }
+
+  /// Live search: results appear as the user types, debounced so a rapid burst
+  /// of keystrokes triggers only one request. `#tag` navigation and search
+  /// history are still commit-time actions (enter / history tap), not live.
+  void _onChanged(String value) {
+    _debounce?.cancel();
+    final query = value.trim();
+    if (query.isEmpty) {
+      setState(() => _query = '');
+      return;
+    }
+    if (query.startsWith('#')) return;
+    _debounce = Timer(const Duration(milliseconds: 450), () {
+      if (!mounted) return;
+      if (_query != query) setState(() => _query = query);
+    });
   }
 
   void _selectFromHistory(String query) {
@@ -94,11 +116,7 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
               ),
               textInputAction: TextInputAction.search,
-              onChanged: (value) {
-                if (value.trim().isEmpty && _query.isNotEmpty) {
-                  setState(() => _query = '');
-                }
-              },
+              onChanged: _onChanged,
               onSubmitted: _submit,
             ),
           ),
