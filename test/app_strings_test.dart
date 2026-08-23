@@ -73,12 +73,37 @@ void main() {
     );
     expect(zh.deleteFinishedDownloadsFailed('无权限'), '删除失败：无权限');
     expect(en.moreLikeThisLoadFailed, 'Could not load similar artwork');
-    expect(zh.noMoreLikeThis, contains('网页和备用来源'));
+    expect(zh.noMoreLikeThis, contains('稍后再检查'));
     expect(zh.checkSuggestions, '检查更新');
-    expect(zh.moreLikeThisStillEmpty, contains('已重新检查'));
+    expect(zh.moreLikeThisStillEmpty, contains('已检查最新推荐'));
     expect(zh.reloadSuggestions, '重新加载');
     expect(en.moreLikeThisNetworkFailure, contains('network'));
     expect(zh.moreLikeThisSessionFailure, contains('登录会话'));
     expect(en.videoLoadFailed, 'Video failed to load');
+  });
+
+  test('empty watched feed guides users without exposing API details', () {
+    final zh = strings(AppLanguage.zh);
+    final en = strings(AppLanguage.en);
+
+    expect(zh.noWatched, contains('关注喜欢的创作者'));
+    expect(zh.discoverArtists, '发现并关注');
+    expect(zh.watchedFeedLoadFailure, isNot(contains('results')));
+    expect(en.noWatched, contains('Follow creators'));
+    expect(en.noWatched.toLowerCase(), isNot(contains('api')));
+    expect(en.watchedFeedLoadFailure.toLowerCase(), isNot(contains('api')));
+  });
+
+  test('similar artwork copy does not expose website parser details', () {
+    final zh = strings(AppLanguage.zh);
+    final en = strings(AppLanguage.en);
+
+    expect(zh.moreLikeThisFormatFailure, isNot(contains('页面结构')));
+    expect(zh.noMoreLikeThis, isNot(contains('备用来源')));
+    expect(
+      en.moreLikeThisFormatFailure.toLowerCase(),
+      isNot(contains('format')),
+    );
+    expect(en.noMoreLikeThis.toLowerCase(), isNot(contains('source')));
   });
 }

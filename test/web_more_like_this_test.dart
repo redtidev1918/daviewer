@@ -5,6 +5,31 @@ import 'package:daviewer/core/data/web_more_like_this.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('reads the current streamed related-content cache', () {
+    final artworks = WebMoreLikeThisFetcher.parseInitialState(
+      _relatedCacheHtml(),
+      deviationId: '1371131855',
+    );
+
+    expect(artworks.map((artwork) => artwork.id), <String>['10', '11']);
+    expect(artworks.first.title, 'Gallery result');
+    expect(artworks.first.author.username, 'ArtistOne');
+    expect(artworks.first.media, isNotEmpty);
+    expect(artworks.last.title, 'Recommended result');
+  });
+
+  test('falls back to initial state when streamed cache is partial', () {
+    final html =
+        '<script>window.__RCACHE__ = JSON.parse("{}");</script>${_fixtureHtml()}';
+
+    final artworks = WebMoreLikeThisFetcher.parseInitialState(
+      html,
+      deviationId: '1371131855',
+    );
+
+    expect(artworks.map((artwork) => artwork.id), <String>['10', '11']);
+  });
+
   test('restores website gallery and recommended entities in order', () {
     final html = _fixtureHtml();
 
@@ -54,6 +79,43 @@ void main() {
     });
   }
 }
+
+String _relatedCacheHtml() {
+  final cache = <String, Object?>{
+    'relatedContent': <String, Object?>{
+      'relatedContent': <Object?>[
+        <String, Object?>{
+          'contentType': 'gallery',
+          'deviations': <Object?>[
+            _deviation(10, 'Gallery result')..['author'] = _author(),
+          ],
+        },
+        <String, Object?>{
+          'contentType': 'boosted',
+          'deviations': <Object?>[
+            _deviation(99, 'Promoted result')..['author'] = _author(),
+          ],
+        },
+        <String, Object?>{
+          'contentType': 'recommended',
+          'deviations': <Object?>[
+            _deviation(11, 'Recommended result')..['author'] = _author(),
+            _deviation(10, 'Duplicate result')..['author'] = _author(),
+          ],
+        },
+      ],
+    },
+  };
+  final literal = jsonEncode(jsonEncode(cache));
+  return '<html><script>window.__RCACHE__ = JSON.parse($literal);'
+      '</script></html>';
+}
+
+Map<String, Object?> _author() => <String, Object?>{
+  'userId': 1,
+  'username': 'ArtistOne',
+  'usericon': 'https://a.deviantart.net/avatar.png',
+};
 
 String _fixtureHtml() {
   final metadata = jsonEncode(<Object?>[

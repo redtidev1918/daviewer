@@ -42,11 +42,10 @@
 - **Media**: shared double-tap/pinch image zoom; highest-quality video selection
   with seeking and retry; cached GIFs and rich-text images with progress,
   placeholders, and retry
-- **Related content**: native "More like this" results matching the current
-  website, with the official API retained as a fallback; inconclusive empty
-  pages recover automatically, confirmed empty results explain both sources,
-  and refresh keeps current cards visible before reporting updated, unchanged,
-  or still-empty results
+- **Related content**: native "More like this" results supporting both the
+  current streamed website cache and the legacy page state, with the official
+  API retained as a fallback; refresh keeps current cards visible and reports
+  updated, unchanged, or no results without exposing source internals
 - **Tags**: one compact horizontal tag row across detail, search, and tag
   screens; sparse watched-feed entries hydrate tags from official artwork
   metadata, and later feed refreshes cannot overwrite that complete data
@@ -71,7 +70,7 @@ dependencies:
 ```yaml
 dependencies:
   dakit_core: ^0.1.11
-  dakit_api: ^0.1.17
+  dakit_api: ^0.1.18
   dakit_flutter: ^0.1.8
 ```
 

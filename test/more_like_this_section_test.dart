@@ -28,7 +28,7 @@ void main() {
     expect(result.artworks, isEmpty);
   });
 
-  testWidgets('an empty result explains both sources and checks again', (
+  testWidgets('an empty result stays user-facing and checks again', (
     tester,
   ) async {
     var attempts = 0;
@@ -51,7 +51,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('网页和备用来源'), findsOneWidget);
+    expect(find.textContaining('暂时没有找到'), findsOneWidget);
+    expect(find.textContaining('网页'), findsNothing);
+    expect(find.textContaining('备用来源'), findsNothing);
     expect(find.text('检查更新'), findsOneWidget);
     expect(find.text('重试'), findsNothing);
     expect(find.text('重新加载'), findsNothing);
@@ -60,7 +62,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(attempts, 2);
-    expect(find.textContaining('已重新检查'), findsWidgets);
+    expect(find.textContaining('已检查最新推荐'), findsWidgets);
   });
 
   testWidgets('a transient failure retries once then explains the cause', (

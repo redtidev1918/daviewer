@@ -53,8 +53,9 @@ final class _WatchedBody extends ConsumerWidget {
           child: ArtworkFeedGrid(
             feed: feed,
             emptyMessage: s.noWatched,
-            emptyActionLabel: s.discover,
+            emptyActionLabel: s.discoverArtists,
             emptyOnAction: () => context.push('/search'),
+            errorMessage: s.watchedFeedLoadFailure,
             onRefresh: () => ref.read(followingFeedProvider.notifier).refresh(),
             onLoadMore: () =>
                 ref.read(followingFeedProvider.notifier).loadMore(),
