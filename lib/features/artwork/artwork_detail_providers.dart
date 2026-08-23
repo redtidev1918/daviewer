@@ -90,9 +90,9 @@ final artworkTagsProvider = FutureProvider.autoDispose
       final resolution = await resolveOfficialArtworkTags(
         artwork,
         alreadyResolved: store.hasResolvedTags(artworkId),
-        fetchDetail: () {
+        fetchTags: () {
           final runtime = ref.read(runtimeProvider);
-          return dataAccessFor(runtime).artworkById(artworkId);
+          return dataAccessFor(runtime).artworkTags(artworkId);
         },
       );
       if (resolution.isConfirmed) {
@@ -101,9 +101,9 @@ final artworkTagsProvider = FutureProvider.autoDispose
       return resolution.tags;
     });
 
-/// Official list endpoints often omit tags even though `deviation/{id}` has
-/// them. Treat an empty feed tag list as incomplete data and hydrate only then,
-/// avoiding an extra request for already-complete search/gallery items.
+/// Official list endpoints often omit tags. Treat an empty feed tag list as
+/// incomplete data and hydrate it from `deviation/metadata`, avoiding an extra
+/// request for already-complete search/gallery items.
 final class ArtworkTagResolution {
   const ArtworkTagResolution({required this.tags, required this.isConfirmed});
 
@@ -118,16 +118,16 @@ final class ArtworkTagResolution {
 Future<ArtworkTagResolution> resolveOfficialArtworkTags(
   Artwork artwork, {
   bool alreadyResolved = false,
-  required Future<Artwork> Function() fetchDetail,
+  required Future<List<String>> Function() fetchTags,
 }) async {
   if (artwork.tags.isNotEmpty || alreadyResolved) {
     return ArtworkTagResolution(tags: artwork.tags, isConfirmed: true);
   }
   try {
-    final detailed = await fetchDetail();
-    return ArtworkTagResolution(tags: detailed.tags, isConfirmed: true);
+    final tags = await fetchTags();
+    return ArtworkTagResolution(tags: tags, isConfirmed: true);
   } on Object catch (error) {
-    debugPrint('[tags] detail hydration failed for ${artwork.id}: $error');
+    debugPrint('[tags] metadata hydration failed for ${artwork.id}: $error');
     return const ArtworkTagResolution(tags: <String>[], isConfirmed: false);
   }
 }

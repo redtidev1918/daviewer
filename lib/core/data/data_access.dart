@@ -26,6 +26,14 @@ final class DataAccess {
   Future<Artwork> artworkById(String id) =>
       OfficialArtworkRepository(runtime.transport!).getById(id);
 
+  /// Fetches searchable tags from DeviantArt's dedicated metadata endpoint.
+  ///
+  /// Compact list responses (notably `browse/deviantsyouwatch`) omit tags, and
+  /// `deviation/{id}` does not reliably add them back. The metadata endpoint is
+  /// the canonical source for this field.
+  Future<List<String>> artworkTags(String id) =>
+      OfficialArtworkMetadataRepository(runtime.transport!).tags(id);
+
   Future<MediaAsset> originalFile(String artworkId) =>
       OfficialMediaRepository(runtime.transport!).originalFile(artworkId);
 }
