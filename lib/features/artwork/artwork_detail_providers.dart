@@ -306,9 +306,11 @@ final artworkDescriptionHtmlProvider = FutureProvider.autoDispose
       return null;
     });
 
-/// "More Like This" — use the current website's organic related blocks first,
-/// because they can diverge from the legacy OAuth preview endpoint. The
-/// official endpoint remains a fallback when the artwork page is unavailable.
+/// "More Like This" — the current website's organic related blocks provide the
+/// artwork, while the official preview endpoint provides the featured/suggested
+/// collections (the website does not expose those groups). Both are fetched and
+/// merged so the collections rails show consistently instead of disappearing
+/// whenever the website source happens to return artwork.
 final moreLikeThisProvider = FutureProvider.autoDispose
     .family<MoreLikeThisResult, String>((ref, artworkId) async {
       final runtime = ref.watch(runtimeProvider);
@@ -316,6 +318,9 @@ final moreLikeThisProvider = FutureProvider.autoDispose
       final numericId = isNumericDeviationId(artworkId)
           ? artworkId
           : RegExp(r'-(\d+)/?$').firstMatch(artwork.pageUri.path)?.group(1);
+
+      // Website related artwork (current, may diverge from the legacy preview).
+      List<Artwork> webArtworks = const <Artwork>[];
       Object? websiteError;
       if (numericId != null) {
         try {
@@ -327,14 +332,15 @@ final moreLikeThisProvider = FutureProvider.autoDispose
             cookieHeader: cookieHeader,
           );
           if (artworks.isNotEmpty) {
+            webArtworks = artworks;
             ref.read(artworkStoreProvider.notifier).putAll(artworks);
             debugPrint(
               '[moreLikeThis] website source returned ${artworks.length} '
               'items for $numericId',
             );
-            return MoreLikeThisResult(artworks: artworks);
+          } else {
+            debugPrint('[moreLikeThis] website source empty for $numericId');
           }
-          debugPrint('[moreLikeThis] website source empty for $numericId');
         } on Object catch (error) {
           websiteError = error;
           debugPrint(
@@ -352,13 +358,20 @@ final moreLikeThisProvider = FutureProvider.autoDispose
           '[moreLikeThis] OAuth source returned ${result.artworks.length} '
           'items for $uuid',
         );
-        return resolveOfficialMoreLikeThisFallback(
-          result,
+        return mergeMoreLikeThisResult(
+          official: result,
+          webArtworks: webArtworks,
           websiteError: websiteError,
         );
       } on MoreLikeThisFailure {
         rethrow;
       } on Object catch (officialError) {
+        // The official source can be unreachable for numeric web-feed ids
+        // without a web session (no UUID to resolve). Keep the website artwork
+        // in that case, and only surface a combined failure when both are gone.
+        if (webArtworks.isNotEmpty) {
+          return MoreLikeThisResult(artworks: webArtworks);
+        }
         throw MoreLikeThisFailure(
           websiteError: websiteError,
           officialError: officialError,
@@ -366,16 +379,48 @@ final moreLikeThisProvider = FutureProvider.autoDispose
       }
     });
 
-/// An empty fallback is authoritative only when the website source also
-/// completed successfully. If the website failed or was only partially
-/// hydrated, returning an empty success would falsely tell the user that no
-/// recommendations exist even though the browser may be showing them.
-MoreLikeThisResult resolveOfficialMoreLikeThisFallback(
-  MoreLikeThisResult result, {
-  Object? websiteError,
+/// Merges the website's related artwork with the official preview's
+/// collections (and its artwork as the fallback). Website artwork wins when
+/// present, while collections always come from the official source.
+///
+/// An empty result is authoritative only when the website source also completed
+/// successfully. If the website failed or was only partially hydrated, an empty
+/// success would falsely tell the user that no recommendations exist even
+/// though the browser may be showing them.
+MoreLikeThisResult mergeMoreLikeThisResult({
+  required MoreLikeThisResult official,
+  required List<Artwork> webArtworks,
+  required Object? websiteError,
 }) {
-  if (result.artworks.isEmpty && websiteError != null) {
+  final merged = MoreLikeThisResult(
+    artworks: webArtworks.isNotEmpty ? webArtworks : official.artworks,
+    featuredInCollections: official.featuredInCollections,
+    suggestedCollections: official.suggestedCollections,
+  );
+  if (merged.artworks.isEmpty && websiteError != null) {
     throw MoreLikeThisFailure(websiteError: websiteError, officialError: null);
   }
-  return result;
+  return merged;
 }
+
+/// The author's other recent works, shown as a "More from this artist" rail
+/// below the artwork. Reads the first page of the author's gallery and excludes
+/// the current artwork. Failures are swallowed so the rail simply hides instead
+/// of taking down the whole detail page.
+final moreFromArtistProvider = FutureProvider.autoDispose
+    .family<List<Artwork>, String>((ref, artworkId) async {
+      final runtime = ref.watch(runtimeProvider);
+      final artwork = await ref.watch(artworkDetailProvider(artworkId).future);
+      final username = artwork.author.username;
+      if (username.isEmpty) return const <Artwork>[];
+      try {
+        final page = await dataAccessFor(runtime)
+            .gallery(username, const PageRequest(limit: 24));
+        return List<Artwork>.unmodifiable(
+          page.items.where((item) => item.id != artworkId),
+        );
+      } on Object {
+        // Best-effort rail: an unavailable gallery is not an error for the page.
+        return const <Artwork>[];
+      }
+    });

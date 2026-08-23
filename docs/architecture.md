@@ -59,6 +59,14 @@ preferred when complete, then parsing falls back to the legacy state. A missing
 confirmed empty recommendation set. An empty success is shown only when the
 website parse and official fallback both finish without errors.
 
+Related **artwork** comes from the website source when available (it can diverge
+from the legacy preview) and falls back to the official `browse/morelikethis`
+preview. Featured/suggested **collections** exist only in the official preview,
+so `moreLikeThisProvider` always fetches the official result and merges it with
+the website artwork (`mergeMoreLikeThisResult`); the collection rails therefore
+show consistently instead of disappearing whenever the website source happens
+to return artwork.
+
 Refreshing related content is one awaited operation. Existing cards remain
 visible during it, and completion must report one of three outcomes: changed,
 unchanged, or still empty. Source failures retain their network, session,
@@ -68,6 +76,32 @@ fallback.
 Provider/parser names and raw exception messages are diagnostic data. User copy
 describes only the outcome and next action (checking, updated, unchanged, no
 result, sign in, check network, or try later).
+
+## Collection contents and artist discovery
+
+**Collection full contents** (`WebCollectionContentsFetcher`): the official API
+only accepts a UUID `folderid`, while the preview exposes a numeric id, so there
+is no official full-contents path. DAViewer reads the same server-rendered page
+the website serves — `deviantart.com/{username}/favourites/{folderId}?page=N` —
+whose `window.__INITIAL_STATE__` embeds the folder's deviations with full Wix
+media descriptors. These pages are public, so no login is required. The mapping
+reuses `RfyFeedFetcher.mapDeviation` (the shared web-deviation shape). The UI
+shows the preview deviations instantly and swaps in the full list when ready,
+with an "open on the web" fallback.
+
+**More from this artist** (`MoreFromArtistSection`): the author's other recent
+works, read from the official `gallery/{username}` first page. This is the
+cleanly available "artist discovery" path.
+
+**Similar artists (Suggested Deviants)** is intentionally not implemented yet.
+DeviantArt has no public similar-artists endpoint (the official API only offers
+`browse/morelikethis`, which returns deviations and collections). The website
+marks the feature with a `currentBiMetadata` section of `type: "artist"` but
+streams the actual list post-hydration from an undocumented BI recommendation
+endpoint, so it is not present in `__INITIAL_STATE__`, `__RCACHE__`, or
+`dadeviation/init`. Any implementation must therefore reverse-engineer that
+stream (web-session Cookie/CSRF), not extend the official API surface; DAKit
+must stay free of that private contract.
 
 ## Gesture ownership
 
