@@ -410,8 +410,25 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '更多类似作品' : 'More like this';
   String get moreLikeThisLoadFailed =>
       _lang == AppLanguage.zh ? '更多类似作品加载失败' : 'Could not load similar artwork';
-  String get noMoreLikeThis =>
-      _lang == AppLanguage.zh ? '暂时没有找到类似作品' : 'No similar artwork found';
+  String get moreLikeThisLoading => _lang == AppLanguage.zh
+      ? '正在从网页和备用来源加载类似作品…'
+      : 'Loading similar artwork from the website and fallback source…';
+  String get noMoreLikeThis => _lang == AppLanguage.zh
+      ? '网页和备用来源当前都没有返回可显示的类似作品。'
+      : 'Neither the website nor the fallback source currently returned displayable suggestions.';
+  String get checkSuggestions =>
+      _lang == AppLanguage.zh ? '检查更新' : 'Check again';
+  String get moreLikeThisChecking =>
+      _lang == AppLanguage.zh ? '正在检查…' : 'Checking…';
+  String get moreLikeThisStillEmpty => _lang == AppLanguage.zh
+      ? '已重新检查，网页和备用来源仍没有返回可显示的类似作品。'
+      : 'Checked again; neither source returned displayable suggestions.';
+  String get moreLikeThisUnchanged => _lang == AppLanguage.zh
+      ? '已重新检查，当前类似作品没有变化。'
+      : 'Checked again; suggestions are unchanged.';
+  String moreLikeThisUpdated(int count) => _lang == AppLanguage.zh
+      ? '已更新，找到 $count 个类似作品。'
+      : 'Updated with $count similar artwork${count == 1 ? '' : 's'}.';
   String get moreLikeThisRecovering => _lang == AppLanguage.zh
       ? '相关推荐暂时中断，正在自动恢复…'
       : 'Suggestions were interrupted. Recovering automatically…';
