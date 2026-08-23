@@ -37,11 +37,14 @@ lib/
     auth/                      Sign-in state, session restore, logout, WebView OAuth bridge
     data/                      Unified data access layer (official API + web fallback)
     diagnostics/               File logging, global error capture
+    downloads/                 Completed-download shared-storage saver
     feed/                      Paged feed controller
     l10n/                      Chinese/English strings and language state
     network/                   Proxy detection, open-in-browser, dynamic proxy Dio
     runtime/                   DAKit composition root
     search/                    Search history persistence
+    settings/                  Persisted user preferences (language, theme)
+    theme/                     Theme mode controller
   features/
     web_login/                 Web-session commit and OAuth login page
     home/                      Home (native For you / Daily feeds)
@@ -52,10 +55,11 @@ lib/
     favourites/                Current account favourites
     watching/                  Watched users list
     downloads/                 Download list
-    settings/                  Settings, proxy, language, logs, about
+    notifications/             Message center + local read-state store
+    settings/                  Settings, proxy, language, theme, logs, about
     diagnostics/               Log & diagnostics page
     splash/                    Splash screen
-  shared/widgets/              Shared artwork card, empty/error states
+  shared/widgets/              Shared artwork card, empty/error states, timestamps
 android/
 macos/
 windows/
