@@ -392,10 +392,27 @@ MoreLikeThisResult mergeMoreLikeThisResult({
   required List<Artwork> webArtworks,
   required Object? websiteError,
 }) {
+  // Only show items with a thumbnail in the related grid; journals and other
+  // media-less posts would otherwise render as empty image cards.
+  final artworks = (webArtworks.isNotEmpty ? webArtworks : official.artworks)
+      .where((artwork) => artwork.media.isNotEmpty)
+      .toList(growable: false);
+
+  // The preview can list the same collection in both groups; keep it only in
+  // "Featured" (the more specific claim) and drop it from "Suggested".
+  final featuredIds = official.featuredInCollections
+      .map((group) => group.collection.folderId)
+      .toSet();
+  final suggested = official.suggestedCollections
+      .where((group) => !featuredIds.contains(group.collection.folderId))
+      .toList(growable: false);
+
   final merged = MoreLikeThisResult(
-    artworks: webArtworks.isNotEmpty ? webArtworks : official.artworks,
+    artworks: List<Artwork>.unmodifiable(artworks),
     featuredInCollections: official.featuredInCollections,
-    suggestedCollections: official.suggestedCollections,
+    suggestedCollections: List<CollectionWithDeviations>.unmodifiable(
+      suggested,
+    ),
   );
   if (merged.artworks.isEmpty && websiteError != null) {
     throw MoreLikeThisFailure(websiteError: websiteError, officialError: null);
@@ -417,7 +434,9 @@ final moreFromArtistProvider = FutureProvider.autoDispose
         final page = await dataAccessFor(runtime)
             .gallery(username, const PageRequest(limit: 24));
         return List<Artwork>.unmodifiable(
-          page.items.where((item) => item.id != artworkId),
+          page.items.where(
+            (item) => item.id != artworkId && item.media.isNotEmpty,
+          ),
         );
       } on Object {
         // Best-effort rail: an unavailable gallery is not an error for the page.

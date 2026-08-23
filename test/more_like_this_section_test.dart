@@ -57,6 +57,51 @@ void main() {
     expect(result.featuredInCollections.single.collection.name, 'Curated');
   });
 
+  test('drops media-less items from the related grid', () {
+    final result = mergeMoreLikeThisResult(
+      official: MoreLikeThisResult(
+        artworks: <Artwork>[
+          _artwork('a', 'With media'),
+          _artwork('b', 'Journal', withMedia: false),
+        ],
+      ),
+      webArtworks: const <Artwork>[],
+      websiteError: null,
+    );
+
+    expect(result.artworks.map((artwork) => artwork.id), <String>['a']);
+  });
+
+  test('keeps a duplicate collection only in featured', () {
+    final collection = CollectionSummary(
+      folderId: 1,
+      name: 'Shared',
+      owner: UserProfile(id: 'u', username: 'curator'),
+    );
+    final result = mergeMoreLikeThisResult(
+      official: MoreLikeThisResult(
+        artworks: const <Artwork>[],
+        featuredInCollections: <CollectionWithDeviations>[
+          CollectionWithDeviations(
+            collection: collection,
+            deviations: const <Artwork>[],
+          ),
+        ],
+        suggestedCollections: <CollectionWithDeviations>[
+          CollectionWithDeviations(
+            collection: collection,
+            deviations: const <Artwork>[],
+          ),
+        ],
+      ),
+      webArtworks: const <Artwork>[],
+      websiteError: null,
+    );
+
+    expect(result.featuredInCollections, hasLength(1));
+    expect(result.suggestedCollections, isEmpty);
+  });
+
   testWidgets('an empty result stays user-facing and checks again', (
     tester,
   ) async {
@@ -173,10 +218,20 @@ void main() {
   });
 }
 
-Artwork _artwork(String id, String title) => Artwork(
+Artwork _artwork(String id, String title, {bool withMedia = true}) => Artwork(
   id: id,
   title: title,
   author: UserProfile(id: 'user-$id', username: 'artist'),
   pageUri: Uri.parse('https://www.deviantart.com/artist/art/work-$id'),
-  media: const <MediaAsset>[],
+  media: withMedia
+      ? <MediaAsset>[
+          MediaAsset(
+            id: '$id:preview',
+            kind: MediaKind.image,
+            role: MediaRole.preview,
+            availability: MediaAvailability.available,
+            uri: Uri.parse('https://images.example.test/$id.jpg'),
+          ),
+        ]
+      : const <MediaAsset>[],
 );
