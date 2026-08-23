@@ -60,9 +60,9 @@ Download the package for your platform from
 ## Why
 
 - DeviantArt has discontinued its official client app;
-- The website has full functionality (personalized recommendations, galleries,
+- The website has rich functionality (personalized recommendations, galleries,
   tags, favourites, watch, download) but no native desktop/mobile experience;
-- This project combines the website's full capabilities with native interaction,
+- This project combines the website's core features with native interaction,
   out of the box — no need to register your own OAuth app.
 
 ## Features
