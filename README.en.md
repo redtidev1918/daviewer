@@ -197,7 +197,6 @@ WebView is unavailable.
 ## Login FAQ
 
 - **DAViewer has no account of its own**: you sign in with your DeviantArt account — the app never registers an account or stores a password.
-- **You don't need a Google email to register**: DeviantArt accepts any email, and the login page also offers one-click Google / Apple sign-in.
 - **Forgot your password?** Use the "Forgot Password" link on the login page, or tap "?" → "Forgot password" in the app's login screen to open the reset page in your browser.
 - **Register an account**: tap "?" → "Register a DeviantArt account" in the app's login screen to open the sign-up page in your browser.
 - **macOS unsigned-preview Keychain prompt**: an ad-hoc-signed app's identity can change between builds, so macOS may ask for the Mac login password on first sign-in or after an upgrade. The password field belongs to macOS and DAViewer never reads it; the app only accesses its own stored DeviantArt OAuth token. The macOS package remains explicitly labelled as an unsigned preview until Developer ID signing and notarization are in place.
