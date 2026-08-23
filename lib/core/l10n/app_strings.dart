@@ -108,6 +108,8 @@ final class AppStrings {
   String get noFavourites =>
       _lang == AppLanguage.zh ? '暂无收藏' : 'No favourites.';
   String get noDownloads => _lang == AppLanguage.zh ? '暂无下载' : 'No downloads.';
+  String get storedInApp =>
+      _lang == AppLanguage.zh ? '已保存在应用内' : 'Stored in the app';
   String get deleteFinishedDownloads =>
       _lang == AppLanguage.zh ? '删除已结束下载' : 'Delete finished downloads';
   String get deleteFinishedDownloadsTitle =>
