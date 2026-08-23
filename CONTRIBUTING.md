@@ -69,6 +69,12 @@ test/
 3. `flutter analyze` and `flutter test` locally.
 4. Open a pull request. Explain **what** changed and **why**.
 
+> Pushing to `main` runs the full CI pipeline (quality checks plus Android, macOS,
+> and Windows builds). For documentation-only commits, add `[skip ci]` to the
+> commit message (e.g. `docs: fix typo [skip ci]`) to skip CI. A GitHub Release
+> is created only when a `v*` tag is pushed (via the manual Release workflow), so
+> ordinary pushes never release by themselves.
+
 ## Style
 
 - Follow the existing code style; run `dart format lib test` before committing.

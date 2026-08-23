@@ -67,11 +67,11 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '登录帮助' : 'Sign-in help';
   String get loginHelpBody => _lang == AppLanguage.zh
       ? '本页登录的是 DeviantArt 官方账号。DAViewer 不注册账号、不保存密码。\n\n'
-            '• 注册：支持任意邮箱（不限于 Google），也可使用登录页提供的 Google / Apple 一键登录。\n'
+            '• 注册：支持任意邮箱注册，登录页也提供一键登录。\n'
             '• 找回密码：点击登录页的「Forgot Password」，或使用下方「找回密码」在浏览器中重置。\n'
             '• 找回密码与注册均在系统浏览器中完成，完成后返回本页登录。'
       : 'This page signs in to your DeviantArt account. DAViewer does not create accounts or store passwords.\n\n'
-            '• Register: any email works (not just Google); the page also offers Google / Apple sign-in.\n'
+            '• Register: any email works; the page also offers one-click sign-in.\n'
             '• Forgot password: tap "Forgot Password" on the page, or use "Forgot password" below to reset it in your browser.\n'
             '• Password reset and registration open in your browser; return here to sign in afterwards.';
   String get forgotPassword =>
