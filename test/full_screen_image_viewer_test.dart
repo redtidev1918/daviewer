@@ -14,10 +14,14 @@ void main() {
   testWidgets('shared image viewer pins the zoom interaction contract', (
     tester,
   ) async {
+    var artworkNavigation = 0;
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
-          home: FullScreenImageViewer(imageProvider: MemoryImage(bytes)),
+          home: FullScreenImageViewer(
+            imageProvider: MemoryImage(bytes),
+            onNextArtwork: () => artworkNavigation++,
+          ),
         ),
       ),
     );
@@ -39,6 +43,19 @@ void main() {
           .panEnabled,
       isTrue,
     );
+
+    final controller = tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!;
+    final before = controller.value.getTranslation();
+    await tester.drag(find.byType(InteractiveViewer), const Offset(80, 40));
+    await tester.pump();
+    final after = controller.value.getTranslation();
+
+    expect(after.x, isNot(before.x));
+    expect(after.y, isNot(before.y));
+    expect(artworkNavigation, 0);
+    await tester.pump(const Duration(milliseconds: 50));
   });
 
   testWidgets('full-screen swipe changes artwork only at base zoom', (

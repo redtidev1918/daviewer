@@ -86,8 +86,40 @@ final artworkTagsProvider = FutureProvider.autoDispose
         }
       }
       final artwork = await ref.watch(artworkDetailProvider(artworkId).future);
-      return artwork.tags;
+      final tags = await resolveOfficialArtworkTags(
+        artwork,
+        fetchDetail: () {
+          final runtime = ref.read(runtimeProvider);
+          return dataAccessFor(runtime).artworkById(artworkId);
+        },
+      );
+      if (tags.isNotEmpty && artwork.tags.isEmpty) {
+        // Official feeds such as `/watch/deviations` return a compact artwork
+        // without tags. Enrich the existing cached item instead of replacing
+        // its feed-specific fields with another endpoint's representation.
+        ref.read(artworkStoreProvider.notifier).putAll(<Artwork>[
+          artwork.copyWith(tags: tags),
+        ]);
+      }
+      return tags;
     });
+
+/// Official list endpoints often omit tags even though `deviation/{id}` has
+/// them. Treat an empty feed tag list as incomplete data and hydrate only then,
+/// avoiding an extra request for already-complete search/gallery items.
+Future<List<String>> resolveOfficialArtworkTags(
+  Artwork artwork, {
+  required Future<Artwork> Function() fetchDetail,
+}) async {
+  if (artwork.tags.isNotEmpty) return artwork.tags;
+  try {
+    final detailed = await fetchDetail();
+    return detailed.tags;
+  } on Object catch (error) {
+    debugPrint('[tags] detail hydration failed for ${artwork.id}: $error');
+    return const <String>[];
+  }
+}
 
 /// The full rich-text HTML body of a journal deviation, fetched from the web
 /// `dadeviation/init` endpoint (`type=journal`) using the embedded web session.
