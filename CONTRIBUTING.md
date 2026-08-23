@@ -21,11 +21,46 @@ welcome — bug reports, fixes, features, translations, and documentation.
 2. `flutter pub get`
 3. Run `dart format lib test`, `flutter analyze`, and `flutter test` before
    committing — all must pass.
-4. For a full build, see the [README](README.md#构建-release--release-build).
+4. For a full build, see [Build notes](docs/build.md).
 
 > The project deliberately pins `flutter_inappwebview 6.1.5` and specific
-> Gradle/AGP/Kotlin versions (see the README's toolchain table). Do not upgrade
-> these without verifying the toolchain compatibility.
+> Gradle/AGP/Kotlin versions (see the [toolchain pin](docs/build.md#toolchain-pin)).
+> Do not upgrade these without verifying the toolchain compatibility.
+
+## Project structure
+
+```text
+lib/
+  main.dart                    App entry, proxy injection, ProviderScope
+  app/                         AppShell, theme, router
+  core/
+    auth/                      Sign-in state, session restore, logout, WebView OAuth bridge
+    data/                      Unified data access layer (official API + web fallback)
+    diagnostics/               File logging, global error capture
+    feed/                      Paged feed controller
+    l10n/                      Chinese/English strings and language state
+    network/                   Proxy detection, open-in-browser, dynamic proxy Dio
+    runtime/                   DAKit composition root
+    search/                    Search history persistence
+  features/
+    web_login/                 Web-session commit and OAuth login page
+    home/                      Home (native For you / Daily feeds)
+    watched/                   Watched feed (first-class "following" tab + avatar strip)
+    search/                    Search
+    artwork/                   Artwork detail, media playback, download, favourite
+    artist/                    Artist profile, gallery, favourites, watch
+    favourites/                Current account favourites
+    watching/                  Watched users list
+    downloads/                 Download list
+    settings/                  Settings, proxy, language, logs, about
+    diagnostics/               Log & diagnostics page
+    splash/                    Splash screen
+  shared/widgets/              Shared artwork card, empty/error states
+android/
+macos/
+windows/
+test/
+```
 
 ## Workflow
 

@@ -16,22 +16,18 @@
 [![Platforms](https://img.shields.io/badge/platform-Android%20%7C%20macOS%20%7C%20Windows-blue?style=flat)](https://github.com/redtidev1918/daviewer/releases)
 [![Flutter](https://img.shields.io/badge/Flutter-3.47.1-blue?style=flat&logo=flutter)](https://flutter.dev)
 
-## 目录
+## 安装
 
-- [截图预览](#截图预览)
-- [为什么做这个项目](#为什么做这个项目)
-- [功能特性](#功能特性)
-- [与 DAKit 的关系](#与-dakit-的关系)
-- [安装](#安装)
-- [使用前准备](#使用前准备)
-- [运行](#运行)
-- [代理](#代理)
-- [构建与发布](#构建与发布)
-- [项目结构](#项目结构)
-- [首页与登录态](#首页与登录态)
-- [登录常见问题](#登录常见问题)
-- [贡献](#贡献)
-- [说明](#说明)
+从 [Releases](https://github.com/redtidev1918/daviewer/releases) 下载对应平台的安装包：
+
+- **Android**：`DAViewer-<版本>.apk`
+- **macOS 12+ 未签名测试版**：`DAViewer-<版本>-macos-unsigned-preview.zip`
+  （同时支持 Intel 与 Apple Silicon；解压后拖入「应用程序」）
+- **Windows**：`DAViewer-<版本>-windows.zip`（解压后运行 `DAViewer.exe`）
+
+> **⚠️ macOS 未签名测试版 / unsigned preview**：macOS 产物没有 Apple Developer ID
+> 签名，也没有经过 Apple 公证；钥匙串可能要求 Mac 登录密码。该密码由 macOS 接收，
+> DAViewer 不会读取。只应使用本仓库 Release 的原始文件。
 
 ## 截图预览
 
@@ -42,6 +38,20 @@
     <td align="center"><img src="docs/screenshots/related_works.jpg" width="200" /><br /><sub>相关推荐</sub></td>
   </tr>
 </table>
+
+## 目录
+
+- [为什么做这个项目](#为什么做这个项目)
+- [功能特性](#功能特性)
+- [与 DAKit 的关系](#与-dakit-的关系)
+- [使用前准备](#使用前准备)
+- [运行](#运行)
+- [代理](#代理)
+- [构建与发布](#构建与发布)
+- [首页与登录态](#首页与登录态)
+- [登录常见问题](#登录常见问题)
+- [贡献](#贡献)
+- [说明](#说明)
 
 ## 为什么做这个项目
 
@@ -79,21 +89,6 @@ dependencies:
 
 首次登录先提交网页 Cookie/CSRF，再完成 OAuth；未登录是正常引导状态。详细边界
 与数据流见 [架构说明](docs/architecture.md)。
-
-## 安装
-
-从 [Releases](https://github.com/redtidev1918/daviewer/releases) 下载对应平台的安装包：
-
-- **Android**：`DAViewer-<版本>.apk`
-- **macOS 12+ 未签名测试版**：`DAViewer-<版本>-macos-unsigned-preview.zip`
-  （同时支持 Intel 与 Apple Silicon；解压后拖入「应用程序」）
-- **Windows**：`DAViewer-<版本>-windows.zip`（解压后运行 `DAViewer.exe`）
-
-> **⚠️ macOS 未签名测试版：** 当前包没有 Apple Developer ID 签名，也没有经过
-> Apple 公证；内部只有用于校验包完整性的 ad-hoc 签名。首次打开可能被 Gatekeeper
-> 拦截，登录或升级后访问 OAuth 令牌时，macOS 钥匙串也可能要求输入 Mac 登录密码。
-> 该密码由 macOS 系统接收，DAViewer 不会读取或获得密码。只应使用本仓库 Release
-> 的原始文件；如果不能接受这些系统提示，请不要安装此测试版。
 
 ## 使用前准备
 
@@ -152,41 +147,6 @@ flutter build windows --release      # Windows 应用
 
 签名、工具链版本（AGP / Gradle / Kotlin / flutter_inappwebview）与 macOS 未签名
 标记的细节见 [构建说明](docs/build.md)。
-
-## 项目结构
-
-```text
-lib/
-  main.dart                    应用入口、代理注入、ProviderScope
-  app/                        AppShell、主题、路由
-  core/
-    auth/                      登录态、会话恢复、登出、WebView OAuth 桥接
-    data/                      统一数据访问层（官方 API + 网页抓取回退）
-    diagnostics/               文件日志、全局错误捕获
-    feed/                      分页信息流控制器
-    l10n/                      中英文案与语言状态
-    network/                   代理检测、浏览器打开、动态代理 Dio
-    runtime/                   DAKit 组合根
-    search/                    搜索历史持久化
-  features/
-    web_login/                 网页会话提交与 OAuth 登录页
-    home/                      首页（原生推荐 / 每日推荐）
-    watched/                   关注动态（B站「动态」式一级标签 + 头像排）
-    search/                    搜索
-    artwork/                   作品详情、媒体播放、下载、收藏
-    artist/                    作者资料、画廊、收藏夹、关注
-    favourites/                当前账户收藏
-    watching/                  关注用户列表
-    downloads/                 下载记录
-    settings/                  设置、代理、语言、日志、关于
-    diagnostics/               日志与诊断页
-    splash/                    启动页
-  shared/widgets/              通用作品卡片、空态/错误态
-android/
-macos/
-windows/
-test/
-```
 
 ## 首页与登录态
 
