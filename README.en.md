@@ -17,6 +17,23 @@
 [![Platforms](https://img.shields.io/badge/platform-Android%20%7C%20macOS%20%7C%20Windows-blue?style=flat)](https://github.com/redtidev1918/daviewer/releases)
 [![Flutter](https://img.shields.io/badge/Flutter-3.47.1-blue?style=flat&logo=flutter)](https://flutter.dev)
 
+## Contents
+
+- [Screenshots](#screenshots)
+- [Why](#why)
+- [Features](#features)
+- [Relationship with DAKit](#relationship-with-dakit)
+- [Install](#install)
+- [Before you start](#before-you-start)
+- [Run](#run)
+- [Proxy](#proxy)
+- [Build & release](#build--release)
+- [Project structure](#project-structure)
+- [Home & sign-in state](#home--sign-in-state)
+- [Login FAQ](#login-faq)
+- [Contributing](#contributing)
+- [Notes](#notes)
+
 ## Screenshots
 
 <table align="center">
@@ -38,35 +55,26 @@
 ## Features
 
 - **Sign in**: one login establishes both the web session and OAuth (bundled
-  public client id, out of the box, no OAuth app registration needed)
+  public client id, no OAuth app registration needed)
 - **Recommendations**: the home "For you" tab is the website's personalized feed
   (`rfy/deviations`), matching the website
 - **Search**: keyword search + history + paste a DeviantArt link to jump straight
   to an artwork or artist
-- **Artwork detail**: preserves the originating feed for uninterrupted
-  previous/next browsing by swipe or top-bar buttons; the page follows the
-  gesture and transitions in its navigation direction instead of flashing;
-  full-screen images switch works only at 1× zoom, while zoomed gestures pan;
-  multi-image works page internally first and switch work only after another
-  swipe beyond the first/last page
-- **Media**: shared double-tap/pinch image zoom; highest-quality video selection
-  with seeking and retry; cached GIFs and rich-text images with progress,
-  placeholders, and retry
-- **Related content**: native "More like this" results supporting both the
-  current streamed website cache and the legacy page state, with the official
-  API retained as a fallback; refresh keeps current cards visible and reports
-  updated, unchanged, or no results without exposing source internals
-- **Tags**: one compact horizontal tag row across detail, search, and tag
-  screens; sparse watched-feed entries hydrate tags from official artwork
-  metadata, and later feed refreshes cannot overwrite that complete data
-- **Artist**: profile (including the artist's bio), gallery, **custom
-  sub-galleries (folders)**, favourites, watch
-- **Social**: favourite artworks (with favourite state), watch/unwatch artists,
-  watched-user list, notifications (who posted new work)
-- **Download**: verifies original-file access for the current account, explains
-  login, purchase, quota, creator, network, and storage failures, and only uses
-  an explicitly labelled highest-quality image preview fallback; persistent
-  background failure details, file/folder actions, and cleanup confirmation
+- **Artwork detail**: swipe or top-bar buttons to browse previous/next works;
+  pinch zoom; paged multi-image works
+- **Media**: shared image zoom; highest-quality video with seeking and retry;
+  cached GIFs and rich-text images with loading progress
+- **Related content**: native "More like this" on the detail page, with clear
+  empty and failure states
+- **Tags**: one compact tag row across detail, search, and tag screens, with
+  automatic tag hydration from official metadata
+- **Artist**: profile (including bio), gallery, **custom sub-galleries
+  (folders)**, favourites, watch
+- **Social**: favourite (with state), watch/unwatch, watched-user list,
+  notifications
+- **Download**: real-time original-file permission check; explains login,
+  purchase, quota, or creator restrictions and falls back to the highest-quality
+  preview; open file/folder and delete confirmation
 - **Bilingual**: Chinese / English toggle
 - **Proxy**: auto-detect the system proxy + manual configuration (required in
   mainland China)
@@ -74,8 +82,9 @@
 ## Relationship with DAKit
 
 `DAViewer` is the app; DAKit is the SDK. The client only depends on DAKit and
-does not copy SDK code. DAKit is published to pub.dev; the client uses versioned
-dependencies:
+does not copy SDK code: OAuth, official API mapping, domain models, and
+background transfers live in DAKit, while website-personalized feeds,
+sparse-data hydration, and native interaction live in DAViewer. Dependencies:
 
 ```yaml
 dependencies:
@@ -84,15 +93,9 @@ dependencies:
   dakit_flutter: ^0.1.8
 ```
 
-The boundary is explicit: OAuth, official API mapping, domain models, and
-background transfers live in DAKit; website-personalized feeds, current website
-recommendations, sparse-data hydration, and native page interaction live in
-DAViewer. Upstream lists may omit detail-only fields; DAKit's
-`deviation/metadata` adapter supplies official tag metadata, while the app's
-shared artwork cache prevents later sparse refreshes from downgrading it. See
-[Architecture](docs/architecture.md) for the full data flow.
-First sign-in commits the web Cookie/CSRF before OAuth; signed-out state remains
-normal onboarding, not a feed error.
+First sign-in commits the web Cookie/CSRF session before OAuth; signed-out state
+is normal onboarding, not a feed error. See
+[Architecture](docs/architecture.md) for the full data flow and boundaries.
 
 ## Install
 
@@ -148,55 +151,23 @@ flutter run -d windows   # Windows
 ## Proxy
 
 The app auto-detects the system proxy at runtime (macOS via `scutil`, Windows via
-the registry). To set one manually, enter `host:port` in Settings → Proxy.
+the registry), or you can set `host:port` manually in Settings → Proxy. The app
+also reads `http_proxy`, `https_proxy`, `all_proxy`, and their uppercase forms;
+apps launched from Finder usually do not inherit terminal variables — use the
+system proxy or in-app settings in that case.
 
-`flutter pub get` uses Dart's HTTP client, not the Git proxy; to proxy pub.dev:
+Environment variables for proxying `flutter pub get` and Gradle builds are in
+[Build notes](docs/build.md#proxying-builds).
 
-```shell
-export http_proxy=http://127.0.0.1:7890
-export https_proxy=http://127.0.0.1:7890
-# Or use one general proxy (lowercase and uppercase variables are supported):
-# export all_proxy=http://127.0.0.1:7892
-export no_proxy=localhost,127.0.0.1
-flutter pub get
-```
-
-DAViewer also reads `http_proxy`, `https_proxy`, `all_proxy`, and their uppercase
-forms. Apps launched from Finder usually do not inherit terminal variables; use
-the system proxy or Settings → Proxy in that case.
-
-The Gradle Wrapper runs on the JVM and is not guaranteed to read `all_proxy`.
-Pass JVM proxy properties explicitly when an Android toolchain download needs a
-proxy:
-
-```shell
-export GRADLE_OPTS="-Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=7892 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=7892"
-flutter build apk --debug
-```
-
-## Release build
+## Build & release
 
 Pushes to `main` trigger CI quality checks and Android/macOS/Windows builds;
-pushing a `v*` tag creates a GitHub Release and uploads the artifacts. Release
-notes come from the matching `CHANGELOG.md` section, and historical releases
-and tags are retained.
+pushing a `v*` tag creates a GitHub Release whose notes come from the matching
+`CHANGELOG.md` section.
 
-The macOS CI job reapplies the checked-in release entitlements, verifies the
-ad-hoc signature and both CPU architectures, and keeps the built app running
-for an eight-second launch smoke test. The artifact is always named
-`macos-unsigned-preview`; that marker can only be removed after Developer ID
-Application signing, Hardened Runtime, and Apple notarization are configured.
-
-The release APK is always signed with the upload keystore (from the CI
-`KEYSTORE_B64` / `KEYSTORE_PROPERTIES` secrets); a release build without a local
-`android/key.properties` fails intentionally, to avoid a debug-signed APK that
-can't be installed over a previous upload-signed release.
-
-### One-click release (recommended)
-
-Actions → **Release** → Run workflow → pick `patch` / `minor` / `major` (or enter
-an exact version) → run. It bumps the version, commits, pushes the tag, and CI
-builds and publishes.
+**One-click release (recommended)**: Actions → **Release** → Run workflow → pick
+`patch` / `minor` / `major` (or an exact version) → run. It bumps the version,
+commits, pushes the tag, and CI builds and publishes.
 
 Local verification builds:
 
@@ -206,25 +177,9 @@ flutter build macos --release        # macOS app
 flutter build windows --release      # Windows app
 ```
 
-## Toolchain
-
-Flutter 3.47 defaults to AGP 9.1.0, but the stable `flutter_inappwebview` (6.1.5)
-Android sub-package still references `proguard-android.txt`, which AGP 9 removed,
-and its beta macOS sub-package fails to compile under Swift 6. This project
-therefore **pins** the following toolchain (off Flutter's defaults, but meeting
-Flutter 3.47's Gradle ≥ 8.14 / Kotlin ≥ 2.2.20 minimums):
-
-| Component | Version | Notes |
-| --- | --- | --- |
-| Android Gradle Plugin | `8.13.2` | 8.x keeps `proguard-android.txt` and supports compileSdk 36 |
-| Gradle | `8.14.2` | Flutter 3.47 minimum is 8.14 |
-| Kotlin | `2.2.20` | Flutter 3.47 minimum is 2.2.20 |
-| flutter_inappwebview | `6.1.5` (exact) | Stable; do not upgrade to `6.2.0-beta` (macOS build fails) |
-
-These values live in `android/settings.gradle.kts`,
-`android/gradle/wrapper/gradle-wrapper.properties`, and `pubspec.yaml`. Before
-upgrading the plugin or Flutter, verify the `flutter_inappwebview` Android/macOS
-sub-packages are compatible with the new AGP/Swift toolchain.
+Signing, the pinned toolchain (AGP / Gradle / Kotlin / flutter_inappwebview), and
+the macOS unsigned-preview contract are detailed in
+[Build notes](docs/build.md).
 
 ## Project structure
 
