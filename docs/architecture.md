@@ -90,6 +90,17 @@ reuses `RfyFeedFetcher.mapDeviation`. The UI shows the preview deviations
 instantly and swaps in the full list when ready, with an "open on the web"
 fallback.
 
+**Collection covers**: the "More Like This" preview only sometimes carries a
+collection thumbnail. When it does not, the collection card lazily resolves the
+cover from `gallection/contents` (`collectionCoverProvider`), so cards do not
+stay blank; the folder-icon placeholder is only the last resort.
+
+**Watching a collection is not implemented.** The official API can watch a
+*user* (`user/watch`), not a specific collection/folder; a collection watch
+exists only in an undocumented web surface. Until that is reverse-engineered
+(web-session work, out of DAKit), collection cards open the collection natively
+but offer no follow action.
+
 **More from this artist** (`MoreFromArtistSection`): the author's other recent
 works, read from the official `gallery/{username}` first page. This is the
 cleanly available "artist discovery" path.

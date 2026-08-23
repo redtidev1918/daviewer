@@ -41,3 +41,27 @@ final collectionContentsProvider = FutureProvider.autoDispose
         csrfToken: csrf,
       ).contents(key.folderId, key.username);
     });
+
+/// A collection's cover image, fetched lazily from the website's own
+/// `gallection/contents` endpoint. Used when the "More Like This" preview did
+/// not carry a cover, so every collection card can still show a thumbnail.
+/// Returns `null` when the cover cannot be resolved (renders a placeholder).
+final collectionCoverProvider = FutureProvider.autoDispose
+    .family<Uri?, CollectionContentsKey>((ref, key) async {
+      final runtime = ref.watch(runtimeProvider);
+      final webSession = ref.watch(webSessionProvider);
+      final csrf = ref.watch(
+        webSessionControllerProvider.select((web) => web.csrf),
+      );
+      final cookieHeader = await webSession.cookieHeader();
+      try {
+        return await WebCollectionContentsFetcher(runtime.dio!).fetchCover(
+          folderId: key.folderId,
+          username: key.username,
+          cookieHeader: cookieHeader,
+          csrfToken: csrf,
+        );
+      } on Object {
+        return null;
+      }
+    });
