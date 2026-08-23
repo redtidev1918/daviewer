@@ -47,4 +47,42 @@ void main() {
     container.read(artworkStoreProvider.notifier).setFavourite('nope', true);
     expect(container.read(artworkStoreProvider), isEmpty);
   });
+
+  test('sparse feed refresh preserves hydrated tags', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final store = container.read(artworkStoreProvider.notifier);
+    store.putAll(<Artwork>[_artwork()]);
+
+    store.putAll(<Artwork>[
+      Artwork(
+        id: '1',
+        title: 'new title',
+        author: UserProfile(id: 'u', username: 'alice'),
+        pageUri: Uri.parse('https://d.test/a'),
+        media: const <MediaAsset>[],
+        isFavourited: true,
+      ),
+    ]);
+
+    final updated = container.read(artworkStoreProvider)['1']!;
+    expect(updated.title, 'new title');
+    expect(updated.isFavourited, isTrue);
+    expect(updated.tags, const <String>['a', 'b']);
+    expect(store.hasResolvedTags('1'), isTrue);
+  });
+
+  test('confirmed empty tags are remembered without mutating artwork', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final store = container.read(artworkStoreProvider.notifier);
+    final artwork = _artwork().copyWith(tags: const <String>[]);
+    store.putAll(<Artwork>[artwork]);
+
+    expect(store.hasResolvedTags('1'), isFalse);
+    store.setTags('1', const <String>[]);
+
+    expect(store.hasResolvedTags('1'), isTrue);
+    expect(container.read(artworkStoreProvider)['1']!.tags, isEmpty);
+  });
 }

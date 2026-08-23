@@ -86,38 +86,49 @@ final artworkTagsProvider = FutureProvider.autoDispose
         }
       }
       final artwork = await ref.watch(artworkDetailProvider(artworkId).future);
-      final tags = await resolveOfficialArtworkTags(
+      final store = ref.read(artworkStoreProvider.notifier);
+      final resolution = await resolveOfficialArtworkTags(
         artwork,
+        alreadyResolved: store.hasResolvedTags(artworkId),
         fetchDetail: () {
           final runtime = ref.read(runtimeProvider);
           return dataAccessFor(runtime).artworkById(artworkId);
         },
       );
-      if (tags.isNotEmpty && artwork.tags.isEmpty) {
-        // Official feeds such as `/watch/deviations` return a compact artwork
-        // without tags. Enrich the existing cached item instead of replacing
-        // its feed-specific fields with another endpoint's representation.
-        ref.read(artworkStoreProvider.notifier).putAll(<Artwork>[
-          artwork.copyWith(tags: tags),
-        ]);
+      if (resolution.isConfirmed) {
+        store.setTags(artworkId, resolution.tags);
       }
-      return tags;
+      return resolution.tags;
     });
 
 /// Official list endpoints often omit tags even though `deviation/{id}` has
 /// them. Treat an empty feed tag list as incomplete data and hydrate only then,
 /// avoiding an extra request for already-complete search/gallery items.
-Future<List<String>> resolveOfficialArtworkTags(
+final class ArtworkTagResolution {
+  const ArtworkTagResolution({required this.tags, required this.isConfirmed});
+
+  final List<String> tags;
+
+  /// True when tags came from a non-sparse object or a successful canonical
+  /// detail request. False means the empty list is only a failure fallback and
+  /// must not suppress a later retry.
+  final bool isConfirmed;
+}
+
+Future<ArtworkTagResolution> resolveOfficialArtworkTags(
   Artwork artwork, {
+  bool alreadyResolved = false,
   required Future<Artwork> Function() fetchDetail,
 }) async {
-  if (artwork.tags.isNotEmpty) return artwork.tags;
+  if (artwork.tags.isNotEmpty || alreadyResolved) {
+    return ArtworkTagResolution(tags: artwork.tags, isConfirmed: true);
+  }
   try {
     final detailed = await fetchDetail();
-    return detailed.tags;
+    return ArtworkTagResolution(tags: detailed.tags, isConfirmed: true);
   } on Object catch (error) {
     debugPrint('[tags] detail hydration failed for ${artwork.id}: $error');
-    return const <String>[];
+    return const ArtworkTagResolution(tags: <String>[], isConfirmed: false);
   }
 }
 
@@ -159,7 +170,9 @@ final artworkDetailProvider = FutureProvider.autoDispose
       final cached = ref.read(artworkStoreProvider)[artworkId];
       if (cached != null) return cached;
       final runtime = ref.watch(runtimeProvider);
-      return dataAccessFor(runtime).artworkById(artworkId);
+      final artwork = await dataAccessFor(runtime).artworkById(artworkId);
+      ref.read(artworkStoreProvider.notifier).putAll(<Artwork>[artwork]);
+      return artwork;
     });
 
 /// The authoritative result of probing DeviantArt's original-download

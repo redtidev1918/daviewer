@@ -1,7 +1,7 @@
 # DAViewer
 
 <p align="center">
-  <img src="docs/icon.png" alt="DAViewer" width="160" />
+  <img src="assets/icon/icon.png" alt="DAViewer" width="160" />
 </p>
 
 **Language:** English · [中文](README.md)
@@ -47,7 +47,8 @@
   not presented as an error, while network, session, service, and page-format
   failures are explained separately and recoverable failures retry once
 - **Tags**: one compact horizontal tag row across detail, search, and tag
-  screens; related tags collapse while the artwork feed scrolls down
+  screens; sparse watched-feed entries hydrate tags from canonical artwork
+  detail, and later feed refreshes cannot overwrite that complete data
 - **Artist**: profile (including the artist's bio), gallery, **custom
   sub-galleries (folders)**, favourites, watch
 - **Social**: favourite artworks (with favourite state), watch/unwatch artists,
@@ -75,11 +76,12 @@ dependencies:
 
 The boundary is explicit: OAuth, official API mapping, domain models, and
 background transfers live in DAKit; website-personalized feeds, current website
-recommendations, and native page interaction live in DAViewer. Web data is
-mapped back into DAKit models, so detail, cache, download, and error handling do
-not split into parallel implementations. First sign-in commits the web
-Cookie/CSRF before OAuth; signed-out state remains normal onboarding, not a feed
-error.
+recommendations, sparse-data hydration, and native page interaction live in
+DAViewer. Upstream lists may omit detail-only fields, so the app's shared
+artwork cache preserves hydrated data instead of allowing a later refresh to
+downgrade it. See [Architecture](docs/architecture.md) for the full data flow.
+First sign-in commits the web Cookie/CSRF before OAuth; signed-out state remains
+normal onboarding, not a feed error.
 
 ## Install
 
@@ -148,11 +150,21 @@ DAViewer also reads `http_proxy`, `https_proxy`, `all_proxy`, and their uppercas
 forms. Apps launched from Finder usually do not inherit terminal variables; use
 the system proxy or Settings → Proxy in that case.
 
+The Gradle Wrapper runs on the JVM and is not guaranteed to read `all_proxy`.
+Pass JVM proxy properties explicitly when an Android toolchain download needs a
+proxy:
+
+```shell
+export GRADLE_OPTS="-Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=7892 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=7892"
+flutter build apk --debug
+```
+
 ## Release build
 
 Pushes to `main` trigger CI quality checks and Android/macOS/Windows builds;
-pushing a `v*` tag creates a GitHub Release and uploads the artifacts (with a
-version number, auto-generated changelog, and only the latest release kept).
+pushing a `v*` tag creates a GitHub Release and uploads the artifacts. Release
+notes come from the matching `CHANGELOG.md` section, and historical releases
+and tags are retained.
 
 The macOS CI job reapplies the checked-in release entitlements, verifies the
 bundle signature and both CPU architectures, and keeps the built app running
@@ -214,8 +226,8 @@ lib/
     runtime/                   DAKit composition root
     search/                    Search history persistence
   features/
-    login/                     Login page
-    home/                      Home (native two tabs: For you / Daily)
+    web_login/                 Web-session commit and OAuth login page
+    home/                      Home (native For you / Daily feeds)
     watched/                   Watched feed (first-class "following" tab + avatar strip)
     search/                    Search
     artwork/                   Artwork detail, media playback, download, favourite
@@ -269,7 +281,7 @@ All contributions are welcome — issues, bug fixes, features, and docs. See
 community guidelines.
 
 1. Fork the repository and branch from `main`;
-2. Run `flutter analyze` before committing;
+2. Run `dart format lib test`, `flutter analyze`, and `flutter test`;
 3. Open a PR describing what changed and why.
 
 The SDK the client depends on is [DAKit](https://github.com/redtidev1918/dakit)

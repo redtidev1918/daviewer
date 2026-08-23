@@ -14,25 +14,54 @@ final artworkStoreProvider =
 
 final class ArtworkStore extends Notifier<Map<String, Artwork>> {
   static const int _maxEntries = 512;
+  final Set<String> _resolvedTagIds = <String>{};
 
   @override
-  Map<String, Artwork> build() => <String, Artwork>{};
+  Map<String, Artwork> build() {
+    _resolvedTagIds.clear();
+    return <String, Artwork>{};
+  }
 
   Artwork? byId(String id) => state[id];
+
+  /// Whether the canonical detail endpoint has already confirmed this
+  /// artwork's tags. This distinguishes a genuinely tagless work from a
+  /// compact feed item whose `tags` field was omitted upstream.
+  bool hasResolvedTags(String id) =>
+      _resolvedTagIds.contains(id) || (state[id]?.tags.isNotEmpty ?? false);
 
   void putAll(Iterable<Artwork> artworks) {
     var next = Map<String, Artwork>.of(state);
     for (final artwork in artworks) {
       if (artwork.id.isEmpty) continue;
-      next[artwork.id] = artwork;
+      final cached = next[artwork.id];
+      // List endpoints are allowed to return sparse artwork objects. Never let
+      // a later feed refresh erase tags that the canonical detail endpoint has
+      // already hydrated.
+      next[artwork.id] =
+          cached != null && artwork.tags.isEmpty && cached.tags.isNotEmpty
+          ? artwork.copyWith(tags: cached.tags)
+          : artwork;
+      if (artwork.tags.isNotEmpty) _resolvedTagIds.add(artwork.id);
     }
     if (next.length > _maxEntries) {
       final entries = next.entries.toList(growable: false);
       next = Map<String, Artwork>.fromEntries(
         entries.skip(entries.length - _maxEntries),
       );
+      _resolvedTagIds.removeWhere((id) => !next.containsKey(id));
     }
     state = next;
+  }
+
+  /// Records the canonical tag result, including a confirmed empty list.
+  void setTags(String id, List<String> tags) {
+    final artwork = state[id];
+    if (artwork == null) return;
+    _resolvedTagIds.add(id);
+    final normalized = List<String>.unmodifiable(tags);
+    if (_sameStrings(artwork.tags, normalized)) return;
+    state = <String, Artwork>{...state, id: artwork.copyWith(tags: normalized)};
   }
 
   /// Updates a cached artwork's favourite flag so the detail screen reflects a
@@ -45,4 +74,13 @@ final class ArtworkStore extends Notifier<Map<String, Artwork>> {
       id: artwork.copyWith(isFavourited: favourited),
     };
   }
+}
+
+bool _sameStrings(List<String> left, List<String> right) {
+  if (identical(left, right)) return true;
+  if (left.length != right.length) return false;
+  for (var index = 0; index < left.length; index++) {
+    if (left[index] != right[index]) return false;
+  }
+  return true;
 }

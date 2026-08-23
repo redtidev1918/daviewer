@@ -1,7 +1,7 @@
 # DAViewer
 
 <p align="center">
-  <img src="docs/icon.png" alt="DAViewer" width="160" />
+  <img src="assets/icon/icon.png" alt="DAViewer" width="160" />
 </p>
 
 **语言 / Language:** 中文 · [English](README.en.md)
@@ -31,7 +31,7 @@
 - **作品详情**：保留进入详情前的作品序列，可连续左右滑动或使用顶部按钮查看前后作品；页面跟随手势并按方向平滑过渡，不会闪现；单图全屏在 1× 时也可切作品，放大后手势只用于平移；多图先翻内部页面，到首尾后继续滑动才切作品
 - **媒体**：图片统一双击/捏合缩放；视频优先最高画质、可拖进度并支持失败重试；GIF 带缓存和加载进度；富文本图片带缓存、占位和重试
 - **相关内容**：详情页原生展示与网页当前一致的「更多类似作品」，网页源不可用时再回退官方 API；正常无结果不会伪装成故障，网络、会话、服务及页面变化会分别说明并自动恢复可重试故障
-- **标签**：详情、搜索和标签页统一使用单行紧凑标签条；相关标签会随作品列表向下滚动自动收起
+- **标签**：详情、搜索和标签页统一使用单行紧凑标签条；关注流等精简列表缺失标签时会从作品详情补全，并避免后续刷新覆盖完整数据
 - **作者**：资料（含作者简介）、画廊、**自定义分画廊（画集）**、收藏夹、关注
 - **社交**：收藏作品（显示收藏态）、关注/取消关注作者、关注用户列表、通知（谁更新了作品）
 - **下载**：先按当前账号实时确认原图权限；不可下载时直接显示登录、购买、次数用尽、作者关闭等原因，图片可明确降级保存最高画质预览；后台失败原因会保留在下载列表；支持打开文件/文件夹及删除前二次确认
@@ -51,9 +51,10 @@ dependencies:
 ```
 
 边界保持清晰：OAuth、官方 API 映射、领域模型与后台传输属于 DAKit；网页版个性化流、
-网页当前相关推荐和原生页面交互属于 DAViewer。网页数据最终都映射为 DAKit 模型，因此
-详情、缓存、下载和错误状态不需要维护两套实现。首次登录先提交网页 Cookie/CSRF，再
-完成 OAuth；未登录是正常引导状态，不会被当成推荐加载错误。
+网页当前相关推荐、稀疏数据补全和原生页面交互属于 DAViewer。上游列表允许省略标签等
+详情字段，App 的统一作品缓存会保留已补全数据，避免刷新时发生“数据降级”。详细边界与
+数据流见 [架构说明](docs/architecture.md)。首次登录先提交网页 Cookie/CSRF，再完成
+OAuth；未登录是正常引导状态，不会被当成推荐加载错误。
 
 ## 安装
 
@@ -117,10 +118,19 @@ DAViewer 自身也识别 `http_proxy` / `https_proxy` / `all_proxy` 及其大写
 Finder 直接启动时通常不会继承终端环境变量，此时请使用系统代理或 App 内的
 「设置 → 网络代理」。
 
+Gradle Wrapper 使用 JVM 下载工具链，不保证读取 `all_proxy`。Android 构建若需代理，
+请显式传入 JVM 参数：
+
+```shell
+export GRADLE_OPTS="-Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=7892 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=7892"
+flutter build apk --debug
+```
+
 ## 构建 Release
 
 推送到 `main` 会触发 CI 的质量检查与 Android/macOS/Windows 构建；打 `v*` 标签会自动创建
-GitHub Release 并上传构建产物（带版本号、自动生成 changelog、只保留最新 release）。
+GitHub Release 并上传构建产物。Release 说明直接取对应版本的 `CHANGELOG.md` 章节，
+历史 Release 与标签都会保留。
 
 Release APK 始终使用 upload keystore 签名（来自 CI 的 `KEYSTORE_B64` /
 `KEYSTORE_PROPERTIES` secret）；本地无 `android/key.properties` 时 release 构建会
@@ -177,8 +187,8 @@ lib/
     runtime/                   DAKit 组合根
     search/                    搜索历史持久化
   features/
-    login/                     登录页
-    home/                      首页（原生两标签：推荐 / 每日推荐）
+    web_login/                 网页会话提交与 OAuth 登录页
+    home/                      首页（原生推荐 / 每日推荐）
     watched/                   关注动态（B站「动态」式一级标签 + 头像排）
     search/                    搜索
     artwork/                   作品详情、媒体播放、下载、收藏
@@ -228,7 +238,7 @@ App 里存在两条独立的登录态：
 社区准则见 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。
 
 1. Fork 本仓库，从 `main` 开分支；
-2. 改动后 `flutter analyze` 通过即可提交；
+2. 改动后运行 `dart format lib test`、`flutter analyze` 和 `flutter test`；
 3. 发 PR 描述清楚「改了什么、为什么」。
 
 客户端依赖的 SDK 是 [DAKit](https://github.com/redtidev1918/dakit)（已发布到

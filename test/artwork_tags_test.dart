@@ -14,7 +14,7 @@ Artwork _artwork(String id, {List<String> tags = const <String>[]}) => Artwork(
 void main() {
   test('complete feed tags avoid an unnecessary detail request', () async {
     var fetches = 0;
-    final tags = await resolveOfficialArtworkTags(
+    final result = await resolveOfficialArtworkTags(
       _artwork('a', tags: const <String>['cat']),
       fetchDetail: () async {
         fetches++;
@@ -22,13 +22,14 @@ void main() {
       },
     );
 
-    expect(tags, const <String>['cat']);
+    expect(result.tags, const <String>['cat']);
+    expect(result.isConfirmed, isTrue);
     expect(fetches, 0);
   });
 
   test('empty watched-feed tags hydrate from the artwork detail', () async {
     var fetches = 0;
-    final tags = await resolveOfficialArtworkTags(
+    final result = await resolveOfficialArtworkTags(
       _artwork('watched-id'),
       fetchDetail: () async {
         fetches++;
@@ -39,16 +40,34 @@ void main() {
       },
     );
 
-    expect(tags, const <String>['portrait', 'digitalart']);
+    expect(result.tags, const <String>['portrait', 'digitalart']);
+    expect(result.isConfirmed, isTrue);
     expect(fetches, 1);
   });
 
+  test('confirmed tagless artwork avoids repeated detail requests', () async {
+    var fetches = 0;
+    final result = await resolveOfficialArtworkTags(
+      _artwork('tagless'),
+      alreadyResolved: true,
+      fetchDetail: () async {
+        fetches++;
+        return _artwork('tagless');
+      },
+    );
+
+    expect(result.tags, isEmpty);
+    expect(result.isConfirmed, isTrue);
+    expect(fetches, 0);
+  });
+
   test('tag hydration failure leaves the detail page usable', () async {
-    final tags = await resolveOfficialArtworkTags(
+    final result = await resolveOfficialArtworkTags(
       _artwork('watched-id'),
       fetchDetail: () => Future<Artwork>.error(StateError('offline')),
     );
 
-    expect(tags, isEmpty);
+    expect(result.tags, isEmpty);
+    expect(result.isConfirmed, isFalse);
   });
 }

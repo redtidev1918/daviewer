@@ -19,7 +19,8 @@ welcome — bug reports, fixes, features, translations, and documentation.
 
 1. Install Flutter 3.47.1 (the project pins this version).
 2. `flutter pub get`
-3. Run `flutter analyze` before committing — it must be clean.
+3. Run `dart format lib test`, `flutter analyze`, and `flutter test` before
+   committing — all must pass.
 4. For a full build, see the [README](README.md#构建-release--release-build).
 
 > The project deliberately pins `flutter_inappwebview 6.1.5` and specific
@@ -35,8 +36,13 @@ welcome — bug reports, fixes, features, translations, and documentation.
 
 ## Style
 
-- Follow the existing code style; run `dart format lib` before committing.
+- Follow the existing code style; run `dart format lib test` before committing.
 - Keep user-facing strings in `lib/core/l10n/app_strings.dart` (Chinese + English).
+- Treat list-endpoint artwork as potentially sparse. Hydrate detail-only fields
+  through the canonical repository and merge them through `ArtworkStore`; never
+  let a later feed refresh erase richer cached data.
+- At 1x zoom, horizontal gestures may navigate between artworks. Once zoomed,
+  the image viewer owns both axes and outer navigation recognizers must be off.
 - Prefer small, reviewable PRs over large, mixed ones.
 
 ## Getting help
