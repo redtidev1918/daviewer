@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +18,7 @@ import '../../shared/widgets/skeleton.dart';
 import 'artwork_detail_providers.dart';
 import 'artwork_detail_sections.dart';
 import 'artwork_navigation.dart';
+import 'artwork_store.dart';
 import 'download_section.dart';
 import 'download_reason.dart';
 import 'favourite_actions.dart';
@@ -68,6 +70,36 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
       weight: 50,
     ),
   ]).animate(_heartController);
+
+  @override
+  void initState() {
+    super.initState();
+    // Warm the image cache for the adjacent artworks so swiping to them is
+    // instant instead of flashing a placeholder while their media loads.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _prefetchNeighbors());
+  }
+
+  void _prefetchNeighbors() {
+    final session = widget.browseSession;
+    if (session == null || !mounted) return;
+    final store = ref.read(artworkStoreProvider);
+    for (final id in <String?>[
+      session.previousOf(widget.artworkId),
+      session.nextOf(widget.artworkId),
+    ]) {
+      if (id == null) continue;
+      final neighbor = store[id];
+      if (neighbor == null) continue;
+      final uri = selectDisplayAsset(neighbor.media)?.uri;
+      if (uri == null) continue;
+      unawaited(
+        precacheImage(
+          CachedNetworkImageProvider(uri.toString(), maxWidth: 1080),
+          context,
+        ),
+      );
+    }
+  }
 
   @override
   void dispose() {
