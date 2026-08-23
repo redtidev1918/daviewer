@@ -33,6 +33,7 @@ final class ArtworkCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = strings(ref.watch(appLanguageProvider));
     // Track the favourite flag through the store so a favourite action here is
     // reflected immediately (and mirrored in the detail screen).
     final favourited = ref.watch(
@@ -186,14 +187,18 @@ final class ArtworkCard extends ConsumerWidget {
                     color: Colors.black54,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      Icon(Icons.filter_none, size: 12, color: Colors.white),
-                      SizedBox(width: 2),
+                      const Icon(
+                        Icons.filter_none,
+                        size: 12,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 2),
                       Text(
-                        'MULTI',
-                        style: TextStyle(
+                        s.multiImageBadge,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 9,
                           fontWeight: FontWeight.bold,

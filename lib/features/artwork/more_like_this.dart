@@ -164,6 +164,7 @@ final class _MoreLikeThisSectionState
   }) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: <Widget>[
+      const SizedBox(height: 24),
       Row(
         children: <Widget>[
           Expanded(
@@ -331,6 +332,7 @@ final class _RelatedStatus extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: <Widget>[
+      const SizedBox(height: 24),
       Text(title, style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 8),
       Row(
