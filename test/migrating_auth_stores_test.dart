@@ -17,11 +17,19 @@ void main() {
     () async {
       final primary = _MemoryTokenStore();
       final legacy = _MemoryTokenStore(tokens);
-      final store = MigratingTokenStore(primary: primary, legacy: legacy);
+      final evidence = <bool>[];
+      final store = MigratingTokenStore(
+        primary: primary,
+        legacy: legacy,
+        recordSessionPresence: (present) async => evidence.add(present),
+      );
 
       expect(await store.read(), same(tokens));
       expect(await primary.read(), same(tokens));
       expect(await legacy.read(), same(tokens));
+      expect(await store.read(), same(tokens));
+      expect(evidence, contains(true));
+      expect(evidence.where((value) => value), hasLength(1));
     },
   );
 
@@ -30,7 +38,11 @@ void main() {
     () async {
       final primary = _MemoryTokenStore()..failWrites = true;
       final legacy = _MemoryTokenStore(tokens);
-      final store = MigratingTokenStore(primary: primary, legacy: legacy);
+      final store = MigratingTokenStore(
+        primary: primary,
+        legacy: legacy,
+        recordSessionPresence: (_) async {},
+      );
 
       expect(await store.read(), same(tokens));
       expect(await legacy.read(), same(tokens));
@@ -40,7 +52,12 @@ void main() {
   test('refresh falls back to legacy storage and logout clears both', () async {
     final primary = _MemoryTokenStore()..failWrites = true;
     final legacy = _MemoryTokenStore(tokens);
-    final store = MigratingTokenStore(primary: primary, legacy: legacy);
+    final evidence = <bool>[];
+    final store = MigratingTokenStore(
+      primary: primary,
+      legacy: legacy,
+      recordSessionPresence: (present) async => evidence.add(present),
+    );
     final refreshed = AuthTokens(
       accessToken: 'new',
       tokenType: 'Bearer',
@@ -52,6 +69,19 @@ void main() {
     await store.clear();
     expect(await primary.read(), isNull);
     expect(await legacy.read(), isNull);
+    expect(evidence.last, isFalse);
+  });
+
+  test('an empty secure store records first-run evidence as absent', () async {
+    final evidence = <bool>[];
+    final store = MigratingTokenStore(
+      primary: _MemoryTokenStore(),
+      legacy: _MemoryTokenStore(),
+      recordSessionPresence: (present) async => evidence.add(present),
+    );
+
+    expect(await store.read(), isNull);
+    expect(evidence, <bool>[false]);
   });
 
   test('pending OAuth transaction is migrated too', () async {

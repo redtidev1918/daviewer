@@ -84,6 +84,31 @@ final class AppPreferences {
     }
   });
 
+  /// Non-sensitive evidence that this installation has successfully stored an
+  /// OAuth session before. Tokens remain in secure storage; this flag only
+  /// lets cold-start recovery distinguish an existing user from first run when
+  /// the network or Keychain is temporarily unavailable.
+  static Future<bool> loadOAuthSessionKnown() async {
+    try {
+      final file = await _file();
+      if (!await file.exists()) return false;
+      final decoded = jsonDecode(await file.readAsString());
+      return decoded is Map && decoded['oauthSessionKnown'] == true;
+    } on Object catch (error, stack) {
+      AppLogger.instance.warning(
+        'prefs',
+        'failed to load OAuth session evidence',
+        error,
+        stack,
+      );
+      return false;
+    }
+  }
+
+  static Future<void> saveOAuthSessionKnown(bool value) => _update((map) {
+    map['oauthSessionKnown'] = value;
+  });
+
   static Future<void> _update(void Function(Map<String, Object?>) mutate) {
     final next = _writeTail.then((_) => _performUpdate(mutate));
     // _performUpdate catches and logs storage failures, so the tail remains

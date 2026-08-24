@@ -16,8 +16,8 @@ experiences different without collecting location data.
 The runtime priority is:
 
 1. a persisted in-app manual proxy;
-2. the OS system proxy (`scutil` on macOS, registry on Windows, GNOME settings
-   on Linux);
+2. the OS system proxy (`scutil` on macOS, registry on Windows, GNOME manual
+   HTTPS/HTTP settings on Linux);
 3. `https_proxy`, `http_proxy`, or `all_proxy` (lowercase and uppercase);
 4. `DAKIT_PROXY_URL` supplied at build time;
 5. direct connection.
@@ -47,6 +47,12 @@ in-app setting.
 | macOS 14+ | dynamic app proxy | `WKWebsiteDataStore.proxyConfigurations` |
 | macOS 12/13 | dynamic app proxy | OS system proxy only |
 | Linux | dynamic app proxy | OS WebView/system behavior |
+
+On GNOME, `none` mode ignores stale host/port values and `manual` mode prefers
+the HTTPS endpoint before HTTP. PAC `auto` mode is not representable through
+`dart:io`'s static `findProxy` directive, so DAViewer logs that limitation and
+continues to environment/build/direct fallback instead of claiming that a PAC
+route was applied.
 
 All Windows WebViews and cookie reads use the same WebView2 environment. This
 is important: creating the login page with one environment and reading cookies

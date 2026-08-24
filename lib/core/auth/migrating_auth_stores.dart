@@ -1,6 +1,8 @@
 import 'package:dakit_api/dakit_api.dart';
 import 'package:dakit_core/dakit_core.dart';
 
+import '../settings/app_preferences.dart';
+
 /// Reads the current DAViewer Keychain item first, then the pre-0.2.126 item.
 ///
 /// The macOS Keychain account name changed when the prompt was relabelled from
@@ -9,10 +11,23 @@ import 'package:dakit_core/dakit_core.dart';
 /// copies the old value forward without deleting it until the user explicitly
 /// signs out, which also keeps rollback safe.
 final class MigratingTokenStore implements TokenStore {
-  MigratingTokenStore({required this.primary, required this.legacy});
+  MigratingTokenStore({
+    required this.primary,
+    required this.legacy,
+    Future<void> Function(bool present)? recordSessionPresence,
+  }) : _recordSessionPresence =
+           recordSessionPresence ?? AppPreferences.saveOAuthSessionKnown;
 
   final TokenStore primary;
   final TokenStore legacy;
+  final Future<void> Function(bool present) _recordSessionPresence;
+  bool? _lastRecordedPresence;
+
+  Future<void> _recordPresence(bool present) async {
+    if (_lastRecordedPresence == present) return;
+    await _recordSessionPresence(present);
+    _lastRecordedPresence = present;
+  }
 
   @override
   Future<AuthTokens?> read() async {
@@ -20,7 +35,10 @@ final class MigratingTokenStore implements TokenStore {
     StackTrace? primaryStack;
     try {
       final current = await primary.read();
-      if (current != null) return current;
+      if (current != null) {
+        await _recordPresence(true);
+        return current;
+      }
     } on Object catch (error, stack) {
       primaryError = error;
       primaryStack = stack;
@@ -31,6 +49,7 @@ final class MigratingTokenStore implements TokenStore {
       if (primaryError != null) {
         Error.throwWithStackTrace(primaryError, primaryStack!);
       }
+      await _recordPresence(false);
       return null;
     }
 
@@ -41,6 +60,7 @@ final class MigratingTokenStore implements TokenStore {
     } on Object {
       // Keep the legacy value intact and use it for this process.
     }
+    await _recordPresence(true);
     return old;
   }
 
@@ -53,10 +73,14 @@ final class MigratingTokenStore implements TokenStore {
       // session. Preserve it in the storage location the app could read.
       await legacy.write(tokens);
     }
+    await _recordPresence(true);
   }
 
   @override
-  Future<void> clear() => _clearBoth(primary.clear, legacy.clear);
+  Future<void> clear() async {
+    await _clearBoth(primary.clear, legacy.clear);
+    await _recordPresence(false);
+  }
 }
 
 /// Applies the same no-data-loss migration to an interrupted PKCE transaction.

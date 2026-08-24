@@ -86,3 +86,17 @@ Raw endpoint names, parser errors, HTTP payloads, and provider details belong in
 Diagnostics. UI copy states the outcome and next action. A personalized-feed
 failure stops automatic retries, keeps session data intact, and offers pull to
 refresh plus the proxy/settings path.
+
+## Cold-start session evidence
+
+Cold-start recovery must distinguish an existing account from first run. The
+secure token store records a separate non-sensitive boolean only after it has
+successfully read or written OAuth tokens. A transient network, rate-limit,
+upstream, or Keychain failure preserves `signedIn` only when this evidence
+exists. Without it, the app stays signed out and keeps Login, Proxy, Settings,
+Updates, and Diagnostics available; it must never route a first-run user into a
+personalized endpoint that cannot authorize.
+
+The flag contains no token or account identity. A successful empty token-store
+read and explicit logout clear it. Reading an expired token sets it before the
+refresh request, so an offline refresh still preserves an established user.

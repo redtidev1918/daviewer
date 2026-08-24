@@ -53,4 +53,22 @@ void main() {
       isFalse,
     );
   });
+
+  test('a transient failure preserves only an evidenced prior session', () {
+    final failure = TimeoutException('offline');
+    expect(
+      shouldRestoreSignedInAfterFailure(
+        error: failure,
+        hasSessionEvidence: true,
+      ),
+      isTrue,
+    );
+    expect(
+      shouldRestoreSignedInAfterFailure(
+        error: failure,
+        hasSessionEvidence: false,
+      ),
+      isFalse,
+    );
+  });
 }

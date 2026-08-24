@@ -7,6 +7,7 @@ import '../diagnostics/app_logger.dart';
 import '../l10n/app_strings.dart';
 import '../runtime/app_runtime.dart';
 import '../runtime/runtime_provider.dart';
+import '../settings/app_preferences.dart';
 import 'auth_state.dart';
 import 'web_session_controller.dart';
 
@@ -28,6 +29,11 @@ bool shouldPreserveSessionAfterRestoreFailure(Object error) {
   }
   return true;
 }
+
+bool shouldRestoreSignedInAfterFailure({
+  required Object error,
+  required bool hasSessionEvidence,
+}) => hasSessionEvidence && shouldPreserveSessionAfterRestoreFailure(error);
 
 /// Owns the OAuth sign-in lifecycle only. The embedded DeviantArt web session
 /// is managed by the separate [WebSessionController].
@@ -82,7 +88,11 @@ final class AuthController extends StateNotifier<AuthState> {
         _initializing = false;
         return;
       } on DAKitException catch (error) {
-        if (shouldPreserveSessionAfterRestoreFailure(error)) {
+        final hasSessionEvidence = await AppPreferences.loadOAuthSessionKnown();
+        if (shouldRestoreSignedInAfterFailure(
+          error: error,
+          hasSessionEvidence: hasSessionEvidence,
+        )) {
           _log.warning(
             'auth',
             'initialize: persisted session temporarily unavailable; '
@@ -93,17 +103,36 @@ final class AuthController extends StateNotifier<AuthState> {
           _initializing = false;
           return;
         }
-        _log.info('auth', 'initialize: authorization is required', error);
+        _log.info(
+          'auth',
+          hasSessionEvidence
+              ? 'initialize: authorization is required'
+              : 'initialize: no prior OAuth session; staying signed out',
+          error,
+        );
       } on Object catch (error, stack) {
+        final hasSessionEvidence = await AppPreferences.loadOAuthSessionKnown();
+        if (shouldRestoreSignedInAfterFailure(
+          error: error,
+          hasSessionEvidence: hasSessionEvidence,
+        )) {
+          _log.warning(
+            'auth',
+            'initialize: existing session restore failed transiently; '
+                'preserving state',
+            error,
+            stack,
+          );
+          state = const AuthState(status: AuthStatus.signedIn);
+          _initializing = false;
+          return;
+        }
         _log.warning(
           'auth',
-          'initialize: session restore failed transiently; preserving state',
+          'initialize: first-run session check failed; staying signed out',
           error,
           stack,
         );
-        state = const AuthState(status: AuthStatus.signedIn);
-        _initializing = false;
-        return;
       }
     }
 
@@ -221,6 +250,7 @@ final class AuthController extends StateNotifier<AuthState> {
       _log.warning('auth', 'logout: web cookie clear failed', error, stack);
     }
     await _ref.read(webSessionControllerProvider.notifier).clear();
+    await AppPreferences.saveOAuthSessionKnown(false);
     state = const AuthState(status: AuthStatus.signedOut);
   }
 
