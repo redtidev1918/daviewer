@@ -32,6 +32,77 @@ bool shouldRecoverLogin403({
   required String username,
 }) => isMainFrame && statusCode == 403 && username.isNotEmpty;
 
+enum LoginHttpPageKind {
+  ignored,
+  humanVerification,
+  committedSession,
+  connectionFailure,
+}
+
+bool isPotentialHumanVerificationStatus(int statusCode) =>
+    statusCode == 403 || statusCode == 429 || statusCode == 503;
+
+/// Distinguishes an interactive anti-bot page from a real transport failure.
+///
+/// DeviantArt and its edge providers commonly return their human-verification
+/// document with HTTP 403/429/503. The document is still usable inside the
+/// WebView, so treating that response as a failed connection hides the very UI
+/// the user needs to complete.
+bool looksLikeHumanVerificationPage({
+  Uri? pageUri,
+  String title = '',
+  String visibleText = '',
+  bool hasChallengeElement = false,
+}) {
+  if (hasChallengeElement) return true;
+
+  final uriText = pageUri?.toString().toLowerCase() ?? '';
+  if (uriText.contains('/cdn-cgi/challenge-platform') ||
+      uriText.contains('/_sec/cp_challenge') ||
+      uriText.contains('px-captcha') ||
+      uriText.contains('captcha') ||
+      uriText.contains('challenge=')) {
+    return true;
+  }
+
+  final text = '$title\n$visibleText'.toLowerCase();
+  const markers = <String>[
+    'verify you are human',
+    'verify that you are human',
+    'confirm you are human',
+    'are you a human',
+    'human verification',
+    'not a robot',
+    'press and hold',
+    'checking your browser',
+    'security verification',
+    'complete the security check',
+    'captcha',
+    'recaptcha',
+    'hcaptcha',
+    'cloudflare ray id',
+    '人机验证',
+    '安全验证',
+  ];
+  return markers.any(text.contains);
+}
+
+LoginHttpPageKind classifyLoginHttpPage({
+  required bool isMainFrame,
+  required int statusCode,
+  required String username,
+  required bool isHumanVerification,
+}) {
+  if (!isMainFrame) return LoginHttpPageKind.ignored;
+  if (isPotentialHumanVerificationStatus(statusCode) && isHumanVerification) {
+    return LoginHttpPageKind.humanVerification;
+  }
+  if (statusCode != 403) return LoginHttpPageKind.ignored;
+  return username.isNotEmpty
+      ? LoginHttpPageKind.committedSession
+      : LoginHttpPageKind.connectionFailure;
+}
+
 enum WebLoginMethod { deviantArt, google, apple }
 
 bool shouldActivateLoginMethod({
@@ -105,6 +176,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   bool _oauthRequested = false;
   bool _recoveringHttp403 = false;
   bool _pageLoadFailed = false;
+  bool _humanVerificationActive = false;
   bool _showBrowser = false;
   bool _preparingBrowser = false;
   WebLoginMethod _loginMethod = WebLoginMethod.deviantArt;
@@ -123,6 +195,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   Uri? _activeAuthorizeUri;
   Uri? _lastMainFrameUri;
   int _reportSeq = 0;
+  int _humanVerificationInspectionSeq = 0;
   double _progress = 0;
   late final AuthController _authController;
   app_proxy.ProxyController? _proxyController;
@@ -446,13 +519,132 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     setState(() => _completingSocialSignIn = false);
   }
 
+  void _beginWebNavigation() {
+    _humanVerificationInspectionSeq++;
+    if (mounted && _humanVerificationActive) {
+      setState(() => _humanVerificationActive = false);
+    }
+  }
+
+  /// Returns `null` when this inspection was superseded by a newer navigation.
+  Future<bool?> _inspectHumanVerification(
+    InAppWebViewController controller, {
+    WebUri? fallbackUri,
+    bool clearOnNegative = false,
+  }) async {
+    // Multiple callbacks (HTTP error + load stop) may inspect the same
+    // document concurrently. Only a real navigation invalidates them; one
+    // callback must not cancel another callback that still owns HTTP error
+    // classification for the same page.
+    final inspectionSeq = _humanVerificationInspectionSeq;
+    for (final delay in <Duration>[
+      Duration.zero,
+      const Duration(milliseconds: 250),
+      const Duration(milliseconds: 750),
+    ]) {
+      if (delay != Duration.zero) await Future<void>.delayed(delay);
+      if (!mounted || inspectionSeq != _humanVerificationInspectionSeq) {
+        return null;
+      }
+      try {
+        final raw = await controller.evaluateJavascript(
+          source: r'''(() => {
+            const challengeSelector = [
+              'iframe[src*="captcha" i]',
+              'iframe[src*="challenge" i]',
+              '[id*="captcha" i]',
+              '[class*="captcha" i]',
+              '[id*="challenge-running" i]',
+              '[class*="challenge-running" i]',
+              'input[name*="captcha" i]',
+              '#px-captcha',
+              '.cf-challenge-running'
+            ].join(',');
+            const hasVisibleChallengeElement = Array.from(
+              document.querySelectorAll(challengeSelector)
+            ).some((element) => {
+              const style = getComputedStyle(element);
+              const rect = element.getBoundingClientRect();
+              return style.display !== 'none' &&
+                style.visibility !== 'hidden' &&
+                Number(style.opacity || 1) !== 0 &&
+                rect.width > 0 && rect.height > 0;
+            });
+            return JSON.stringify({
+              url: location.href || '',
+              title: document.title || '',
+              text: (document.body && document.body.innerText || '').slice(0, 12000),
+              hasChallengeElement: hasVisibleChallengeElement
+            });
+          })()''',
+        );
+        if (raw is String && raw.isNotEmpty) {
+          final decoded = jsonDecode(raw);
+          if (decoded is Map<String, dynamic>) {
+            final currentUri = Uri.tryParse('${decoded['url'] ?? ''}');
+            final detected = looksLikeHumanVerificationPage(
+              pageUri:
+                  currentUri ??
+                  (fallbackUri == null
+                      ? null
+                      : Uri.tryParse(fallbackUri.toString())),
+              title: '${decoded['title'] ?? ''}',
+              visibleText: '${decoded['text'] ?? ''}',
+              hasChallengeElement: decoded['hasChallengeElement'] == true,
+            );
+            if (detected) {
+              if (!mounted ||
+                  inspectionSeq != _humanVerificationInspectionSeq) {
+                return null;
+              }
+              setState(() {
+                _humanVerificationActive = true;
+                _pageLoadFailed = false;
+                _socialCompletionFailed = false;
+                _loading = false;
+                _waitingForAuthorizationPage = false;
+              });
+              AppLogger.instance.info(
+                'auth',
+                'human-verification page detected; keeping the interactive '
+                    'WebView visible',
+              );
+              return true;
+            }
+          }
+        }
+      } on Object catch (error, stack) {
+        AppLogger.instance.debug(
+          'auth',
+          'could not inspect the current login document',
+          error,
+          stack,
+        );
+      }
+    }
+    if (!mounted || inspectionSeq != _humanVerificationInspectionSeq) {
+      return null;
+    }
+    if (clearOnNegative && _humanVerificationActive) {
+      setState(() => _humanVerificationActive = false);
+    }
+    return false;
+  }
+
   Future<void> _handleSocialPopupError(
+    InAppWebViewController controller,
     WebResourceRequest request,
     WebResourceError error,
   ) async {
     if (request.isForMainFrame != true || !mounted) return;
+    final challenge = await _inspectHumanVerification(
+      controller,
+      fallbackUri: request.url,
+    );
+    if (challenge != false || !mounted) return;
     final username = await ref.read(webSessionProvider).webUsername();
     if (!mounted) return;
+    if (_humanVerificationActive) return;
     if (username.isNotEmpty) {
       await _finishSocialPopup('provider navigation completed');
       return;
@@ -460,6 +652,41 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     AppLogger.instance.warning(
       'auth',
       'social login popup network error: ${error.type} ${error.description}',
+    );
+    setState(() {
+      _loading = false;
+      _pageLoadFailed = true;
+      _socialCompletionFailed = false;
+      _popupWindowId = null;
+    });
+  }
+
+  Future<void> _handleSocialPopupHttpError(
+    InAppWebViewController controller,
+    WebResourceRequest request,
+    WebResourceResponse response,
+  ) async {
+    final statusCode = response.statusCode ?? 0;
+    if (request.isForMainFrame != true ||
+        !isPotentialHumanVerificationStatus(statusCode) ||
+        !mounted) {
+      return;
+    }
+    final challenge = await _inspectHumanVerification(
+      controller,
+      fallbackUri: request.url,
+    );
+    if (challenge != false || !mounted) return;
+    final username = await ref.read(webSessionProvider).webUsername();
+    if (!mounted) return;
+    if (_humanVerificationActive) return;
+    if (username.isNotEmpty) {
+      await _finishSocialPopup('provider HTTP response completed');
+      return;
+    }
+    AppLogger.instance.warning(
+      'auth',
+      'social login popup returned HTTP $statusCode without a challenge page',
     );
     setState(() {
       _loading = false;
@@ -662,6 +889,34 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                         ),
                       ),
                     ),
+                  if (_humanVerificationActive)
+                    Material(
+                      color: theme.colorScheme.tertiaryContainer,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            Icon(
+                              Icons.verified_user_outlined,
+                              size: 20,
+                              color: theme.colorScheme.onTertiaryContainer,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                s.humanVerificationHint,
+                                style: TextStyle(
+                                  color: theme.colorScheme.onTertiaryContainer,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   if (_pageLoadFailed)
                     Material(
                       color: theme.colorScheme.errorContainer,
@@ -799,6 +1054,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                             return true;
                           },
                           onLoadStart: (controller, url) {
+                            _beginWebNavigation();
                             if (url != null && url.scheme != 'about') {
                               _lastMainFrameUri = Uri.tryParse(url.toString());
                             }
@@ -818,6 +1074,13 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                             }
                             if (mounted) setState(() => _loading = false);
                             unawaited(
+                              _inspectHumanVerification(
+                                controller,
+                                fallbackUri: url,
+                                clearOnNegative: true,
+                              ),
+                            );
+                            unawaited(
                               _triggerSelectedLoginMethod(controller, url),
                             );
                             // Report from any deviantart.com page. A sequence counter
@@ -829,55 +1092,74 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                               unawaited(_reportWebSession());
                             }
                           },
-                          onReceivedHttpError:
-                              (controller, request, response) async {
-                                if (request.isForMainFrame != true ||
-                                    response.statusCode != 403 ||
-                                    _recoveringHttp403) {
-                                  return;
-                                }
-                                // DeviantArt can return a transient HTML 403 after accepting
-                                // the first WebView password submission. If the persistent
-                                // userinfo cookie was already committed, move to Home so a
-                                // fresh CSRF can be read instead of leaving the user staring
-                                // at the stale error document.
-                                final username =
-                                    await _waitForCommittedUsername();
-                                if (!shouldRecoverLogin403(
-                                      isMainFrame:
-                                          request.isForMainFrame == true,
-                                      statusCode: response.statusCode ?? 0,
-                                      username: username,
-                                    ) ||
-                                    !mounted) {
-                                  if (mounted) {
-                                    setState(() => _pageLoadFailed = true);
-                                  }
-                                  AppLogger.instance.warning(
-                                    'auth',
-                                    'main-frame login returned HTTP 403 before a session '
-                                        'cookie was committed',
-                                  );
-                                  return;
-                                }
-                                AppLogger.instance.warning(
-                                  'auth',
-                                  'recovering committed WebView login after HTTP 403',
-                                );
-                                _recoveringHttp403 = true;
-                                final recoveryUri =
-                                    _activeAuthorizeUri ?? _homeUri;
-                                await controller.loadUrl(
-                                  urlRequest: URLRequest(
-                                    url: WebUri(recoveryUri.toString()),
-                                  ),
-                                );
-                                _recoveringHttp403 = false;
-                              },
-                          onReceivedError: (controller, request, error) {
+                          onReceivedHttpError: (controller, request, response) async {
+                            final statusCode = response.statusCode ?? 0;
+                            if (request.isForMainFrame != true ||
+                                !isPotentialHumanVerificationStatus(
+                                  statusCode,
+                                ) ||
+                                _recoveringHttp403) {
+                              return;
+                            }
+                            final challenge = await _inspectHumanVerification(
+                              controller,
+                              fallbackUri: request.url,
+                            );
+                            // A newer onLoadStop/navigation owns the state when
+                            // inspection was superseded. An interactive challenge
+                            // must remain visible and must never become a proxy error.
+                            if (challenge != false || !mounted) return;
+                            // DeviantArt can return a transient HTML 403 after accepting
+                            // the first WebView password submission. If the persistent
+                            // userinfo cookie was already committed, move to Home so a
+                            // fresh CSRF can be read instead of leaving the user staring
+                            // at the stale error document.
+                            final username = await _waitForCommittedUsername();
+                            if (!mounted) return;
+                            if (_humanVerificationActive) return;
+                            final pageKind = classifyLoginHttpPage(
+                              isMainFrame: request.isForMainFrame == true,
+                              statusCode: statusCode,
+                              username: username,
+                              isHumanVerification: false,
+                            );
+                            if (pageKind == LoginHttpPageKind.ignored) {
+                              return;
+                            }
+                            if (pageKind ==
+                                LoginHttpPageKind.connectionFailure) {
+                              setState(() => _pageLoadFailed = true);
+                              AppLogger.instance.warning(
+                                'auth',
+                                'main-frame login returned HTTP 403 before a session '
+                                    'cookie was committed and no human-verification '
+                                    'document was found',
+                              );
+                              return;
+                            }
+                            AppLogger.instance.warning(
+                              'auth',
+                              'recovering committed WebView login after HTTP 403',
+                            );
+                            _recoveringHttp403 = true;
+                            final recoveryUri = _activeAuthorizeUri ?? _homeUri;
+                            await controller.loadUrl(
+                              urlRequest: URLRequest(
+                                url: WebUri(recoveryUri.toString()),
+                              ),
+                            );
+                            _recoveringHttp403 = false;
+                          },
+                          onReceivedError: (controller, request, error) async {
                             if (request.isForMainFrame != true || !mounted) {
                               return;
                             }
+                            final challenge = await _inspectHumanVerification(
+                              controller,
+                              fallbackUri: request.url,
+                            );
+                            if (challenge != false || !mounted) return;
+                            if (_humanVerificationActive) return;
                             AppLogger.instance.warning(
                               'auth',
                               'login page network error: ${error.type} '
@@ -935,8 +1217,24 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                                   }
                                   return NavigationActionPolicy.ALLOW;
                                 },
+                            onLoadStart: (popupController, url) {
+                              _beginWebNavigation();
+                              if (mounted) {
+                                setState(() {
+                                  _loading = true;
+                                  _pageLoadFailed = false;
+                                });
+                              }
+                            },
                             onLoadStop: (popupController, url) async {
                               if (mounted) setState(() => _loading = false);
+                              unawaited(
+                                _inspectHumanVerification(
+                                  popupController,
+                                  fallbackUri: url,
+                                  clearOnNegative: true,
+                                ),
+                              );
                               final uri = url == null
                                   ? null
                                   : Uri.tryParse(url.toString());
@@ -971,9 +1269,21 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                             onCloseWindow: (controller) {
                               unawaited(_finishSocialPopup('window.close'));
                             },
+                            onReceivedHttpError:
+                                (controller, request, response) => unawaited(
+                                  _handleSocialPopupHttpError(
+                                    controller,
+                                    request,
+                                    response,
+                                  ),
+                                ),
                             onReceivedError: (controller, request, error) =>
                                 unawaited(
-                                  _handleSocialPopupError(request, error),
+                                  _handleSocialPopupError(
+                                    controller,
+                                    request,
+                                    error,
+                                  ),
                                 ),
                           ),
                         if (_completingSocialSignIn ||
