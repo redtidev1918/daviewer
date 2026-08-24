@@ -1,4 +1,5 @@
 import 'package:daviewer/features/web_login/web_login_screen.dart';
+import 'package:daviewer/core/network/proxy_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -219,10 +220,9 @@ void main() {
     );
   });
 
-  test('social sign-in resumes the same OAuth transaction only from login', () {
+  test('embedded provider completion resumes the same OAuth transaction only from login', () {
     expect(
-      shouldResumeOAuthAfterSocialSignIn(
-        method: WebLoginMethod.google,
+      shouldResumeOAuthAfterEmbeddedProvider(
         oauthSignedIn: false,
         callbackSeen: false,
         mainFrameUri: Uri.parse(
@@ -232,8 +232,7 @@ void main() {
       isTrue,
     );
     expect(
-      shouldResumeOAuthAfterSocialSignIn(
-        method: WebLoginMethod.google,
+      shouldResumeOAuthAfterEmbeddedProvider(
         oauthSignedIn: false,
         callbackSeen: false,
         mainFrameUri: Uri.parse(
@@ -243,8 +242,7 @@ void main() {
       isTrue,
     );
     expect(
-      shouldResumeOAuthAfterSocialSignIn(
-        method: WebLoginMethod.google,
+      shouldResumeOAuthAfterEmbeddedProvider(
         oauthSignedIn: false,
         callbackSeen: false,
         mainFrameUri: Uri.parse('https://www.deviantart.com/oauth2/authorize'),
@@ -252,76 +250,77 @@ void main() {
       isFalse,
     );
     expect(
-      shouldResumeOAuthAfterSocialSignIn(
-        method: WebLoginMethod.google,
+      shouldResumeOAuthAfterEmbeddedProvider(
         oauthSignedIn: false,
         callbackSeen: true,
         mainFrameUri: Uri.parse('https://www.deviantart.com/users/login'),
       ),
       isFalse,
     );
+  });
+
+  test('embedded account route only activates the DeviantArt join control', () {
+    final join = Uri.parse(
+      'https://www.deviantart.com/join?oauth=1&referer=oauth2',
+    );
+    final login = Uri.parse('https://www.deviantart.com/users/login');
+    final authorize = Uri.parse('https://www.deviantart.com/oauth2/authorize');
+
     expect(
-      shouldResumeOAuthAfterSocialSignIn(
-        method: WebLoginMethod.deviantArt,
-        oauthSignedIn: false,
-        callbackSeen: false,
-        mainFrameUri: Uri.parse('https://www.deviantart.com/users/login'),
+      shouldActivateDeviantArtAccountForm(
+        alreadyActivated: false,
+        pageUri: join,
+      ),
+      isTrue,
+    );
+    expect(
+      shouldActivateDeviantArtAccountForm(
+        alreadyActivated: false,
+        pageUri: login,
+      ),
+      isFalse,
+    );
+    expect(
+      shouldActivateDeviantArtAccountForm(
+        alreadyActivated: false,
+        pageUri: authorize,
+      ),
+      isFalse,
+    );
+    expect(
+      shouldActivateDeviantArtAccountForm(
+        alreadyActivated: true,
+        pageUri: join,
       ),
       isFalse,
     );
   });
 
-  test(
-    'native login choices target distinct controls on OAuth entry pages',
-    () {
-      final join = Uri.parse(
-        'https://www.deviantart.com/join?oauth=1&referer=oauth2',
-      );
-      final login = Uri.parse('https://www.deviantart.com/users/login');
-      final authorize = Uri.parse(
-        'https://www.deviantart.com/oauth2/authorize',
-      );
+  test('system browser proxy warning matches the actual routing boundary', () {
+    expect(systemBrowserFollowsSelectedProxy(ProxySource.system), isTrue);
+    expect(systemBrowserFollowsSelectedProxy(ProxySource.direct), isTrue);
+    expect(systemBrowserFollowsSelectedProxy(ProxySource.manual), isFalse);
+    expect(systemBrowserFollowsSelectedProxy(ProxySource.environment), isFalse);
+    expect(systemBrowserFollowsSelectedProxy(ProxySource.dartDefine), isFalse);
+  });
 
-      expect(
-        shouldActivateLoginMethod(
-          method: WebLoginMethod.deviantArt,
-          alreadyActivated: false,
-          pageUri: join,
-        ),
-        isTrue,
-      );
-      expect(
-        shouldActivateLoginMethod(
-          method: WebLoginMethod.deviantArt,
-          alreadyActivated: false,
-          pageUri: login,
-        ),
-        isFalse,
-      );
-      expect(
-        shouldActivateLoginMethod(
-          method: WebLoginMethod.google,
-          alreadyActivated: false,
-          pageUri: join,
-        ),
-        isTrue,
-      );
-      expect(
-        shouldActivateLoginMethod(
-          method: WebLoginMethod.apple,
-          alreadyActivated: false,
-          pageUri: login,
-        ),
-        isTrue,
-      );
-      expect(
-        shouldActivateLoginMethod(
-          method: WebLoginMethod.google,
-          alreadyActivated: false,
-          pageUri: authorize,
-        ),
-        isFalse,
-      );
-    },
-  );
+  test('official social providers are discovered without treating other aria labels as login methods', () {
+    const html = '''
+      <button aria-label="Search">Search</button>
+      <div aria-label="Google"></div>
+      <button aria-label="Apple"><div>Continue with Apple</div></button>
+      <button aria-label="Facebook"><div>Continue with Facebook</div></button>
+      <button aria-label="close">Close</button>
+    ''';
+
+    expect(discoverOfficialSocialProviders(html), <String>[
+      'Google',
+      'Apple',
+      'Facebook',
+    ]);
+    expect(
+      discoverOfficialSocialProviders('<form>email and password</form>'),
+      isEmpty,
+    );
+  });
 }

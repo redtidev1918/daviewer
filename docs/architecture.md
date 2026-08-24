@@ -151,11 +151,25 @@ The app has two sessions:
 - the web Cookie/CSRF session for personalized website-only feeds;
 - OAuth for official API actions such as favourites, watch, and downloads.
 
-Signed-out state is onboarding, not a feed error. First login starts one OAuth/
-PKCE transaction; its password or social-provider navigation establishes the
-web session and returns to the same transaction for App authorization. A
-transient post-login 403 is only recoverable after the web identity cookie has
-been observed, and recovery must reuse the original authorize URI.
+Signed-out state is onboarding, not a feed error. Each visible attempt owns one
+OAuth/PKCE transaction, but login routes are split by browser security:
+
+- DeviantArt username/email and password stays in the embedded WebView and can
+  establish both the web and OAuth sessions through the app proxy route.
+- Social providers use the system browser because Google prohibits embedded
+  user-agents. The custom-scheme callback completes App OAuth; protected system
+  browser cookies are not treated as if they belonged to the WebView.
+
+The social provider list displayed in native UI is a read-only capability hint
+parsed from the current official login page. It never selects an endpoint or
+handles credentials. A transient post-login 403 is only recoverable after the
+web identity cookie has been observed, and recovery must reuse the original
+authorize URI.
+
+An OAuth-only social login is complete, not partially authenticated. Official
+API features work immediately and Home selects its OAuth-backed Daily feed.
+The website-only personalized feed may offer a separate optional web-session
+sync without blocking or invalidating OAuth.
 
 Session restoration is non-destructive. Renaming a macOS Keychain item requires
 a dual-read migration from the legacy account name. Temporary network,

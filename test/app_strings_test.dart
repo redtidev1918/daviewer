@@ -57,6 +57,15 @@ void main() {
     expect(en.loginHelpBody, contains('DeviantArt account'));
     expect(zh.loginFailed('网络错误'), '登录失败：网络错误');
     expect(en.loginFailed('Network error'), 'Sign-in failed: Network error');
+    expect(
+      zh.signInWithSocialBrowser(<String>['Google', 'Apple', 'Facebook']),
+      contains('Facebook'),
+    );
+    expect(
+      en.signInWithSocialBrowser(const <String>[]),
+      contains('system browser'),
+    );
+    expect(zh.externalBrowserProxyHint, contains('系统代理'));
   });
 
   test('download deletion warning states that local files are removed', () {

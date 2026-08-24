@@ -5,14 +5,14 @@ import 'package:flutter/foundation.dart';
 
 import '../network/desktop_uri_launcher.dart';
 
-/// Bridges DAKit's OAuth coordinator with the in-app home WebView.
+/// Routes each DAKit OAuth transaction through the login surface selected by
+/// the user.
 ///
-/// When the home WebView is available, OAuth authorize URLs are loaded there
-/// instead of the external system browser. Because the WebView already owns
-/// the deviantart.com web-session cookies, an already logged-in user only has
-/// to confirm the OAuth consent screen (or is redirected straight through).
-/// The WebView forwards `dakit://oauth/callback` back through [callbacks] so
-/// the existing DAKit PKCE flow completes normally.
+/// DeviantArt-account login stays in the WebView so it can establish the web
+/// Cookie/CSRF session. Social login arms one authorization for the operating
+/// system browser, where embedded-user-agent restrictions do not apply. Both
+/// routes return `dakit://oauth/callback` through [callbacks] and complete the
+/// same PKCE coordinator.
 final class WebViewOAuthBridge implements ExternalUriLauncher {
   WebViewOAuthBridge({ExternalUriLauncher? fallback})
     : _fallback = fallback ?? const DesktopUriLauncher();
@@ -22,6 +22,8 @@ final class WebViewOAuthBridge implements ExternalUriLauncher {
       StreamController<Uri>.broadcast();
   final StreamController<Uri> _callbackController =
       StreamController<Uri>.broadcast();
+  bool _launchNextExternally = false;
+  Uri? _externalAuthorizationUri;
 
   /// Authorize URLs that should be loaded in the home WebView.
   Stream<Uri> get launchRequests => _launchController.stream;
@@ -35,8 +37,49 @@ final class WebViewOAuthBridge implements ExternalUriLauncher {
     _callbackController.add(uri);
   }
 
+  /// Routes exactly one upcoming OAuth authorization through the operating
+  /// system browser.
+  ///
+  /// Google intentionally rejects embedded user-agents. Keeping this as a
+  /// one-shot choice prevents a social-login attempt from silently changing
+  /// later DeviantArt-account logins, which still benefit from the WebView's
+  /// cookies and app-level proxy.
+  void launchNextExternally() {
+    _launchNextExternally = true;
+  }
+
+  /// Clears a one-shot route that was armed but cancelled before DAKit called
+  /// [launch].
+  void cancelExternalLaunch() {
+    _launchNextExternally = false;
+  }
+
+  bool get canReopenExternalAuthorization => _externalAuthorizationUri != null;
+
+  Future<void> reopenExternalAuthorization() async {
+    final uri = _externalAuthorizationUri;
+    if (uri != null) await _fallback.launch(uri);
+  }
+
+  void finishExternalAuthorization() {
+    _externalAuthorizationUri = null;
+    _launchNextExternally = false;
+  }
+
   @override
   Future<void> launch(Uri uri) async {
+    if (_launchNextExternally) {
+      _launchNextExternally = false;
+      _externalAuthorizationUri = uri;
+      debugPrint('[oauth] routing authorize to system browser');
+      try {
+        await _fallback.launch(uri);
+      } on Object {
+        _externalAuthorizationUri = null;
+        rethrow;
+      }
+      return;
+    }
     // The WebLoginScreen subscribes in initState right after its route is
     // pushed, so give it a short grace period before falling back to the
     // system browser. Falling back too eagerly would leave the embedded web
