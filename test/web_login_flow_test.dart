@@ -93,8 +93,32 @@ void main() {
       );
       expect(
         looksLikeHumanVerificationPage(
+          pageUri: Uri.parse(
+            'https://challenges.cloudflare.com/turnstile/v0/g/abc',
+          ),
+        ),
+        isTrue,
+      );
+      expect(
+        looksLikeHumanVerificationPage(
+          pageUri: Uri.parse('https://client-api.arkoselabs.com/fc/gc/'),
+        ),
+        isTrue,
+      );
+      expect(
+        looksLikeHumanVerificationPage(
           title: 'Log in | DeviantArt',
           visibleText: 'Log in with your username or email and password.',
+        ),
+        isFalse,
+      );
+      expect(
+        looksLikeHumanVerificationPage(
+          pageUri: Uri.parse(
+            'https://www.deviantart.com/oauth2/authorize?response_type=code&code_challenge=pkce-value&code_challenge_method=S256',
+          ),
+          title: 'Authorize application',
+          visibleText: 'Allow this application to access your account.',
         ),
         isFalse,
       );
@@ -133,6 +157,65 @@ void main() {
         isHumanVerification: true,
       ),
       LoginHttpPageKind.humanVerification,
+    );
+    expect(
+      classifyLoginHttpPage(
+        isMainFrame: true,
+        statusCode: 429,
+        username: '',
+        isHumanVerification: false,
+      ),
+      LoginHttpPageKind.connectionFailure,
+    );
+    expect(
+      classifyLoginHttpPage(
+        isMainFrame: true,
+        statusCode: 503,
+        username: '',
+        isHumanVerification: false,
+      ),
+      LoginHttpPageKind.connectionFailure,
+    );
+  });
+
+  test('human-verification state survives loading and clears after proof', () {
+    expect(
+      humanVerificationStateAfterHttpStatus(
+        current: HumanVerificationState.none,
+        statusCode: 403,
+      ),
+      HumanVerificationState.loading,
+    );
+    expect(
+      humanVerificationStateAfterInspection(
+        current: HumanVerificationState.loading,
+        detected: true,
+        consecutiveCleanObservations: 0,
+      ),
+      HumanVerificationState.active,
+    );
+    expect(
+      humanVerificationStateAfterInspection(
+        current: HumanVerificationState.active,
+        detected: false,
+        consecutiveCleanObservations: 1,
+      ),
+      HumanVerificationState.active,
+    );
+    expect(
+      humanVerificationStateAfterInspection(
+        current: HumanVerificationState.active,
+        detected: false,
+        consecutiveCleanObservations: 2,
+      ),
+      HumanVerificationState.none,
+    );
+    expect(
+      humanVerificationStateAfterHttpStatus(
+        current: HumanVerificationState.none,
+        statusCode: 500,
+      ),
+      HumanVerificationState.none,
     );
   });
 

@@ -44,6 +44,32 @@ enum LoginHttpPageKind {
   connectionFailure,
 }
 
+enum HumanVerificationState { none, loading, active }
+
+HumanVerificationState humanVerificationStateAfterHttpStatus({
+  required HumanVerificationState current,
+  required int statusCode,
+}) {
+  if (!isPotentialHumanVerificationStatus(statusCode) ||
+      current == HumanVerificationState.active) {
+    return current;
+  }
+  return HumanVerificationState.loading;
+}
+
+HumanVerificationState humanVerificationStateAfterInspection({
+  required HumanVerificationState current,
+  required bool detected,
+  required int consecutiveCleanObservations,
+}) {
+  if (detected) return HumanVerificationState.active;
+  if (current == HumanVerificationState.active &&
+      consecutiveCleanObservations >= 2) {
+    return HumanVerificationState.none;
+  }
+  return current;
+}
+
 bool isPotentialHumanVerificationStatus(int statusCode) =>
     statusCode == 403 || statusCode == 429 || statusCode == 503;
 
@@ -62,11 +88,32 @@ bool looksLikeHumanVerificationPage({
   if (hasChallengeElement) return true;
 
   final uriText = pageUri?.toString().toLowerCase() ?? '';
+  final uriPath = pageUri?.path.toLowerCase() ?? '';
+  final challengeQuery =
+      pageUri?.queryParameters.keys.any(
+        (key) => const <String>{
+          'challenge',
+          'captcha',
+          'cf_chl_tk',
+          '__cf_chl_tk',
+          'g-recaptcha-response',
+          'h-captcha-response',
+        }.contains(key.toLowerCase()),
+      ) ??
+      false;
   if (uriText.contains('/cdn-cgi/challenge-platform') ||
+      uriText.contains('challenges.cloudflare.com') ||
       uriText.contains('/_sec/cp_challenge') ||
       uriText.contains('px-captcha') ||
+      uriText.contains('cf-turnstile') ||
+      uriText.contains('recaptcha') ||
+      uriText.contains('hcaptcha') ||
+      uriText.contains('arkoselabs') ||
+      uriText.contains('funcaptcha') ||
       uriText.contains('captcha') ||
-      uriText.contains('challenge=')) {
+      (uriPath.contains('/challenge/') &&
+          pageUri?.host != 'www.deviantart.com') ||
+      challengeQuery) {
     return true;
   }
 
@@ -82,12 +129,19 @@ bool looksLikeHumanVerificationPage({
     'checking your browser',
     'security verification',
     'complete the security check',
+    'additional verification required',
+    'unusual traffic',
+    'prove you are not a robot',
+    'complete the captcha',
+    'verify your identity',
     'captcha',
     'recaptcha',
     'hcaptcha',
     'cloudflare ray id',
     '人机验证',
     '安全验证',
+    '完成验证',
+    '异常流量',
   ];
   return markers.any(text.contains);
 }
@@ -102,8 +156,10 @@ LoginHttpPageKind classifyLoginHttpPage({
   if (isPotentialHumanVerificationStatus(statusCode) && isHumanVerification) {
     return LoginHttpPageKind.humanVerification;
   }
-  if (statusCode != 403) return LoginHttpPageKind.ignored;
-  return username.isNotEmpty
+  if (!isPotentialHumanVerificationStatus(statusCode)) {
+    return LoginHttpPageKind.ignored;
+  }
+  return statusCode == 403 && username.isNotEmpty
       ? LoginHttpPageKind.committedSession
       : LoginHttpPageKind.connectionFailure;
 }
@@ -181,7 +237,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   bool _oauthRequested = false;
   bool _recoveringHttp403 = false;
   bool _pageLoadFailed = false;
-  bool _humanVerificationActive = false;
+  HumanVerificationState _humanVerificationState = HumanVerificationState.none;
   bool _showBrowser = false;
   bool _preparingBrowser = false;
   WebLoginMethod _loginMethod = WebLoginMethod.deviantArt;
@@ -202,6 +258,10 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   int _reportSeq = 0;
   int _humanVerificationInspectionSeq = 0;
   Timer? _authorizationPageTimer;
+  Timer? _humanVerificationPollTimer;
+  InAppWebViewController? _verificationController;
+  bool _humanVerificationPollInFlight = false;
+  int _humanVerificationNegativePolls = 0;
   double _progress = 0;
   late final AuthController _authController;
   app_proxy.ProxyController? _proxyController;
@@ -230,6 +290,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   @override
   void dispose() {
     _authorizationPageTimer?.cancel();
+    _humanVerificationPollTimer?.cancel();
     _proxyController?.removeListener(_onProxyChanged);
     unawaited(_launchSub?.cancel());
     final auth = ref.read(authControllerProvider);
@@ -420,6 +481,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
 
   Future<void> _retryPage() async {
     _authorizationPageTimer?.cancel();
+    _clearHumanVerification();
     _controller = null;
     await _authController.cancelLogin();
     if (!mounted) return;
@@ -434,6 +496,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
 
   Future<void> _closeBrowser() async {
     _authorizationPageTimer?.cancel();
+    _clearHumanVerification();
     _controller = null;
     await _authController.cancelLogin();
     if (!mounted) return;
@@ -450,6 +513,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     WebLoginMethod method = WebLoginMethod.deviantArt,
   }) async {
     if (_preparingBrowser) return;
+    _clearHumanVerification();
     final oauthSignedIn = ref.read(authControllerProvider).oauthSignedIn;
     setState(() {
       _preparingBrowser = true;
@@ -553,6 +617,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
         _socialCompletionFailed = false;
         _loading = true;
       });
+      _resumeMainVerificationMonitor();
     }
     AppLogger.instance.info(
       'auth',
@@ -598,10 +663,119 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     setState(() => _completingSocialSignIn = false);
   }
 
-  void _beginWebNavigation() {
+  bool get _showHumanVerificationNotice =>
+      _humanVerificationState != HumanVerificationState.none;
+  bool get _humanVerificationActive =>
+      _humanVerificationState == HumanVerificationState.active;
+  bool get _humanVerificationSuspected =>
+      _humanVerificationState == HumanVerificationState.loading;
+
+  void _clearHumanVerification() {
+    _humanVerificationNegativePolls = 0;
+    if (!mounted) {
+      _humanVerificationState = HumanVerificationState.none;
+      return;
+    }
+    if (_showHumanVerificationNotice) {
+      setState(() => _humanVerificationState = HumanVerificationState.none);
+    }
+  }
+
+  void _announceHumanVerification({required bool suspected}) {
+    if (!mounted || _showHumanVerificationNotice) return;
+    final s = strings(ref.read(appLanguageProvider));
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            suspected ? s.humanVerificationChecking : s.humanVerificationHint,
+          ),
+          duration: const Duration(seconds: 8),
+        ),
+      );
+  }
+
+  void _markHumanVerificationSuspected(int statusCode) {
+    if (!mounted) return;
+    _announceHumanVerification(suspected: true);
+    setState(() {
+      _humanVerificationState = humanVerificationStateAfterHttpStatus(
+        current: _humanVerificationState,
+        statusCode: statusCode,
+      );
+      _pageLoadFailed = false;
+      _socialCompletionFailed = false;
+      _loading = false;
+      _waitingForAuthorizationPage = false;
+    });
+    _authorizationPageTimer?.cancel();
+  }
+
+  void _markHumanVerificationActive() {
+    if (!mounted) return;
+    final alreadyNotified = _showHumanVerificationNotice;
+    if (!alreadyNotified) {
+      _announceHumanVerification(suspected: false);
+    }
+    setState(() {
+      _humanVerificationState = humanVerificationStateAfterInspection(
+        current: _humanVerificationState,
+        detected: true,
+        consecutiveCleanObservations: 0,
+      );
+      _pageLoadFailed = false;
+      _socialCompletionFailed = false;
+      _loading = false;
+      _waitingForAuthorizationPage = false;
+    });
+    _humanVerificationNegativePolls = 0;
+    _authorizationPageTimer?.cancel();
+  }
+
+  void _monitorHumanVerification(InAppWebViewController controller) {
+    _verificationController = controller;
+    _humanVerificationPollTimer ??= Timer.periodic(
+      const Duration(milliseconds: 1250),
+      (_) => unawaited(_pollHumanVerification()),
+    );
+    unawaited(_pollHumanVerification());
+  }
+
+  void _resumeMainVerificationMonitor({bool clearNotice = true}) {
+    if (clearNotice) _clearHumanVerification();
+    final controller = _controller;
+    if (controller != null) _monitorHumanVerification(controller);
+  }
+
+  Future<void> _pollHumanVerification() async {
+    final controller = _verificationController;
+    if (!mounted ||
+        !_showBrowser ||
+        controller == null ||
+        _humanVerificationPollInFlight) {
+      return;
+    }
+    _humanVerificationPollInFlight = true;
+    try {
+      await _inspectHumanVerification(
+        controller,
+        clearOnNegative: _humanVerificationActive,
+        retryWhileLoading: false,
+      );
+    } finally {
+      _humanVerificationPollInFlight = false;
+    }
+  }
+
+  void _beginWebNavigation(InAppWebViewController controller, WebUri? url) {
     _humanVerificationInspectionSeq++;
-    if (mounted && _humanVerificationActive) {
-      setState(() => _humanVerificationActive = false);
+    _humanVerificationNegativePolls = 0;
+    _monitorHumanVerification(controller);
+    if (looksLikeHumanVerificationPage(
+      pageUri: url == null ? null : Uri.tryParse(url.toString()),
+    )) {
+      _markHumanVerificationActive();
     }
   }
 
@@ -610,17 +784,22 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     InAppWebViewController controller, {
     WebUri? fallbackUri,
     bool clearOnNegative = false,
+    bool retryWhileLoading = true,
   }) async {
     // Multiple callbacks (HTTP error + load stop) may inspect the same
     // document concurrently. Only a real navigation invalidates them; one
     // callback must not cancel another callback that still owns HTTP error
     // classification for the same page.
     final inspectionSeq = _humanVerificationInspectionSeq;
-    for (final delay in <Duration>[
-      Duration.zero,
-      const Duration(milliseconds: 250),
-      const Duration(milliseconds: 750),
-    ]) {
+    final delays = retryWhileLoading
+        ? const <Duration>[
+            Duration.zero,
+            Duration(milliseconds: 250),
+            Duration(milliseconds: 750),
+            Duration(milliseconds: 1500),
+          ]
+        : const <Duration>[Duration.zero];
+    for (final delay in delays) {
       if (delay != Duration.zero) await Future<void>.delayed(delay);
       if (!mounted || inspectionSeq != _humanVerificationInspectionSeq) {
         return null;
@@ -631,10 +810,17 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
             const challengeSelector = [
               'iframe[src*="captcha" i]',
               'iframe[src*="challenge" i]',
+              'iframe[src*="recaptcha" i]',
+              'iframe[src*="hcaptcha" i]',
+              'iframe[src*="arkoselabs" i]',
               '[id*="captcha" i]',
               '[class*="captcha" i]',
               '[id*="challenge-running" i]',
               '[class*="challenge-running" i]',
+              '[class*="cf-turnstile" i]',
+              '[data-sitekey]',
+              '.g-recaptcha',
+              '.h-captcha',
               'input[name*="captcha" i]',
               '#px-captcha',
               '.cf-challenge-running'
@@ -676,14 +862,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                   inspectionSeq != _humanVerificationInspectionSeq) {
                 return null;
               }
-              setState(() {
-                _humanVerificationActive = true;
-                _pageLoadFailed = false;
-                _socialCompletionFailed = false;
-                _loading = false;
-                _waitingForAuthorizationPage = false;
-              });
-              _authorizationPageTimer?.cancel();
+              _markHumanVerificationActive();
               AppLogger.instance.info(
                 'auth',
                 'human-verification page detected; keeping the interactive '
@@ -706,7 +885,15 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       return null;
     }
     if (clearOnNegative && _humanVerificationActive) {
-      setState(() => _humanVerificationActive = false);
+      _humanVerificationNegativePolls++;
+      final nextState = humanVerificationStateAfterInspection(
+        current: _humanVerificationState,
+        detected: false,
+        consecutiveCleanObservations: _humanVerificationNegativePolls,
+      );
+      if (nextState == HumanVerificationState.none) {
+        _clearHumanVerification();
+      }
     }
     return false;
   }
@@ -739,6 +926,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       _socialCompletionFailed = false;
       _popupWindowId = null;
     });
+    _resumeMainVerificationMonitor();
   }
 
   Future<void> _handleSocialPopupHttpError(
@@ -752,11 +940,13 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
         !mounted) {
       return;
     }
+    _markHumanVerificationSuspected(statusCode);
     final challenge = await _inspectHumanVerification(
       controller,
       fallbackUri: request.url,
     );
     if (challenge != false || !mounted) return;
+    _clearHumanVerification();
     final username = await ref.read(webSessionProvider).webUsername();
     if (!mounted) return;
     if (_humanVerificationActive) return;
@@ -774,6 +964,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       _socialCompletionFailed = false;
       _popupWindowId = null;
     });
+    _resumeMainVerificationMonitor();
   }
 
   Future<void> _testNetwork() async {
@@ -906,6 +1097,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                 onPressed: () {
                   if (_popupWindowId != null) {
                     setState(() => _popupWindowId = null);
+                    _resumeMainVerificationMonitor();
                     return;
                   }
                   unawaited(_closeBrowser());
@@ -968,7 +1160,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                         ),
                       ),
                     ),
-                  if (_humanVerificationActive)
+                  if (_showHumanVerificationNotice)
                     Material(
                       color: theme.colorScheme.tertiaryContainer,
                       child: Padding(
@@ -978,19 +1170,43 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                         ),
                         child: Row(
                           children: <Widget>[
-                            Icon(
-                              Icons.verified_user_outlined,
-                              size: 20,
-                              color: theme.colorScheme.onTertiaryContainer,
-                            ),
+                            _humanVerificationSuspected
+                                ? SizedBox.square(
+                                    dimension: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color:
+                                          theme.colorScheme.onTertiaryContainer,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.verified_user_outlined,
+                                    size: 20,
+                                    color:
+                                        theme.colorScheme.onTertiaryContainer,
+                                  ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: Text(
-                                s.humanVerificationHint,
-                                style: TextStyle(
-                                  color: theme.colorScheme.onTertiaryContainer,
+                              child: Semantics(
+                                liveRegion: true,
+                                child: Text(
+                                  _humanVerificationSuspected
+                                      ? s.humanVerificationChecking
+                                      : s.humanVerificationHint,
+                                  style: TextStyle(
+                                    color:
+                                        theme.colorScheme.onTertiaryContainer,
+                                  ),
                                 ),
                               ),
+                            ),
+                            IconButton(
+                              tooltip: s.refresh,
+                              onPressed: () => unawaited(
+                                _verificationController?.reload() ??
+                                    Future<void>.value(),
+                              ),
+                              icon: const Icon(Icons.refresh),
                             ),
                           ],
                         ),
@@ -1071,6 +1287,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                             javaScriptCanOpenWindowsAutomatically: true,
                             supportMultipleWindows: true,
                             thirdPartyCookiesEnabled: true,
+                            domStorageEnabled: true,
                             // A desktop Chrome UA makes deviantart.com serve its desktop
                             // login page, which includes the Google/Apple one-click
                             // sign-in buttons that the mobile layout omits.
@@ -1081,6 +1298,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                           ),
                           onWebViewCreated: (controller) {
                             _controller = controller;
+                            _monitorHumanVerification(controller);
                             final pending = _pendingAuthUri;
                             if (pending != null) {
                               _pendingAuthUri = null;
@@ -1105,6 +1323,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                                     uri.host == 'oauth') {
                                   _oauthCallbackSeen = true;
                                   _authorizationPageTimer?.cancel();
+                                  _clearHumanVerification();
                                   _bridge?.addCallback(uri);
                                   // Navigate back to the deviantart home page; its
                                   // onLoadStop then reports the real web session.
@@ -1135,7 +1354,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                             return true;
                           },
                           onLoadStart: (controller, url) {
-                            _beginWebNavigation();
+                            _beginWebNavigation(controller, url);
                             if (url != null && url.scheme != 'about') {
                               _lastMainFrameUri = Uri.tryParse(url.toString());
                             }
@@ -1184,6 +1403,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                                 _recoveringHttp403) {
                               return;
                             }
+                            _markHumanVerificationSuspected(statusCode);
                             final challenge = await _inspectHumanVerification(
                               controller,
                               fallbackUri: request.url,
@@ -1192,6 +1412,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                             // inspection was superseded. An interactive challenge
                             // must remain visible and must never become a proxy error.
                             if (challenge != false || !mounted) return;
+                            _clearHumanVerification();
                             // DeviantArt can return a transient HTML 403 after accepting
                             // the first WebView password submission. If the persistent
                             // userinfo cookie was already committed, move to Home so a
@@ -1275,9 +1496,13 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                               javaScriptCanOpenWindowsAutomatically: true,
                               supportMultipleWindows: true,
                               thirdPartyCookiesEnabled: true,
+                              domStorageEnabled: true,
                               userAgent: webUserAgent,
                               transparentBackground: false,
                             ),
+                            onWebViewCreated: (controller) {
+                              _monitorHumanVerification(controller);
+                            },
                             shouldOverrideUrlLoading:
                                 (popupController, navigationAction) async {
                                   final uri = navigationAction.request.url;
@@ -1286,9 +1511,11 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                                       uri.host == 'oauth') {
                                     _oauthCallbackSeen = true;
                                     _authorizationPageTimer?.cancel();
+                                    _clearHumanVerification();
                                     _bridge?.addCallback(uri);
                                     if (mounted) {
                                       setState(() => _popupWindowId = null);
+                                      _resumeMainVerificationMonitor();
                                     }
                                     unawaited(
                                       _controller?.loadUrl(
@@ -1303,7 +1530,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                                   return NavigationActionPolicy.ALLOW;
                                 },
                             onLoadStart: (popupController, url) {
-                              _beginWebNavigation();
+                              _beginWebNavigation(popupController, url);
                               if (mounted) {
                                 setState(() {
                                   _loading = true;
@@ -1352,6 +1579,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                               }
                             },
                             onCloseWindow: (controller) {
+                              _resumeMainVerificationMonitor();
                               unawaited(_finishSocialPopup('window.close'));
                             },
                             onReceivedHttpError:
