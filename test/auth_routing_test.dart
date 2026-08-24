@@ -11,11 +11,17 @@ void main() {
     expect(authRedirect(AuthStatus.signedIn, '/splash'), '/');
   });
 
-  test('settings, updates and diagnostics remain available while signed out', () {
-    expect(authRedirect(AuthStatus.signedOut, '/settings'), isNull);
-    expect(authRedirect(AuthStatus.signedOut, '/settings/proxy'), isNull);
-    expect(authRedirect(AuthStatus.signedOut, '/settings/diagnostics'), isNull);
-  });
+  test(
+    'settings, updates and diagnostics remain available while signed out',
+    () {
+      expect(authRedirect(AuthStatus.signedOut, '/settings'), isNull);
+      expect(authRedirect(AuthStatus.signedOut, '/settings/proxy'), isNull);
+      expect(
+        authRedirect(AuthStatus.signedOut, '/settings/diagnostics'),
+        isNull,
+      );
+    },
+  );
 
   test('explicit logout returns account routes to public Home', () {
     expect(authRedirect(AuthStatus.signedOut, '/favourites'), '/');

@@ -97,9 +97,7 @@ void main() {
     final silent = controller.refreshSilently();
     expect(calls, 1);
 
-    gate.complete(
-      Page<Artwork>(items: <Artwork>[artwork(1)], hasMore: false),
-    );
+    gate.complete(Page<Artwork>(items: <Artwork>[artwork(1)], hasMore: false));
     await Future.wait(<Future<void>>[first, second, silent]);
     expect(calls, 1);
     expect(controller.state.items.single.id, 'art-1');
