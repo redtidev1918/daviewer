@@ -59,6 +59,7 @@ flutter build windows --release      # Windows app
 export http_proxy=http://127.0.0.1:7890
 export https_proxy=http://127.0.0.1:7890
 # Or one general proxy (lowercase and uppercase variables are supported):
+# 7892 is only an example; replace it with your proxy's HTTP/Mixed port.
 # export all_proxy=http://127.0.0.1:7892
 export no_proxy=localhost,127.0.0.1
 flutter pub get
@@ -69,6 +70,7 @@ Pass JVM proxy properties explicitly when an Android toolchain download needs a
 proxy:
 
 ```shell
+# Replace 7892 with the actual HTTP/Mixed port shown by your proxy app.
 export GRADLE_OPTS="-Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=7892 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=7892"
 flutter build apk --debug
 ```

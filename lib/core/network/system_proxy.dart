@@ -1,6 +1,12 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart';
+
 import '../diagnostics/app_logger.dart';
+
+const MethodChannel _systemProxyChannel = MethodChannel(
+  'daviewer/system_proxy',
+);
 
 final class SystemProxyConfig {
   const SystemProxyConfig({required this.host, required this.port});
@@ -20,11 +26,44 @@ final class SystemProxyConfig {
 }
 
 Future<SystemProxyConfig?> detectSystemProxy() async {
+  if (Platform.isAndroid) return _detectAndroidProxy(AppLogger.instance);
   final logger = AppLogger.instance;
   if (Platform.isMacOS) return _detectMacOsProxy(logger);
   if (Platform.isWindows) return _detectWindowsProxy(logger);
   if (Platform.isLinux) return _detectLinuxProxy(logger);
   return null;
+}
+
+Future<SystemProxyConfig?> _detectAndroidProxy(AppLogger logger) async {
+  try {
+    final result = await _systemProxyChannel.invokeMapMethod<String, Object?>(
+      'getSystemProxy',
+    );
+    final host = result?['host'];
+    final port = result?['port'];
+    if (host is! String || host.trim().isEmpty || port is! int) {
+      logger.info('proxy', 'Android: no system HTTP proxy configured');
+      return null;
+    }
+    if (port <= 0 || port > 65535) {
+      logger.warning('proxy', 'Android: invalid system proxy port');
+      return null;
+    }
+    final proxy = SystemProxyConfig(host: host.trim(), port: port);
+    logger.info('proxy', 'Android: detected $proxy');
+    return proxy;
+  } on MissingPluginException {
+    logger.warning('proxy', 'Android system proxy bridge unavailable');
+    return null;
+  } on Object catch (error, stack) {
+    logger.warning(
+      'proxy',
+      'Android system proxy detection failed',
+      error,
+      stack,
+    );
+    return null;
+  }
 }
 
 Future<SystemProxyConfig?> _detectMacOsProxy(AppLogger logger) async {

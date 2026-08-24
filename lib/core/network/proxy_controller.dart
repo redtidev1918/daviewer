@@ -128,25 +128,11 @@ final class ProxyController extends ChangeNotifier {
     final stopwatch = Stopwatch()..start();
     final client = HttpClient()..findProxy = (_) => directive;
     try {
-      final request = await client
-          .getUrl(Uri.parse('https://www.deviantart.com/'))
-          .timeout(const Duration(seconds: 12));
-      request.headers.set(HttpHeaders.userAgentHeader, 'DAViewer/1.0');
-      final response = await request.close().timeout(
-        const Duration(seconds: 12),
-      );
-      await response.drain<void>().timeout(const Duration(seconds: 12));
-      stopwatch.stop();
-      final success = response.statusCode >= 200 && response.statusCode < 400;
-      AppLogger.instance.info(
-        'proxy',
-        'connectivity check: ${response.statusCode} in ${stopwatch.elapsedMilliseconds}ms',
-      );
-      return ProxyCheckResult(
-        isSuccess: success,
-        elapsed: stopwatch.elapsed,
-        statusCode: response.statusCode,
-      );
+      final result = await _performConnectionTest(
+        client,
+        stopwatch,
+      ).timeout(const Duration(seconds: 12));
+      return result;
     } on Object catch (error, stack) {
       stopwatch.stop();
       AppLogger.instance.warning(
@@ -159,6 +145,31 @@ final class ProxyController extends ChangeNotifier {
     } finally {
       client.close(force: true);
     }
+  }
+
+  Future<ProxyCheckResult> _performConnectionTest(
+    HttpClient client,
+    Stopwatch stopwatch,
+  ) async {
+    // robots.txt is a small same-origin resource, so the check measures
+    // reachability without downloading the half-megabyte sign-in document.
+    final request = await client.getUrl(
+      Uri.parse('https://www.deviantart.com/robots.txt'),
+    );
+    request.headers.set(HttpHeaders.userAgentHeader, 'DAViewer/1.0');
+    final response = await request.close();
+    await response.drain<void>();
+    stopwatch.stop();
+    final success = response.statusCode >= 200 && response.statusCode < 400;
+    AppLogger.instance.info(
+      'proxy',
+      'connectivity check: ${response.statusCode} in ${stopwatch.elapsedMilliseconds}ms',
+    );
+    return ProxyCheckResult(
+      isSuccess: success,
+      elapsed: stopwatch.elapsed,
+      statusCode: response.statusCode,
+    );
   }
 
   void _recompute() {

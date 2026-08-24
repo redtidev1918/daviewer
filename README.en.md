@@ -150,9 +150,16 @@ flutter run -d windows   # Windows
 
 The runtime network path is selected in this order: in-app manual setting,
 system proxy, `https_proxy` / `http_proxy` / `all_proxy`, then build setting.
-Settings → Proxy accepts `127.0.0.1:7892` or `http://127.0.0.1:7892`, persists
+Settings → Proxy accepts `127.0.0.1:<YOUR_PORT>` or
+`http://127.0.0.1:<YOUR_PORT>`, persists
 the choice, and applies it to API, media, downloads, background web sessions,
 and sign-in. The page includes a direct DeviantArt connectivity check.
+
+The port is never fixed: use the HTTP/Mixed port shown by your proxy app. On a
+phone, `127.0.0.1` is correct only when the proxy runs on that same phone. If it
+runs on a computer or router, enter its LAN IP and enable LAN access. The app
+tests reachability first, so directly connected users are not pushed toward a
+proxy while restricted networks receive the relevant recovery steps.
 
 Apps launched from Finder usually do not inherit terminal variables. On macOS
 12/13 an app-only proxy cannot be injected into the system WebView, so use the

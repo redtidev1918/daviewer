@@ -23,6 +23,7 @@ final class _ProxySettingsScreenState
   String _status = '';
   bool _busy = false;
   bool _testingConnection = false;
+  bool? _lastTestSucceeded;
 
   @override
   void initState() {
@@ -51,71 +52,115 @@ final class _ProxySettingsScreenState
 
     return Scaffold(
       appBar: AppBar(title: Text(s.proxy)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: <Widget>[
-          Text(
-            current == null
-                ? s.proxyCurrentDirect
-                : s.proxyCurrentConfigured('${current.host}:${current.port}'),
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 4),
-          Text(_sourceLabel(proxy?.source, s)),
-          const SizedBox(height: 4),
-          Text(s.proxyHint, style: Theme.of(context).textTheme.bodySmall),
-          if (Platform.isMacOS &&
-              proxy?.manualOverride != null &&
-              ref.watch(runtimeProvider).webViewProxyManager?.state ==
-                  WebViewProxyState.unsupported) ...[
-            const SizedBox(height: 8),
-            Text(
-              s.proxyMacLegacyHint,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
-          const SizedBox(height: 16),
-          TextField(
-            controller: _controller,
-            decoration: InputDecoration(
-              labelText: s.proxyAddressLabel,
-              hintText: 'http://127.0.0.1:7892',
-              border: const OutlineInputBorder(),
-            ),
-            keyboardType: TextInputType.url,
-          ),
-          const SizedBox(height: 12),
-          Row(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
             children: <Widget>[
-              FilledButton(
-                onPressed: _busy ? null : _apply,
-                child: Text(s.apply),
+              Text(
+                current == null
+                    ? s.proxyCurrentDirect
+                    : s.proxyCurrentConfigured(
+                        '${current.host}:${current.port}',
+                      ),
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-              const SizedBox(width: 12),
-              OutlinedButton(
-                onPressed: proxy == null || _busy ? null : _restoreAuto,
-                child: Text(s.restoreAutoDetect),
+              const SizedBox(height: 4),
+              Text(_sourceLabel(proxy?.source, s)),
+              const SizedBox(height: 4),
+              Text(s.proxyHint, style: Theme.of(context).textTheme.bodySmall),
+              if (Platform.isMacOS &&
+                  proxy?.manualOverride != null &&
+                  ref.watch(runtimeProvider).webViewProxyManager?.state ==
+                      WebViewProxyState.unsupported) ...[
+                const SizedBox(height: 8),
+                Text(
+                  s.proxyMacLegacyHint,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
+              const SizedBox(height: 16),
+              TextField(
+                controller: _controller,
+                decoration: InputDecoration(
+                  labelText: s.proxyAddressLabel,
+                  hintText: s.proxyAddressExample,
+                  helperText: Platform.isAndroid
+                      ? s.proxyAddressMobileHelp
+                      : s.proxyAddressDesktopHelp,
+                  helperMaxLines: 5,
+                  border: const OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.url,
+                textInputAction: TextInputAction.done,
+                autocorrect: false,
+                enableSuggestions: false,
+                onSubmitted: _busy ? null : (_) => _apply(),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _busy ? null : _apply,
+                  icon: _busy
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save_outlined),
+                  label: Text(s.saveAndTest),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: proxy == null || _busy ? null : _restoreAuto,
+                  icon: const Icon(Icons.settings_backup_restore),
+                  label: Text(s.restoreAutoDetect),
+                ),
+              ),
+              if (_status.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Card(
+                  color: _lastTestSucceeded == null
+                      ? null
+                      : _lastTestSucceeded!
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(context).colorScheme.errorContainer,
+                  child: ListTile(
+                    leading: Icon(
+                      _lastTestSucceeded == null
+                          ? Icons.info_outline
+                          : _lastTestSucceeded!
+                          ? Icons.cloud_done_outlined
+                          : Icons.cloud_off_outlined,
+                    ),
+                    title: Text(_status),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: proxy == null || _busy ? null : _testConnection,
+                  icon: _testingConnection
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.network_check),
+                  label: Text(
+                    _testingConnection ? s.testingConnection : s.testConnection,
+                  ),
+                ),
               ),
             ],
           ),
-          if (_status.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(_status, style: Theme.of(context).textTheme.bodySmall),
-          ],
-          const SizedBox(height: 20),
-          OutlinedButton.icon(
-            onPressed: proxy == null || _busy ? null : _testConnection,
-            icon: _testingConnection
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.network_check),
-            label: Text(
-              _testingConnection ? s.testingConnection : s.testConnection,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -134,13 +179,23 @@ final class _ProxySettingsScreenState
       setState(() => _status = s.invalidProxyFormat);
       return;
     }
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _testingConnection = true;
+      _lastTestSucceeded = null;
+      _status = s.testingConnection;
+    });
     await proxy.setManualProxy(parsed);
     await ref.read(runtimeProvider).webViewProxyManager?.prepare();
+    final result = await proxy.testConnection();
     if (!mounted) return;
     setState(() {
       _busy = false;
-      _status = s.appliedProxy(parsed.toString());
+      _testingConnection = false;
+      _lastTestSucceeded = result.isSuccess;
+      _status = result.isSuccess
+          ? s.proxyConnectionReady(parsed.toString())
+          : s.savedButTestFailed;
       _controller.text = parsed.toString();
     });
   }
@@ -149,14 +204,27 @@ final class _ProxySettingsScreenState
     final runtime = ref.read(runtimeProvider);
     final proxy = runtime.proxyController;
     if (proxy == null) return;
-    setState(() => _busy = true);
+    final s = strings(ref.read(appLanguageProvider));
+    setState(() {
+      _busy = true;
+      _testingConnection = true;
+      _lastTestSucceeded = null;
+      _status = s.testingConnection;
+    });
     await proxy.setManualProxy(null);
     await runtime.webViewProxyManager?.prepare();
+    final result = await proxy.testConnection();
     if (!mounted) return;
     setState(() {
       _busy = false;
+      _testingConnection = false;
+      _lastTestSucceeded = result.isSuccess;
       _controller.clear();
-      _status = strings(ref.read(appLanguageProvider)).restoredAutoDetect;
+      _status = result.isSuccess
+          ? proxy.config == null
+                ? s.directConnectionReady
+                : s.proxyConnectionReady(proxy.config.toString())
+          : s.connectionNeedsAttention;
     });
   }
 
@@ -167,6 +235,7 @@ final class _ProxySettingsScreenState
     setState(() {
       _busy = true;
       _testingConnection = true;
+      _lastTestSucceeded = null;
       _status = s.testingConnection;
     });
     final result = await proxy.testConnection();
@@ -174,6 +243,7 @@ final class _ProxySettingsScreenState
     setState(() {
       _busy = false;
       _testingConnection = false;
+      _lastTestSucceeded = result.isSuccess;
       _status = result.isSuccess
           ? s.proxyTestSucceeded(result.elapsed.inMilliseconds)
           : s.proxyTestFailed;
