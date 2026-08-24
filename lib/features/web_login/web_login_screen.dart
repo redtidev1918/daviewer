@@ -32,12 +32,50 @@ bool shouldRecoverLogin403({
   required String username,
 }) => isMainFrame && statusCode == 403 && username.isNotEmpty;
 
+enum WebLoginMethod { deviantArt, google, apple }
+
+bool shouldActivateLoginMethod({
+  required WebLoginMethod method,
+  required bool alreadyActivated,
+  required Uri? pageUri,
+}) {
+  if (alreadyActivated ||
+      pageUri == null ||
+      pageUri.host != 'www.deviantart.com') {
+    return false;
+  }
+  final isJoinPage = pageUri.path == '/join' || pageUri.path == '/join/oauth2';
+  final isLoginPage = pageUri.path.startsWith('/users/login');
+  return method == WebLoginMethod.deviantArt
+      ? isJoinPage
+      : isJoinPage || isLoginPage;
+}
+
+bool shouldResumeOAuthAfterSocialSignIn({
+  required WebLoginMethod method,
+  required bool oauthSignedIn,
+  required bool callbackSeen,
+  required Uri? mainFrameUri,
+}) {
+  if (method == WebLoginMethod.deviantArt || oauthSignedIn || callbackSeen) {
+    return false;
+  }
+  if (mainFrameUri == null || mainFrameUri.scheme == 'about') return true;
+  if (mainFrameUri.host != 'www.deviantart.com') return false;
+  final path = mainFrameUri.path.toLowerCase();
+  return path.startsWith('/users/login') ||
+      path == '/join' ||
+      path == '/join/oauth2' ||
+      path == '/' ||
+      path.isEmpty;
+}
+
 /// Hosts the embedded DeviantArt WebView.
 ///
-/// This screen owns the deviantart.com web session. It is opened to let the
-/// user sign in on the web (for the personalized `rfy/deviations` home feed)
-/// and also receives DAKit OAuth authorize URLs so an existing web session can
-/// complete OAuth without re-entering credentials.
+/// This screen owns the deviantart.com web session and hosts DAKit's OAuth
+/// authorize navigation. A first sign-in begins with one OAuth/PKCE request;
+/// its password or social-provider page establishes the web cookies and then
+/// returns to that same transaction for the App token exchange.
 final class WebLoginScreen extends ConsumerStatefulWidget {
   const WebLoginScreen({super.key});
 
@@ -69,13 +107,21 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   bool _pageLoadFailed = false;
   bool _showBrowser = false;
   bool _preparingBrowser = false;
-  bool _socialSignIn = false;
+  WebLoginMethod _loginMethod = WebLoginMethod.deviantArt;
+  bool _launchOAuthWhenReady = false;
+  bool _loginMethodTriggered = false;
+  bool _completingSocialSignIn = false;
+  bool _socialCompletionFailed = false;
+  bool _waitingForAuthorizationPage = false;
+  bool _oauthCallbackSeen = false;
   bool _testingNetwork = false;
   bool? _networkReachable;
   String _networkStatus = '';
   WebViewEnvironment? _webViewEnvironment;
   int _webViewGeneration = 0;
   int? _popupWindowId;
+  Uri? _activeAuthorizeUri;
+  Uri? _lastMainFrameUri;
   int _reportSeq = 0;
   double _progress = 0;
   late final AuthController _authController;
@@ -97,10 +143,9 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_testNetwork());
     });
-    // OAuth is deliberately not started here. On a first install the login
-    // form must finish establishing its cookies before the same WebView is
-    // navigated to /oauth2/authorize; racing those two navigations produced a
-    // misleading 403 after the user submitted a valid password on macOS.
+    // OAuth starts only after the user chooses a method. The authorize request
+    // then owns the complete login round trip, so a social provider never has
+    // to establish a web session and start a second authorization afterwards.
   }
 
   @override
@@ -115,6 +160,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   }
 
   void _loadAuthRequest(Uri uri) {
+    _activeAuthorizeUri = uri;
     final controller = _controller;
     if (controller == null) {
       _pendingAuthUri = uri;
@@ -161,6 +207,11 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
             .showSnackBar(SnackBar(content: Text(s.webLoginSuccess)));
       }
       if (isLoggedIn) _startOAuthIfNeeded();
+      if (isLoggedIn &&
+          ref.read(authControllerProvider).oauthSignedIn &&
+          !_closeAfterReport) {
+        _closeAfterReport = true;
+      }
       _maybeClose();
     } on Object {
       // Best effort; the page may not expose the state during navigation.
@@ -181,6 +232,23 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     unawaited(
       _authController.login().whenComplete(() {
         _oauthRequested = false;
+        if (mounted && _activeAuthorizeUri == null) {
+          setState(() => _waitingForAuthorizationPage = false);
+        }
+      }),
+    );
+  }
+
+  void _startUnifiedOAuth() {
+    final auth = ref.read(authControllerProvider);
+    if (auth.oauthSignedIn || auth.isLoggingIn || _oauthRequested) return;
+    _oauthRequested = true;
+    unawaited(
+      _authController.login().whenComplete(() {
+        _oauthRequested = false;
+        if (mounted && _activeAuthorizeUri == null) {
+          setState(() => _waitingForAuthorizationPage = false);
+        }
       }),
     );
   }
@@ -208,6 +276,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       const Duration(milliseconds: 250),
       const Duration(milliseconds: 750),
       const Duration(milliseconds: 1500),
+      const Duration(milliseconds: 2500),
     ]) {
       if (delay != Duration.zero) await Future<void>.delayed(delay);
       final username = await ref.read(webSessionProvider).webUsername();
@@ -222,14 +291,25 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       _showBrowser = false;
       _pageLoadFailed = false;
     });
-    unawaited(_openBrowser(social: _socialSignIn));
+    unawaited(_openBrowser(method: _loginMethod));
   }
 
-  Future<void> _openBrowser({bool social = false}) async {
+  Future<void> _openBrowser({
+    WebLoginMethod method = WebLoginMethod.deviantArt,
+  }) async {
     if (_preparingBrowser) return;
+    final oauthSignedIn = ref.read(authControllerProvider).oauthSignedIn;
     setState(() {
       _preparingBrowser = true;
-      _socialSignIn = social;
+      _loginMethod = method;
+      _launchOAuthWhenReady = !oauthSignedIn;
+      _waitingForAuthorizationPage = !oauthSignedIn;
+      _loginMethodTriggered = false;
+      _completingSocialSignIn = false;
+      _socialCompletionFailed = false;
+      _oauthCallbackSeen = false;
+      _activeAuthorizeUri = null;
+      _lastMainFrameUri = null;
       _networkStatus = '';
     });
     final environment = await ref
@@ -243,6 +323,149 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       _showBrowser = true;
       _loading = true;
       _webViewGeneration++;
+    });
+  }
+
+  String get _socialProviderName => switch (_loginMethod) {
+    WebLoginMethod.google => 'Google',
+    WebLoginMethod.apple => 'Apple',
+    WebLoginMethod.deviantArt => 'DeviantArt',
+  };
+
+  Future<void> _triggerSelectedLoginMethod(
+    InAppWebViewController controller,
+    WebUri? url,
+  ) async {
+    if (!shouldActivateLoginMethod(
+      method: _loginMethod,
+      alreadyActivated: _loginMethodTriggered,
+      pageUri: url == null ? null : Uri.tryParse(url.toString()),
+    )) {
+      return;
+    }
+    final provider = _socialProviderName;
+    for (final delay in <Duration>[
+      Duration.zero,
+      const Duration(milliseconds: 250),
+      const Duration(milliseconds: 600),
+    ]) {
+      if (delay != Duration.zero) await Future<void>.delayed(delay);
+      if (!mounted || _loginMethodTriggered) return;
+      try {
+        final clicked = await controller.evaluateJavascript(
+          source: _loginMethod == WebLoginMethod.deviantArt
+              ? '''(() => {
+                  const links = Array.from(document.querySelectorAll('a[href*="/users/login"]'));
+                  const target = links.find((link) => (link.textContent || '').toLowerCase().includes('log in')) || links[0];
+                  if (!target) return false;
+                  target.click();
+                  return true;
+                })()'''
+              : '''(() => {
+                  const marker = document.querySelector('[aria-label="$provider"]');
+                  if (!marker) return false;
+                  const target = marker.closest('button, a, [role="button"]') || marker;
+                  target.click();
+                  return true;
+                })()''',
+        );
+        if (clicked == true) {
+          _loginMethodTriggered = true;
+          AppLogger.instance.info(
+            'auth',
+            _loginMethod == WebLoginMethod.deviantArt
+                ? 'opened the DeviantArt account form from the OAuth join page'
+                : 'opened $provider from the official DeviantArt sign-in page',
+          );
+          return;
+        }
+      } on Object catch (error, stack) {
+        AppLogger.instance.warning(
+          'auth',
+          'could not activate the selected sign-in control ($provider)',
+          error,
+          stack,
+        );
+      }
+    }
+  }
+
+  Future<void> _finishSocialPopup(String reason) async {
+    if (_loginMethod == WebLoginMethod.deviantArt || _completingSocialSignIn) {
+      return;
+    }
+    if (mounted) {
+      setState(() {
+        _popupWindowId = null;
+        _completingSocialSignIn = true;
+        _socialCompletionFailed = false;
+        _loading = true;
+      });
+    }
+    AppLogger.instance.info(
+      'auth',
+      'social provider window finished ($reason); reconciling the same OAuth transaction',
+    );
+
+    final username = await _waitForCommittedUsername();
+    if (!mounted) return;
+    if (username.isEmpty) {
+      setState(() {
+        _completingSocialSignIn = false;
+        _socialCompletionFailed = true;
+        _loading = false;
+        _pageLoadFailed = true;
+      });
+      AppLogger.instance.warning(
+        'auth',
+        'social provider window closed without a committed DeviantArt session',
+      );
+      return;
+    }
+
+    // Give the opener a short opportunity to continue by itself. If it is
+    // still on the login document, reload the exact same PKCE authorize URI;
+    // starting a new OAuth request here would lose the first transaction and
+    // force the user through Google a second time.
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    final auth = ref.read(authControllerProvider);
+    final authorizeUri = _activeAuthorizeUri;
+    if (authorizeUri != null &&
+        shouldResumeOAuthAfterSocialSignIn(
+          method: _loginMethod,
+          oauthSignedIn: auth.oauthSignedIn,
+          callbackSeen: _oauthCallbackSeen,
+          mainFrameUri: _lastMainFrameUri,
+        )) {
+      await _controller?.loadUrl(
+        urlRequest: URLRequest(url: WebUri(authorizeUri.toString())),
+      );
+    }
+    if (!mounted) return;
+    setState(() => _completingSocialSignIn = false);
+  }
+
+  Future<void> _handleSocialPopupError(
+    WebResourceRequest request,
+    WebResourceError error,
+  ) async {
+    if (request.isForMainFrame != true || !mounted) return;
+    final username = await ref.read(webSessionProvider).webUsername();
+    if (!mounted) return;
+    if (username.isNotEmpty) {
+      await _finishSocialPopup('provider navigation completed');
+      return;
+    }
+    AppLogger.instance.warning(
+      'auth',
+      'social login popup network error: ${error.type} ${error.description}',
+    );
+    setState(() {
+      _loading = false;
+      _pageLoadFailed = true;
+      _socialCompletionFailed = false;
+      _popupWindowId = null;
     });
   }
 
@@ -418,7 +641,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
               color: theme.scaffoldBackgroundColor,
               child: Column(
                 children: <Widget>[
-                  if (_socialSignIn)
+                  if (_loginMethod != WebLoginMethod.deviantArt)
                     Material(
                       color: theme.colorScheme.secondaryContainer,
                       child: Padding(
@@ -430,7 +653,11 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                           children: <Widget>[
                             const Icon(Icons.info_outline, size: 20),
                             const SizedBox(width: 10),
-                            Expanded(child: Text(s.socialSignInHint)),
+                            Expanded(
+                              child: Text(
+                                s.socialSignInHint(_socialProviderName),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -444,7 +671,11 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                           children: <Widget>[
                             Expanded(
                               child: Text(
-                                s.loginPageLoadFailed,
+                                _socialCompletionFailed
+                                    ? s.socialSignInIncomplete(
+                                        _socialProviderName,
+                                      )
+                                    : s.loginPageLoadFailed,
                                 style: TextStyle(
                                   color: theme.colorScheme.onErrorContainer,
                                 ),
@@ -495,7 +726,11 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                           key: ValueKey<int>(_webViewGeneration),
                           webViewEnvironment: _webViewEnvironment,
                           initialUrlRequest: URLRequest(
-                            url: WebUri(_loginUri.toString()),
+                            url: WebUri(
+                              _launchOAuthWhenReady
+                                  ? 'about:blank'
+                                  : _loginUri.toString(),
+                            ),
                           ),
                           initialSettings: InAppWebViewSettings(
                             javaScriptEnabled: true,
@@ -520,6 +755,11 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                                   url: WebUri(pending.toString()),
                                 ),
                               );
+                            } else if (_launchOAuthWhenReady) {
+                              _launchOAuthWhenReady = false;
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) _startUnifiedOAuth();
+                              });
                             }
                           },
                           shouldOverrideUrlLoading:
@@ -528,6 +768,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                                 if (uri != null &&
                                     uri.scheme == 'dakit' &&
                                     uri.host == 'oauth') {
+                                  _oauthCallbackSeen = true;
                                   _bridge?.addCallback(uri);
                                   // Navigate back to the deviantart home page; its
                                   // onLoadStop then reports the real web session.
@@ -553,19 +794,32 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                               _popupWindowId = action.windowId;
                               _loading = true;
                               _pageLoadFailed = false;
+                              _socialCompletionFailed = false;
                             });
                             return true;
                           },
                           onLoadStart: (controller, url) {
+                            if (url != null && url.scheme != 'about') {
+                              _lastMainFrameUri = Uri.tryParse(url.toString());
+                            }
                             if (mounted) {
                               setState(() {
+                                if (url != null && url.scheme != 'about') {
+                                  _waitingForAuthorizationPage = false;
+                                }
                                 _loading = true;
                                 _pageLoadFailed = false;
                               });
                             }
                           },
                           onLoadStop: (controller, url) {
+                            if (url != null && url.scheme != 'about') {
+                              _lastMainFrameUri = Uri.tryParse(url.toString());
+                            }
                             if (mounted) setState(() => _loading = false);
+                            unawaited(
+                              _triggerSelectedLoginMethod(controller, url),
+                            );
                             // Report from any deviantart.com page. A sequence counter
                             // makes the latest page win, so an earlier anonymous page
                             // cannot overwrite a later signed-in page.
@@ -611,9 +865,11 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                                   'recovering committed WebView login after HTTP 403',
                                 );
                                 _recoveringHttp403 = true;
+                                final recoveryUri =
+                                    _activeAuthorizeUri ?? _homeUri;
                                 await controller.loadUrl(
                                   urlRequest: URLRequest(
-                                    url: WebUri(_homeUri.toString()),
+                                    url: WebUri(recoveryUri.toString()),
                                   ),
                                 );
                                 _recoveringHttp403 = false;
@@ -629,6 +885,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                             );
                             setState(() {
                               _loading = false;
+                              _waitingForAuthorizationPage = false;
                               _pageLoadFailed = true;
                             });
                           },
@@ -661,6 +918,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                                   if (uri != null &&
                                       uri.scheme == 'dakit' &&
                                       uri.host == 'oauth') {
+                                    _oauthCallbackSeen = true;
                                     _bridge?.addCallback(uri);
                                     if (mounted) {
                                       setState(() => _popupWindowId = null);
@@ -679,37 +937,73 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                                 },
                             onLoadStop: (popupController, url) async {
                               if (mounted) setState(() => _loading = false);
+                              final uri = url == null
+                                  ? null
+                                  : Uri.tryParse(url.toString());
                               final username = await ref
                                   .read(webSessionProvider)
                                   .webUsername();
                               if (username.isEmpty || !mounted) return;
-                              setState(() => _popupWindowId = null);
-                              await _controller?.loadUrl(
-                                urlRequest: URLRequest(
-                                  url: WebUri(_homeUri.toString()),
-                                ),
-                              );
+                              if (uri?.host == 'www.deviantart.com' ||
+                                  uri?.scheme == 'about') {
+                                final windowId = _popupWindowId;
+                                // Prefer the provider's own window.close/postMessage
+                                // completion. The fallback only takes over if that
+                                // script stalls, avoiding the premature close that
+                                // used to discard the first Google OAuth round trip.
+                                unawaited(
+                                  Future<void>.delayed(
+                                    const Duration(milliseconds: 1500),
+                                    () {
+                                      if (mounted &&
+                                          _popupWindowId == windowId) {
+                                        unawaited(
+                                          _finishSocialPopup(
+                                            'provider callback fallback',
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                );
+                              }
                             },
                             onCloseWindow: (controller) {
-                              if (mounted) {
-                                setState(() => _popupWindowId = null);
-                              }
+                              unawaited(_finishSocialPopup('window.close'));
                             },
-                            onReceivedError: (controller, request, error) {
-                              if (request.isForMainFrame != true || !mounted) {
-                                return;
-                              }
-                              AppLogger.instance.warning(
-                                'auth',
-                                'social login popup network error: '
-                                    '${error.type} ${error.description}',
-                              );
-                              setState(() {
-                                _loading = false;
-                                _pageLoadFailed = true;
-                                _popupWindowId = null;
-                              });
-                            },
+                            onReceivedError: (controller, request, error) =>
+                                unawaited(
+                                  _handleSocialPopupError(request, error),
+                                ),
+                          ),
+                        if (_completingSocialSignIn ||
+                            _waitingForAuthorizationPage)
+                          Positioned.fill(
+                            child: ColoredBox(
+                              color: theme.scaffoldBackgroundColor,
+                              child: Center(
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 320,
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      const CircularProgressIndicator(),
+                                      const SizedBox(height: 20),
+                                      Text(
+                                        _completingSocialSignIn
+                                            ? s.finishingSocialSignIn(
+                                                _socialProviderName,
+                                              )
+                                            : s.openingOfficialAuthorization,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                       ],
                     ),
@@ -758,7 +1052,9 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
               ),
               const SizedBox(height: 28),
               FilledButton.icon(
-                onPressed: _preparingBrowser ? null : () => _openBrowser(),
+                onPressed: _preparingBrowser
+                    ? null
+                    : () => _openBrowser(method: WebLoginMethod.deviantArt),
                 icon: _preparingBrowser
                     ? const SizedBox.square(
                         dimension: 18,
@@ -775,9 +1071,17 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
               OutlinedButton.icon(
                 onPressed: _preparingBrowser
                     ? null
-                    : () => _openBrowser(social: true),
+                    : () => _openBrowser(method: WebLoginMethod.google),
                 icon: const Icon(Icons.account_circle_outlined),
-                label: Text(s.signInWithSocial),
+                label: Text(s.signInWithGoogle),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _preparingBrowser
+                    ? null
+                    : () => _openBrowser(method: WebLoginMethod.apple),
+                icon: const Icon(Icons.apple),
+                label: Text(s.signInWithApple),
               ),
               const SizedBox(height: 8),
               Wrap(

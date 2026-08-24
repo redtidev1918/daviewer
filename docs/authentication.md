@@ -30,15 +30,20 @@ and the web-session snapshot.
 
 ## Login WebView
 
-- A native entry screen presents DeviantArt, Google / Apple, registration,
+- A native entry screen presents separate DeviantArt, Google, and Apple actions,
   password recovery, and network checks before opening any website.
+- On first sign-in, the WebView starts at the OAuth authorize URL. Its redirect
+  to the password page or selected social provider remains part of that same
+  PKCE transaction, establishing the web and OAuth sessions in one navigation.
 - Mobile presents DeviantArt's desktop login layout so Google and Apple buttons
   remain visible.
-- `window.open()` navigation is kept in the same WebView and third-party cookies
-  are enabled for the social-login handshake.
+- `window.open()` navigation is attached as a second in-app WebView and
+  third-party cookies are enabled for the social-login handshake. The app waits
+  for the provider's close/callback before removing it. If the opener stalls,
+  it reloads the original authorize URI instead of creating a new transaction.
 - After a password submission, a transient main-frame 403 waits for the
-  persistent `userinfo` cookie. If committed, the WebView moves to Home and
-  records a fresh CSRF; otherwise the app shows a recoverable connection state.
+  persistent `userinfo` cookie. If committed, the WebView resumes the same
+  authorize URI; otherwise the app shows a recoverable connection state.
 - The login screen always exposes Settings. Proxy, diagnostics, update checking,
   About, language, and appearance do not require authentication.
 - Interactive and headless WebViews use the effective app proxy where the OS

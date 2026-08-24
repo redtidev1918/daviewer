@@ -111,8 +111,9 @@ dependencies:
   dakit_flutter: ^0.1.9
 ```
 
-First sign-in commits the web Cookie/CSRF session before OAuth; signed-out state
-is normal onboarding, not a feed error. See
+First sign-in uses one official OAuth/PKCE navigation to establish both the web
+Cookie/CSRF session and app OAuth, instead of starting a second authorization
+after social sign-in. Signed-out state is normal onboarding, not a feed error. See
 [Architecture](docs/architecture.md) for the full data flow and boundaries.
 
 ## Before you start
@@ -207,12 +208,12 @@ The app has two independent sign-in states:
   no manual login is needed each time.
 - **App OAuth session**: decides whether favourites / watch / download work.
 
-Sign-in starts with a native choice screen for DeviantArt, Google / Apple,
+Sign-in starts with a native choice screen for DeviantArt, Google, Apple,
 registration, password recovery, or proxy setup, and opens DeviantArt's page
-only after an explicit action. When the two sessions drift out of sync, a
-banner at the top of Home offers a one-tap fix.
-OAuth authorization happens in the built-in WebView first (reusing the web
-session, no password re-entry), falling back to the system browser if the
+only after an explicit action. First sign-in begins at the OAuth authorize URL;
+the password page and social popup return to that same PKCE transaction, so one
+navigation establishes both sessions. If they later drift out of sync, Home
+offers a one-tap fix. The system browser remains the fallback when the embedded
 WebView is unavailable.
 
 Upgrades do not proactively delete sessions. If the macOS Keychain item name
@@ -225,7 +226,7 @@ explicit logout require authorization again.
 
 - **DAViewer has no account of its own**: you sign in with your DeviantArt account — the app never registers an account or stores a password.
 - **Password reset / registration**: the native sign-in screen exposes both actions; the system browser opens only after you tap one.
-- **Google / Apple sign-in**: tap the native social-sign-in action first, then choose the provider on DeviantArt's page. Mobile uses the desktop layout and keeps provider navigation in the same WebView so the DeviantArt cookie is retained.
+- **Google / Apple sign-in**: the native screen has separate Google and Apple actions. Each activates the matching control on DeviantArt's official page and returns to the original OAuth transaction—there is no second sign-in. Mobile uses the desktop layout and keeps the official popup and cookies inside the app.
 - **Check proxy before sign-in**: the native screen shows the effective route and provides both proxy settings and a connectivity test before any web page is opened.
 - **Mature content**: DeviantArt account browsing preferences override the app request. Open Settings → DeviantArt account settings → Mature content settings.
 - **Settings while sign-in is broken**: the gear on the login screen keeps language, proxy, diagnostics, updates, and About reachable without authentication.

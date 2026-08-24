@@ -57,17 +57,24 @@ final class AppStrings {
   String get signInWelcomeTitle =>
       _lang == AppLanguage.zh ? '登录 DeviantArt' : 'Sign in to DeviantArt';
   String get signInWelcomeBody => _lang == AppLanguage.zh
-      ? '先选择登录方式，再进入 DeviantArt 官方登录页。DAViewer 不读取或保存你的密码。'
-      : 'Choose how to sign in before opening DeviantArt’s official sign-in page. DAViewer never reads or stores your password.';
+      ? '选择登录方式后会进入 DeviantArt 官方授权流程，一次完成网页会话与 App 授权。DAViewer 不读取或保存你的密码。'
+      : 'Choose a sign-in method to complete the official DeviantArt web session and app authorization in one flow. DAViewer never reads or stores your password.';
   String get signInWithDeviantArt => _lang == AppLanguage.zh
       ? '使用 DeviantArt 账号登录'
       : 'Sign in with DeviantArt';
-  String get signInWithSocial => _lang == AppLanguage.zh
-      ? '使用 Google / Apple 登录'
-      : 'Continue with Google / Apple';
-  String get socialSignInHint => _lang == AppLanguage.zh
-      ? '请在官方登录页选择 Continue with Google 或 Continue with Apple。'
-      : 'Choose Continue with Google or Continue with Apple on the official page.';
+  String get signInWithGoogle =>
+      _lang == AppLanguage.zh ? '使用 Google 登录' : 'Continue with Google';
+  String get signInWithApple =>
+      _lang == AppLanguage.zh ? '使用 Apple 登录' : 'Continue with Apple';
+  String socialSignInHint(String provider) => _lang == AppLanguage.zh
+      ? '正在通过 DeviantArt 官方页面连接 $provider；完成后会自动继续 App 授权，无需再次登录。'
+      : 'Connecting $provider through the official DeviantArt page. App authorization continues automatically without another sign-in.';
+  String finishingSocialSignIn(String provider) => _lang == AppLanguage.zh
+      ? '正在完成 $provider 登录并继续原授权流程…'
+      : 'Finishing $provider sign-in and resuming authorization…';
+  String socialSignInIncomplete(String provider) => _lang == AppLanguage.zh
+      ? '$provider 登录窗口已关闭，但 DeviantArt 尚未确认登录。请重试；不会要求重新输入已保存的 Google / Apple 账号。'
+      : '$provider closed before DeviantArt confirmed the sign-in. Retry; your saved Google or Apple account should not need to be entered again.';
   String get noAccountQuestion =>
       _lang == AppLanguage.zh ? '还没有账号？' : 'No account yet?';
   String get networkBeforeLogin =>
@@ -77,6 +84,9 @@ final class AppStrings {
       : 'No proxy is needed when direct access works. If it fails, enter your own HTTP proxy. The same route is used by API, media, downloads and sign-in.';
   String get openingOfficialLogin =>
       _lang == AppLanguage.zh ? '正在打开官方登录页…' : 'Opening official sign-in…';
+  String get openingOfficialAuthorization => _lang == AppLanguage.zh
+      ? '正在建立 DeviantArt 官方授权流程…'
+      : 'Starting the official DeviantArt authorization…';
   String get notLoggedIn => _lang == AppLanguage.zh ? '未登录' : 'Not signed in';
   String get loginFirst =>
       _lang == AppLanguage.zh ? '请先登录。' : 'Please sign in.';
