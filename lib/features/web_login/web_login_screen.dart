@@ -71,6 +71,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   bool _preparingBrowser = false;
   bool _socialSignIn = false;
   bool _testingNetwork = false;
+  bool? _networkReachable;
   String _networkStatus = '';
   WebViewEnvironment? _webViewEnvironment;
   int _webViewGeneration = 0;
@@ -93,6 +94,9 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     if (bridge != null) {
       _launchSub = bridge.launchRequests.listen(_loadAuthRequest);
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_testNetwork());
+    });
     // OAuth is deliberately not started here. On a first install the login
     // form must finish establishing its cookies before the same WebView is
     // navigated to /oauth2/authorize; racing those two navigations produced a
@@ -248,15 +252,20 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     final s = strings(ref.read(appLanguageProvider));
     setState(() {
       _testingNetwork = true;
+      _networkReachable = null;
       _networkStatus = s.testingConnection;
     });
     final result = await proxy.testConnection();
     if (!mounted) return;
+    final current = proxy.config;
     setState(() {
       _testingNetwork = false;
+      _networkReachable = result.isSuccess;
       _networkStatus = result.isSuccess
-          ? s.proxyTestSucceeded(result.elapsed.inMilliseconds)
-          : s.proxyTestFailed;
+          ? current == null
+                ? s.directConnectionReady
+                : s.proxyConnectionReady(current.toString())
+          : s.connectionNeedsAttention;
     });
   }
 
@@ -794,6 +803,11 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
               ),
               const SizedBox(height: 20),
               Card(
+                color: _networkReachable == null
+                    ? null
+                    : _networkReachable!
+                    ? theme.colorScheme.primaryContainer
+                    : theme.colorScheme.errorContainer,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -801,7 +815,13 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                     children: <Widget>[
                       Row(
                         children: <Widget>[
-                          const Icon(Icons.lan_outlined),
+                          Icon(
+                            _networkReachable == null
+                                ? Icons.lan_outlined
+                                : _networkReachable!
+                                ? Icons.cloud_done_outlined
+                                : Icons.cloud_off_outlined,
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -825,28 +845,32 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                         Text(_networkStatus, style: theme.textTheme.bodySmall),
                       ],
                       const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: <Widget>[
-                          OutlinedButton.icon(
-                            onPressed: () => context.push('/settings/proxy'),
-                            icon: const Icon(Icons.settings_ethernet),
-                            label: Text(s.proxy),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: _testingNetwork ? null : _testNetwork,
-                            icon: _testingNetwork
-                                ? const SizedBox.square(
-                                    dimension: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.network_check),
-                            label: Text(s.testConnection),
-                          ),
-                        ],
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            await context.push('/settings/proxy');
+                            if (mounted) unawaited(_testNetwork());
+                          },
+                          icon: const Icon(Icons.settings_ethernet),
+                          label: Text(s.proxy),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _testingNetwork ? null : _testNetwork,
+                          icon: _testingNetwork
+                              ? const SizedBox.square(
+                                  dimension: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.network_check),
+                          label: Text(s.testConnection),
+                        ),
                       ),
                     ],
                   ),
