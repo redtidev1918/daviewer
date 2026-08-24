@@ -55,6 +55,24 @@ void main() {
     );
   });
 
+  test('a new login screen replaces an abandoned OAuth transaction', () {
+    expect(
+      shouldReplaceAbandonedOAuth(authBusy: true, requestedByThisScreen: false),
+      isTrue,
+    );
+    expect(
+      shouldReplaceAbandonedOAuth(authBusy: true, requestedByThisScreen: true),
+      isFalse,
+    );
+    expect(
+      shouldReplaceAbandonedOAuth(
+        authBusy: false,
+        requestedByThisScreen: false,
+      ),
+      isFalse,
+    );
+  });
+
   test(
     'human-verification pages are not classified as connection failures',
     () {
