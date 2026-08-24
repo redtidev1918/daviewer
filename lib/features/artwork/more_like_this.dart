@@ -197,7 +197,7 @@ final class _MoreLikeThisSectionState
         itemBuilder: (context, index) {
           final artwork = items[index];
           return AspectRatio(
-            aspectRatio: artworkAspectRatio(artwork),
+            aspectRatio: artworkPreviewAspectRatio(context, artwork),
             child: ArtworkCard(
               artwork: artwork,
               onTap: () => openArtworkFromList(
