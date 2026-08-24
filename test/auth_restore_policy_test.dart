@@ -5,12 +5,15 @@ import 'package:daviewer/core/auth/auth_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('cold-start timeout does not force a persisted user to sign in again', () {
-    expect(
-      shouldPreserveSessionAfterRestoreFailure(TimeoutException('slow')),
-      isTrue,
-    );
-  });
+  test(
+    'cold-start timeout does not force a persisted user to sign in again',
+    () {
+      expect(
+        shouldPreserveSessionAfterRestoreFailure(TimeoutException('slow')),
+        isTrue,
+      );
+    },
+  );
 
   test('network, upstream and Keychain failures preserve the session', () {
     for (final kind in <DAKitFailureKind>[

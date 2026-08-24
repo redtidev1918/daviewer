@@ -12,24 +12,30 @@ void main() {
     scopes: const <String>{'basic'},
   );
 
-  test('legacy OAuth session is copied forward without being deleted', () async {
-    final primary = _MemoryTokenStore();
-    final legacy = _MemoryTokenStore(tokens);
-    final store = MigratingTokenStore(primary: primary, legacy: legacy);
+  test(
+    'legacy OAuth session is copied forward without being deleted',
+    () async {
+      final primary = _MemoryTokenStore();
+      final legacy = _MemoryTokenStore(tokens);
+      final store = MigratingTokenStore(primary: primary, legacy: legacy);
 
-    expect(await store.read(), same(tokens));
-    expect(await primary.read(), same(tokens));
-    expect(await legacy.read(), same(tokens));
-  });
+      expect(await store.read(), same(tokens));
+      expect(await primary.read(), same(tokens));
+      expect(await legacy.read(), same(tokens));
+    },
+  );
 
-  test('legacy OAuth session remains usable when renamed store rejects writes', () async {
-    final primary = _MemoryTokenStore()..failWrites = true;
-    final legacy = _MemoryTokenStore(tokens);
-    final store = MigratingTokenStore(primary: primary, legacy: legacy);
+  test(
+    'legacy OAuth session remains usable when renamed store rejects writes',
+    () async {
+      final primary = _MemoryTokenStore()..failWrites = true;
+      final legacy = _MemoryTokenStore(tokens);
+      final store = MigratingTokenStore(primary: primary, legacy: legacy);
 
-    expect(await store.read(), same(tokens));
-    expect(await legacy.read(), same(tokens));
-  });
+      expect(await store.read(), same(tokens));
+      expect(await legacy.read(), same(tokens));
+    },
+  );
 
   test('refresh falls back to legacy storage and logout clears both', () async {
     final primary = _MemoryTokenStore()..failWrites = true;
@@ -50,7 +56,9 @@ void main() {
 
   test('pending OAuth transaction is migrated too', () async {
     final pending = PendingAuthorization(
-      authorizationUri: Uri.parse('https://www.deviantart.com/oauth2/authorize'),
+      authorizationUri: Uri.parse(
+        'https://www.deviantart.com/oauth2/authorize',
+      ),
       state: 'state',
       codeVerifier: 'verifier',
       createdAt: DateTime.utc(2030),
