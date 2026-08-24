@@ -92,6 +92,9 @@ final class AppStrings {
       : 'Register a DeviantArt account';
   String get contentSettings =>
       _lang == AppLanguage.zh ? '成人内容设置' : 'Mature content settings';
+  String get devartSettings => _lang == AppLanguage.zh
+      ? 'DeviantArt 账号设置'
+      : 'DeviantArt account settings';
   String get webLoginSuccess =>
       _lang == AppLanguage.zh ? '网页登录成功' : 'Web sign-in succeeded';
   String get loginSuccess => _lang == AppLanguage.zh ? '登录成功' : 'Signed in';
