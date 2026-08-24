@@ -137,8 +137,11 @@ final class AppStrings {
       ? '登录页暂时无法连接。你的登录数据没有被清除，可重试或检查应用网络代理。'
       : 'The sign-in page could not connect. Your session data was not cleared; retry or check the app proxy.';
   String get humanVerificationHint => _lang == AppLanguage.zh
-      ? 'DeviantArt 正在进行人机验证，这不是网络故障。请在当前页面完成验证，通过后登录会自动继续。'
-      : 'DeviantArt is asking for human verification. This is not a network failure; complete the check on this page and sign-in will continue automatically.';
+      ? '上游正在要求安全或人机验证，这不是网络故障。请在下方官方页面完成验证，通过后登录会自动继续。'
+      : 'The provider is requesting a security or human-verification check. This is not a network failure; complete it in the official page below and sign-in will continue automatically.';
+  String get humanVerificationChecking => _lang == AppLanguage.zh
+      ? '检测到上游安全拦截，正在载入人机验证。请不要退出；验证控件出现后按页面提示完成。'
+      : 'A provider security check was detected and its verification controls are loading. Stay on this page and complete the check when it appears.';
   String get noArtworks =>
       _lang == AppLanguage.zh ? '暂无作品' : 'No artworks found.';
   String get homeFeedLoadFailure => _lang == AppLanguage.zh

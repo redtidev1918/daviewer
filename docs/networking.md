@@ -74,6 +74,12 @@ document and challenge controls, keeps the WebView (including Google/Apple
 popups) interactive, and tells the user to finish the check. Network/proxy
 recovery is shown only when no challenge document is present. A navigation
 generation guard prevents a late inspection from overwriting the next page.
+Because modern challenge controls are often inserted after the main document
+finishes (or without a `loadStop` event), the active login WebView is also
+inspected periodically. HTTP 403/429/503 produces an immediate loading notice;
+confirmed controls keep a persistent notice until consecutive clean checks show
+that verification has completed. Cookies, DOM storage, third-party cookies, and
+the original PKCE transaction remain intact throughout the check.
 
 ## Maintainer checks
 
@@ -84,6 +90,7 @@ Before a network-related release:
 3. run the in-app connectivity test with a working and stopped proxy;
 4. verify both password and social-login WebView navigation;
 5. verify a 403/429/503 human-verification document remains interactive and is
-   not labelled as a connection failure;
+   not labelled as a connection failure, including a challenge iframe inserted
+   after `loadStop` and one hosted in a Google/Apple popup;
 6. verify the headless web-session refresh uses the same cookie environment;
 7. keep raw proxy, HTTP, and parsing details in Diagnostics only.

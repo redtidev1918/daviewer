@@ -3,6 +3,24 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.135（登录验证状态机）
+
+### Fixed
+
+- 修复 Cloudflare、PerimeterX、reCAPTCHA、hCaptcha 或 Arkose 验证控件由脚本延迟插入、
+  页面不触发 `loadStop` 时，App 看得到验证页却没有任何提示的问题。
+- 修复验证页内部导航一开始就清除提示，以及 Google / Apple 弹窗关闭后仍轮询已经销毁的
+  WebView 的问题。
+- 403、429、503 先进入“上游安全验证正在载入”状态；只有持续确认不存在可交互验证页后，
+  才会显示网络/代理故障，避免把人机验证误判成断网。
+
+### Changed
+
+- 主登录页和社交登录弹窗在授权期间持续侦测动态验证 iframe、DOM 控件、标题和 URL；
+  验证完成后连续确认页面恢复正常，提示才自动消退。
+- 新增常驻状态条、八秒即时提示、读屏实时播报和手动刷新入口；验证页继续保留 Cookie、
+  DOM Storage、第三方 Cookie 与原 OAuth/PKCE 事务。
+
 ## 0.2.134（登录事务可重试热修复）
 
 ### Fixed

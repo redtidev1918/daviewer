@@ -58,6 +58,17 @@ and the web-session snapshot.
   page even when its HTTP status is 403, 429, or 503. The app keeps that page
   visible and resumes the same OAuth transaction after verification; only a
   response without challenge UI is classified as a connection failure.
+- Verification is a first-class login state, not a one-shot `loadStop` check.
+  A 403/429/503 response enters a visible pending-verification state immediately;
+  the main WebView and social popup are then polled for dynamically inserted
+  Cloudflare, PerimeterX, reCAPTCHA, hCaptcha, and Arkose controls. Two clean
+  observations after a confirmed challenge clear the notice. A response is
+  labelled as a network failure only after the interactive document inspection
+  completes without a challenge.
+- The verification notice is persistent and accessible: it also emits a timed
+  snackbar, uses a live region for screen readers, and exposes a reload action.
+  Closing a provider popup hands monitoring back to the parent WebView rather
+  than polling a disposed page.
 - Interactive and headless WebViews use the effective app proxy where the OS
   allows it, and Windows cookie reads share the same WebView2 environment. See
   [Networking and proxy](networking.md) for platform limits.
