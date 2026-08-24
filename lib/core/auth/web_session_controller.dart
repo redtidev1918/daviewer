@@ -1,6 +1,6 @@
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../runtime/runtime_provider.dart';
 import 'auth_controller.dart';
 import 'web_session_store.dart';
 
@@ -66,7 +66,11 @@ final class WebSessionController extends StateNotifier<WebSessionState> {
         oauthUsername.isNotEmpty &&
         username.toLowerCase() != oauthUsername.toLowerCase()) {
       try {
-        await CookieManager.instance().deleteAllCookies();
+        await _ref
+            .read(runtimeProvider)
+            .webViewProxyManager
+            ?.cookieManager
+            .deleteAllCookies();
       } on Object {
         // Best effort.
       }

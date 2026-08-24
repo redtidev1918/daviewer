@@ -3,6 +3,36 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.129（原生登录入口与全链路代理）
+
+### Added
+
+- 登录不再打开即跳网页：新增原生登录入口，明确提供 DeviantArt 账号、Google / Apple、
+  注册、找回密码，以及登录前的代理设置和连通性测试；只有用户点击后才打开官方页面。
+- 网络代理页新增有效来源、DeviantArt 实时连通性测试和操作建议；支持
+  `host:port` 与 `http://host:port` 两种输入。
+
+### Fixed
+
+- 修复 App 内手动代理只对部分 API 生效、不覆盖登录与后台 WebView 的问题；现在 API、
+  图片、下载、网页登录和会话刷新共享同一有效网络路径。
+- Google / Apple 登录的新窗口会作为 App 内第二层 WebView 承接；即使服务商先创建
+  `about:blank` 再跳转也不会丢失窗口、Cookie 或登录结果。
+- 修复手动代理重启即丢失，以及清除手动代理后仍残留旧地址、没有立刻重新检测系统代理
+  的问题。
+- Android 使用进程级 WebView 代理；Windows 的登录、后台刷新与 Cookie 读取共用同一个
+  WebView2 代理环境；macOS 14+ 通过系统 WebKit API 应用 App 代理。
+- 修复 Windows 注册表按协议保存 `http=...;https=...` 时被错误解析成无效主机的问题。
+- WebView 代理切换改为串行执行，避免设置保存、后台刷新与重试同时发生时重复销毁或创建
+  浏览器环境。
+
+### Changed
+
+- macOS 12/13 无法向系统 WebView 注入 App 内代理时会明确提示使用系统代理，而不是让
+  用户在网页登录白屏和 API 成功之间猜测。
+- 新增独立的网络与代理文档，明确自动选择优先级、平台覆盖、`all_proxy` 的桌面启动
+  边界和发布前验证清单。
+
 ## 0.2.128（登录与会话恢复热修复）
 
 ### Fixed

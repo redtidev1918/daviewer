@@ -54,6 +54,29 @@ final class AppStrings {
   String get signedOut => _lang == AppLanguage.zh ? '已登出' : 'Signed out';
   String get login => _lang == AppLanguage.zh ? '登录' : 'Login';
   String get webLogin => _lang == AppLanguage.zh ? '登录网页版' : 'Web login';
+  String get signInWelcomeTitle =>
+      _lang == AppLanguage.zh ? '登录 DeviantArt' : 'Sign in to DeviantArt';
+  String get signInWelcomeBody => _lang == AppLanguage.zh
+      ? '先选择登录方式，再进入 DeviantArt 官方登录页。DAViewer 不读取或保存你的密码。'
+      : 'Choose how to sign in before opening DeviantArt’s official sign-in page. DAViewer never reads or stores your password.';
+  String get signInWithDeviantArt => _lang == AppLanguage.zh
+      ? '使用 DeviantArt 账号登录'
+      : 'Sign in with DeviantArt';
+  String get signInWithSocial => _lang == AppLanguage.zh
+      ? '使用 Google / Apple 登录'
+      : 'Continue with Google / Apple';
+  String get socialSignInHint => _lang == AppLanguage.zh
+      ? '请在官方登录页选择 Continue with Google 或 Continue with Apple。'
+      : 'Choose Continue with Google or Continue with Apple on the official page.';
+  String get noAccountQuestion =>
+      _lang == AppLanguage.zh ? '还没有账号？' : 'No account yet?';
+  String get networkBeforeLogin =>
+      _lang == AppLanguage.zh ? '登录前检查网络' : 'Check network before sign-in';
+  String get loginNetworkHint => _lang == AppLanguage.zh
+      ? '如果所在地区无法直连 DeviantArt，请先设置代理并测试。该设置同时用于 API、图片、下载和登录页。'
+      : 'If DeviantArt is unavailable in your region, configure and test a proxy first. It is shared by API, media, downloads and the sign-in page.';
+  String get openingOfficialLogin =>
+      _lang == AppLanguage.zh ? '正在打开官方登录页…' : 'Opening official sign-in…';
   String get notLoggedIn => _lang == AppLanguage.zh ? '未登录' : 'Not signed in';
   String get loginFirst =>
       _lang == AppLanguage.zh ? '请先登录。' : 'Please sign in.';
@@ -306,22 +329,47 @@ final class AppStrings {
       ? '当前生效：PROXY $hostPort'
       : 'Current: PROXY $hostPort';
   String get proxyHint => _lang == AppLanguage.zh
-      ? '国内访问 DeviantArt 需要代理。应用会自动读取系统代理；也可以在这里手动指定，例如 127.0.0.1:7890。'
-      : 'A proxy is required to reach DeviantArt from some regions. The app auto-detects the system proxy; you can also set one here, e.g. 127.0.0.1:7890.';
+      ? '国内访问 DeviantArt 通常需要代理。应用会自动读取系统代理和 all_proxy，也可以手动指定。手动设置会保存，并用于 API、图片、下载和登录页。'
+      : 'A proxy is required to reach DeviantArt from some regions. The app detects the system proxy and all_proxy, or you can set one manually. Manual settings are saved and shared by API, media, downloads and sign-in.';
   String get proxyAddressLabel =>
-      _lang == AppLanguage.zh ? '代理地址 host:port' : 'Proxy address host:port';
+      _lang == AppLanguage.zh ? '代理地址' : 'Proxy address';
   String get apply => _lang == AppLanguage.zh ? '应用' : 'Apply';
   String get restoreAutoDetect =>
       _lang == AppLanguage.zh ? '恢复自动检测' : 'Restore auto-detect';
   String get restoredAutoDetect =>
       _lang == AppLanguage.zh ? '已恢复自动检测' : 'Restored auto-detect';
   String get invalidProxyFormat => _lang == AppLanguage.zh
-      ? '格式应为 host:port，例如 127.0.0.1:7890'
-      : 'Format must be host:port, e.g. 127.0.0.1:7890';
+      ? '格式应为 host:port 或 http://host:port，例如 http://127.0.0.1:7892'
+      : 'Use host:port or http://host:port, e.g. http://127.0.0.1:7892';
   String invalidProxyPort(String port) =>
       _lang == AppLanguage.zh ? '端口无效：$port' : 'Invalid port: $port';
   String appliedProxy(String hostPort) =>
       _lang == AppLanguage.zh ? '已应用代理 $hostPort' : 'Applied proxy $hostPort';
+  String get proxySourceManual =>
+      _lang == AppLanguage.zh ? '来源：App 手动设置' : 'Source: App setting';
+  String get proxySourceSystem =>
+      _lang == AppLanguage.zh ? '来源：系统代理' : 'Source: System proxy';
+  String get proxySourceEnvironment => _lang == AppLanguage.zh
+      ? '来源：环境变量（all_proxy / https_proxy）'
+      : 'Source: Environment (all_proxy / https_proxy)';
+  String get proxySourceBuild =>
+      _lang == AppLanguage.zh ? '来源：构建参数' : 'Source: Build setting';
+  String get proxySourceDirect =>
+      _lang == AppLanguage.zh ? '来源：未检测到代理' : 'Source: No proxy detected';
+  String get testConnection => _lang == AppLanguage.zh
+      ? '测试 DeviantArt 连接'
+      : 'Test DeviantArt connection';
+  String get testingConnection =>
+      _lang == AppLanguage.zh ? '正在测试…' : 'Testing…';
+  String proxyTestSucceeded(int milliseconds) => _lang == AppLanguage.zh
+      ? '连接成功（${milliseconds}ms），API 与登录页将使用此网络路径。'
+      : 'Connected (${milliseconds}ms). API and sign-in will use this network path.';
+  String get proxyTestFailed => _lang == AppLanguage.zh
+      ? '连接失败。请确认代理软件已启动、端口正确，并允许局域网/本机连接。'
+      : 'Connection failed. Check that the proxy is running, the port is correct, and local connections are allowed.';
+  String get proxyMacLegacyHint => _lang == AppLanguage.zh
+      ? 'macOS 12/13 的登录 WebView 不能使用 App 内手动代理；请改用 macOS 系统代理。macOS 14 及以上支持 App 内代理。'
+      : 'On macOS 12/13, the sign-in WebView cannot use an app-only proxy; use the macOS system proxy. App proxy is supported on macOS 14+.';
 
   // --- diagnostics ---
   String get noLogFile =>

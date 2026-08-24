@@ -19,14 +19,16 @@ final class WebLoginRequired implements Exception {
 /// plain HTTP client because deviantart.com's HTML pages reject non-browser
 /// clients.
 final class WebSession {
-  const WebSession();
+  const WebSession(this._cookieManager);
+
+  final CookieManager Function() _cookieManager;
 
   static final Uri _home = Uri.parse('https://www.deviantart.com/');
 
   /// Serializes the deviantart.com cookies into a `Cookie` header value.
   Future<String> cookieHeader() async {
     try {
-      final cookies = await CookieManager.instance().getCookies(
+      final cookies = await _cookieManager().getCookies(
         url: WebUri(_home.toString()),
       );
       return cookies
@@ -46,7 +48,7 @@ final class WebSession {
   /// page (login/authorize pages lack the full session state).
   Future<String> webUsername() async {
     try {
-      final cookies = await CookieManager.instance().getCookies(
+      final cookies = await _cookieManager().getCookies(
         url: WebUri(_home.toString()),
       );
       for (final cookie in cookies) {

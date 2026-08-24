@@ -171,8 +171,9 @@ Some state is deliberately kept client-side and never synced to DeviantArt:
 - **Notification read state** (`NotificationReadStore`): DeviantArt exposes no
   public "mark read" endpoint, so the unread dot is a local overlay on top of
   the server's `isNew` flag. It persists locally and does not pretend to sync.
-- **User preferences** (`core/settings/AppPreferences`): language and theme
-  mode are stored in a small JSON file under the application-support directory.
+- **User preferences** (`core/settings/AppPreferences`): language, theme mode,
+  and the optional manual proxy are stored in a small JSON file under the
+  application-support directory.
   They are restored before the first frame so the app never flashes defaults.
 - **Theme mode** (`core/theme/ThemeModeController`): system / light / dark, fed
   into the MaterialApp and persisted with the preferences above.
