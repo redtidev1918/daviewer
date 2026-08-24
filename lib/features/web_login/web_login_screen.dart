@@ -12,6 +12,7 @@ import '../../core/auth/auth_state.dart';
 import '../../core/auth/web_session_controller.dart';
 import '../../core/auth/webview_oauth_bridge.dart';
 import '../../core/data/web_session.dart';
+import '../../core/data/web_user_agent.dart';
 import '../../core/diagnostics/app_logger.dart';
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
@@ -338,6 +339,10 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                 ),
                 initialSettings: InAppWebViewSettings(
                   javaScriptEnabled: true,
+                  // A desktop Chrome UA makes deviantart.com serve its desktop
+                  // login page, which includes the Google/Apple one-click
+                  // sign-in buttons that the mobile layout omits.
+                  userAgent: webUserAgent,
                   // Opaque: a transparent platform view uses a slower
                   // composition path and makes the keyboard animation heavier.
                   transparentBackground: false,

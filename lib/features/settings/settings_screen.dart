@@ -14,6 +14,8 @@ import '../../core/theme/theme_mode_provider.dart';
 
 const String _githubUrl = 'https://github.com/redtidev1918/daviewer';
 const String _releasesUrl = 'https://github.com/redtidev1918/daviewer/releases';
+const String _devartSettingsUrl =
+    'https://www.deviantart.com/settings/browsing';
 const String versionLabel = String.fromEnvironment(
   'FLUTTER_BUILD_NAME',
   defaultValue: 'development',
@@ -99,6 +101,21 @@ final class SettingsScreen extends ConsumerWidget {
                 title: Text(s.checkUpdates),
                 subtitle: const Text('DAViewer · $versionLabel'),
                 onTap: () => _checkUpdates(context, ref, s),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _SettingsCard(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.visibility_outlined),
+                title: Text(s.devartSettings),
+                subtitle: Text(s.contentSettings),
+                trailing: const Icon(Icons.open_in_new),
+                onTap: () => launchUrl(
+                  Uri.parse(_devartSettingsUrl),
+                  mode: LaunchMode.externalApplication,
+                ),
               ),
             ],
           ),
