@@ -54,4 +54,110 @@ void main() {
       isFalse,
     );
   });
+
+  test('social sign-in resumes the same OAuth transaction only from login', () {
+    expect(
+      shouldResumeOAuthAfterSocialSignIn(
+        method: WebLoginMethod.google,
+        oauthSignedIn: false,
+        callbackSeen: false,
+        mainFrameUri: Uri.parse(
+          'https://www.deviantart.com/users/login?referer=oauth2',
+        ),
+      ),
+      isTrue,
+    );
+    expect(
+      shouldResumeOAuthAfterSocialSignIn(
+        method: WebLoginMethod.google,
+        oauthSignedIn: false,
+        callbackSeen: false,
+        mainFrameUri: Uri.parse(
+          'https://www.deviantart.com/join?oauth=1&referer=oauth2',
+        ),
+      ),
+      isTrue,
+    );
+    expect(
+      shouldResumeOAuthAfterSocialSignIn(
+        method: WebLoginMethod.google,
+        oauthSignedIn: false,
+        callbackSeen: false,
+        mainFrameUri: Uri.parse('https://www.deviantart.com/oauth2/authorize'),
+      ),
+      isFalse,
+    );
+    expect(
+      shouldResumeOAuthAfterSocialSignIn(
+        method: WebLoginMethod.google,
+        oauthSignedIn: false,
+        callbackSeen: true,
+        mainFrameUri: Uri.parse('https://www.deviantart.com/users/login'),
+      ),
+      isFalse,
+    );
+    expect(
+      shouldResumeOAuthAfterSocialSignIn(
+        method: WebLoginMethod.deviantArt,
+        oauthSignedIn: false,
+        callbackSeen: false,
+        mainFrameUri: Uri.parse('https://www.deviantart.com/users/login'),
+      ),
+      isFalse,
+    );
+  });
+
+  test(
+    'native login choices target distinct controls on OAuth entry pages',
+    () {
+      final join = Uri.parse(
+        'https://www.deviantart.com/join?oauth=1&referer=oauth2',
+      );
+      final login = Uri.parse('https://www.deviantart.com/users/login');
+      final authorize = Uri.parse(
+        'https://www.deviantart.com/oauth2/authorize',
+      );
+
+      expect(
+        shouldActivateLoginMethod(
+          method: WebLoginMethod.deviantArt,
+          alreadyActivated: false,
+          pageUri: join,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldActivateLoginMethod(
+          method: WebLoginMethod.deviantArt,
+          alreadyActivated: false,
+          pageUri: login,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldActivateLoginMethod(
+          method: WebLoginMethod.google,
+          alreadyActivated: false,
+          pageUri: join,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldActivateLoginMethod(
+          method: WebLoginMethod.apple,
+          alreadyActivated: false,
+          pageUri: login,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldActivateLoginMethod(
+          method: WebLoginMethod.google,
+          alreadyActivated: false,
+          pageUri: authorize,
+        ),
+        isFalse,
+      );
+    },
+  );
 }

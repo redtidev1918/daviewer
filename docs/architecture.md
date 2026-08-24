@@ -137,9 +137,11 @@ The app has two sessions:
 - the web Cookie/CSRF session for personalized website-only feeds;
 - OAuth for official API actions such as favourites, watch, and downloads.
 
-Signed-out state is onboarding, not a feed error. First login commits the web
-session before OAuth authorization, and a transient post-login 403 is only
-recoverable after that commit has been observed.
+Signed-out state is onboarding, not a feed error. First login starts one OAuth/
+PKCE transaction; its password or social-provider navigation establishes the
+web session and returns to the same transaction for App authorization. A
+transient post-login 403 is only recoverable after the web identity cookie has
+been observed, and recovery must reuse the original authorize URI.
 
 Session restoration is non-destructive. Renaming a macOS Keychain item requires
 a dual-read migration from the legacy account name. Temporary network,
