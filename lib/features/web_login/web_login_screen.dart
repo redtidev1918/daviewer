@@ -9,13 +9,14 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/auth_state.dart';
+import '../../core/auth/session_state.dart';
 import '../../core/auth/web_session_controller.dart';
 import '../../core/auth/webview_oauth_bridge.dart';
-import '../../core/data/web_session.dart';
 import '../../core/data/web_user_agent.dart';
 import '../../core/diagnostics/app_logger.dart';
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/network/proxy_controller.dart' as app_proxy;
 import '../../core/runtime/runtime_provider.dart';
 
 bool shouldStartOAuthAfterWebSession({
@@ -66,9 +67,18 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   bool _oauthRequested = false;
   bool _recoveringHttp403 = false;
   bool _pageLoadFailed = false;
+  bool _showBrowser = false;
+  bool _preparingBrowser = false;
+  bool _socialSignIn = false;
+  bool _testingNetwork = false;
+  String _networkStatus = '';
+  WebViewEnvironment? _webViewEnvironment;
+  int _webViewGeneration = 0;
+  int? _popupWindowId;
   int _reportSeq = 0;
   double _progress = 0;
   late final AuthController _authController;
+  app_proxy.ProxyController? _proxyController;
 
   WebViewOAuthBridge? get _bridge =>
       ref.read(runtimeProvider).webViewOAuthBridge;
@@ -77,6 +87,8 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   void initState() {
     super.initState();
     _authController = ref.read(authControllerProvider.notifier);
+    _proxyController = ref.read(runtimeProvider).proxyController;
+    _proxyController?.addListener(_onProxyChanged);
     final bridge = _bridge;
     if (bridge != null) {
       _launchSub = bridge.launchRequests.listen(_loadAuthRequest);
@@ -89,14 +101,20 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
 
   @override
   void dispose() {
+    _proxyController?.removeListener(_onProxyChanged);
     unawaited(_launchSub?.cancel());
     super.dispose();
+  }
+
+  void _onProxyChanged() {
+    if (mounted) setState(() {});
   }
 
   void _loadAuthRequest(Uri uri) {
     final controller = _controller;
     if (controller == null) {
       _pendingAuthUri = uri;
+      if (!_showBrowser && !_preparingBrowser) unawaited(_openBrowser());
       return;
     }
     controller.loadUrl(urlRequest: URLRequest(url: WebUri(uri.toString())));
@@ -123,7 +141,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       // Read the login identity from the long-lived `userinfo` cookie instead
       // of the page's __INITIAL_STATE__, which the login/authorize pages do
       // not populate reliably.
-      final username = await const WebSession().webUsername();
+      final username = await ref.read(webSessionProvider).webUsername();
       final isLoggedIn = username.isNotEmpty;
       debugPrint(
         '[web-session] csrf=${csrf.length} isLoggedIn=$isLoggedIn '
@@ -188,20 +206,58 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       const Duration(milliseconds: 1500),
     ]) {
       if (delay != Duration.zero) await Future<void>.delayed(delay);
-      final username = await const WebSession().webUsername();
+      final username = await ref.read(webSessionProvider).webUsername();
       if (username.isNotEmpty) return username;
     }
     return '';
   }
 
   void _retryPage() {
-    setState(() => _pageLoadFailed = false);
-    unawaited(
-      _controller?.loadUrl(
-            urlRequest: URLRequest(url: WebUri(_loginUri.toString())),
-          ) ??
-          Future<void>.value(),
-    );
+    _controller = null;
+    setState(() {
+      _showBrowser = false;
+      _pageLoadFailed = false;
+    });
+    unawaited(_openBrowser(social: _socialSignIn));
+  }
+
+  Future<void> _openBrowser({bool social = false}) async {
+    if (_preparingBrowser) return;
+    setState(() {
+      _preparingBrowser = true;
+      _socialSignIn = social;
+      _networkStatus = '';
+    });
+    final environment = await ref
+        .read(runtimeProvider)
+        .webViewProxyManager
+        ?.prepare();
+    if (!mounted) return;
+    setState(() {
+      _webViewEnvironment = environment;
+      _preparingBrowser = false;
+      _showBrowser = true;
+      _loading = true;
+      _webViewGeneration++;
+    });
+  }
+
+  Future<void> _testNetwork() async {
+    final proxy = ref.read(runtimeProvider).proxyController;
+    if (proxy == null || _testingNetwork) return;
+    final s = strings(ref.read(appLanguageProvider));
+    setState(() {
+      _testingNetwork = true;
+      _networkStatus = s.testingConnection;
+    });
+    final result = await proxy.testConnection();
+    if (!mounted) return;
+    setState(() {
+      _testingNetwork = false;
+      _networkStatus = result.isSuccess
+          ? s.proxyTestSucceeded(result.elapsed.inMilliseconds)
+          : s.proxyTestFailed;
+    });
   }
 
   /// Shows sign-in help: the account model, that any email can register, and
@@ -305,7 +361,21 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       // form scrolls its focused field into view on its own.
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Text(s.webLogin),
+        leading: _showBrowser
+            ? IconButton(
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                onPressed: () {
+                  if (_popupWindowId != null) {
+                    setState(() => _popupWindowId = null);
+                    return;
+                  }
+                  _controller = null;
+                  setState(() => _showBrowser = false);
+                },
+                icon: const Icon(Icons.arrow_back),
+              )
+            : null,
+        title: Text(_showBrowser ? s.webLogin : s.signInWelcomeTitle),
         actions: <Widget>[
           IconButton(
             tooltip: s.settings,
@@ -323,7 +393,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
             icon: const Icon(Icons.check),
           ),
         ],
-        bottom: _loading
+        bottom: _showBrowser && _loading
             ? PreferredSize(
                 preferredSize: const Size.fromHeight(3),
                 child: LinearProgressIndicator(
@@ -333,195 +403,457 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
               )
             : null,
       ),
-      body: ColoredBox(
-        color: theme.scaffoldBackgroundColor,
-        child: Column(
-          children: <Widget>[
-            if (_pageLoadFailed)
-              Material(
-                color: theme.colorScheme.errorContainer,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          s.loginPageLoadFailed,
-                          style: TextStyle(
-                            color: theme.colorScheme.onErrorContainer,
+      body: !_showBrowser
+          ? _buildOnboarding(context, s)
+          : ColoredBox(
+              color: theme.scaffoldBackgroundColor,
+              child: Column(
+                children: <Widget>[
+                  if (_socialSignIn)
+                    Material(
+                      color: theme.colorScheme.secondaryContainer,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            const Icon(Icons.info_outline, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(child: Text(s.socialSignInHint)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (_pageLoadFailed)
+                    Material(
+                      color: theme.colorScheme.errorContainer,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Text(
+                                s.loginPageLoadFailed,
+                                style: TextStyle(
+                                  color: theme.colorScheme.onErrorContainer,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => context.push('/settings/proxy'),
+                              child: Text(s.proxy),
+                            ),
+                            TextButton(
+                              onPressed: _retryPage,
+                              child: Text(s.retry),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (auth.error case final error?)
+                    Material(
+                      color: theme.colorScheme.errorContainer,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Text(
+                                s.loginFailed(friendlyErrorMessage(error)),
+                                style: TextStyle(
+                                  color: theme.colorScheme.onErrorContainer,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: auth.isLoggingIn
+                                  ? null
+                                  : _startOAuthIfNeeded,
+                              child: Text(s.retry),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  Expanded(
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: <Widget>[
+                        InAppWebView(
+                          key: ValueKey<int>(_webViewGeneration),
+                          webViewEnvironment: _webViewEnvironment,
+                          initialUrlRequest: URLRequest(
+                            url: WebUri(_loginUri.toString()),
                           ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => context.push('/settings/proxy'),
-                        child: Text(s.proxy),
-                      ),
-                      TextButton(onPressed: _retryPage, child: Text(s.retry)),
-                    ],
-                  ),
-                ),
-              ),
-            if (auth.error case final error?)
-              Material(
-                color: theme.colorScheme.errorContainer,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          s.loginFailed(friendlyErrorMessage(error)),
-                          style: TextStyle(
-                            color: theme.colorScheme.onErrorContainer,
+                          initialSettings: InAppWebViewSettings(
+                            javaScriptEnabled: true,
+                            javaScriptCanOpenWindowsAutomatically: true,
+                            supportMultipleWindows: true,
+                            thirdPartyCookiesEnabled: true,
+                            // A desktop Chrome UA makes deviantart.com serve its desktop
+                            // login page, which includes the Google/Apple one-click
+                            // sign-in buttons that the mobile layout omits.
+                            userAgent: webUserAgent,
+                            // Opaque: a transparent platform view uses a slower
+                            // composition path and makes the keyboard animation heavier.
+                            transparentBackground: false,
                           ),
+                          onWebViewCreated: (controller) {
+                            _controller = controller;
+                            final pending = _pendingAuthUri;
+                            if (pending != null) {
+                              _pendingAuthUri = null;
+                              controller.loadUrl(
+                                urlRequest: URLRequest(
+                                  url: WebUri(pending.toString()),
+                                ),
+                              );
+                            }
+                          },
+                          shouldOverrideUrlLoading:
+                              (controller, navigationAction) async {
+                                final uri = navigationAction.request.url;
+                                if (uri != null &&
+                                    uri.scheme == 'dakit' &&
+                                    uri.host == 'oauth') {
+                                  _bridge?.addCallback(uri);
+                                  // Navigate back to the deviantart home page; its
+                                  // onLoadStop then reports the real web session.
+                                  unawaited(
+                                    controller.loadUrl(
+                                      urlRequest: URLRequest(
+                                        url: WebUri(_homeUri.toString()),
+                                      ),
+                                    ),
+                                  );
+                                  return NavigationActionPolicy.CANCEL;
+                                }
+                                return NavigationActionPolicy.ALLOW;
+                              },
+                          onCreateWindow: (controller, action) async {
+                            // DeviantArt opens Google/Apple login with window.open().
+                            // Attach the native popup window to a second in-app WebView.
+                            // This also handles providers that create about:blank first
+                            // and navigate it later, which cannot be recovered by merely
+                            // copying the initial request URL into the parent view.
+                            if (!mounted) return false;
+                            setState(() {
+                              _popupWindowId = action.windowId;
+                              _loading = true;
+                              _pageLoadFailed = false;
+                            });
+                            return true;
+                          },
+                          onLoadStart: (controller, url) {
+                            if (mounted) {
+                              setState(() {
+                                _loading = true;
+                                _pageLoadFailed = false;
+                              });
+                            }
+                          },
+                          onLoadStop: (controller, url) {
+                            if (mounted) setState(() => _loading = false);
+                            // Report from any deviantart.com page. A sequence counter
+                            // makes the latest page win, so an earlier anonymous page
+                            // cannot overwrite a later signed-in page.
+                            final uri = url;
+                            if (uri != null &&
+                                uri.host == 'www.deviantart.com') {
+                              unawaited(_reportWebSession());
+                            }
+                          },
+                          onReceivedHttpError:
+                              (controller, request, response) async {
+                                if (request.isForMainFrame != true ||
+                                    response.statusCode != 403 ||
+                                    _recoveringHttp403) {
+                                  return;
+                                }
+                                // DeviantArt can return a transient HTML 403 after accepting
+                                // the first WebView password submission. If the persistent
+                                // userinfo cookie was already committed, move to Home so a
+                                // fresh CSRF can be read instead of leaving the user staring
+                                // at the stale error document.
+                                final username =
+                                    await _waitForCommittedUsername();
+                                if (!shouldRecoverLogin403(
+                                      isMainFrame:
+                                          request.isForMainFrame == true,
+                                      statusCode: response.statusCode ?? 0,
+                                      username: username,
+                                    ) ||
+                                    !mounted) {
+                                  if (mounted) {
+                                    setState(() => _pageLoadFailed = true);
+                                  }
+                                  AppLogger.instance.warning(
+                                    'auth',
+                                    'main-frame login returned HTTP 403 before a session '
+                                        'cookie was committed',
+                                  );
+                                  return;
+                                }
+                                AppLogger.instance.warning(
+                                  'auth',
+                                  'recovering committed WebView login after HTTP 403',
+                                );
+                                _recoveringHttp403 = true;
+                                await controller.loadUrl(
+                                  urlRequest: URLRequest(
+                                    url: WebUri(_homeUri.toString()),
+                                  ),
+                                );
+                                _recoveringHttp403 = false;
+                              },
+                          onReceivedError: (controller, request, error) {
+                            if (request.isForMainFrame != true || !mounted) {
+                              return;
+                            }
+                            AppLogger.instance.warning(
+                              'auth',
+                              'login page network error: ${error.type} '
+                                  '${error.description}',
+                            );
+                            setState(() {
+                              _loading = false;
+                              _pageLoadFailed = true;
+                            });
+                          },
+                          onProgressChanged: (controller, progress) {
+                            // onProgressChanged fires continuously while loading; each
+                            // setState rebuilds the whole Scaffold, so only rebuild on
+                            // meaningful progress steps.
+                            final value = progress / 100;
+                            if (mounted && (value - _progress).abs() >= 0.02) {
+                              setState(() => _progress = value);
+                            }
+                          },
                         ),
-                      ),
-                      TextButton(
-                        onPressed: auth.isLoggingIn
-                            ? null
-                            : _startOAuthIfNeeded,
-                        child: Text(s.retry),
-                      ),
-                    ],
+                        if (_popupWindowId case final windowId?)
+                          InAppWebView(
+                            key: ValueKey<String>('popup-$windowId'),
+                            windowId: windowId,
+                            webViewEnvironment: _webViewEnvironment,
+                            initialSettings: InAppWebViewSettings(
+                              javaScriptEnabled: true,
+                              javaScriptCanOpenWindowsAutomatically: true,
+                              supportMultipleWindows: true,
+                              thirdPartyCookiesEnabled: true,
+                              userAgent: webUserAgent,
+                              transparentBackground: false,
+                            ),
+                            shouldOverrideUrlLoading:
+                                (popupController, navigationAction) async {
+                                  final uri = navigationAction.request.url;
+                                  if (uri != null &&
+                                      uri.scheme == 'dakit' &&
+                                      uri.host == 'oauth') {
+                                    _bridge?.addCallback(uri);
+                                    if (mounted) {
+                                      setState(() => _popupWindowId = null);
+                                    }
+                                    unawaited(
+                                      _controller?.loadUrl(
+                                            urlRequest: URLRequest(
+                                              url: WebUri(_homeUri.toString()),
+                                            ),
+                                          ) ??
+                                          Future<void>.value(),
+                                    );
+                                    return NavigationActionPolicy.CANCEL;
+                                  }
+                                  return NavigationActionPolicy.ALLOW;
+                                },
+                            onLoadStop: (popupController, url) async {
+                              if (mounted) setState(() => _loading = false);
+                              final username = await ref
+                                  .read(webSessionProvider)
+                                  .webUsername();
+                              if (username.isEmpty || !mounted) return;
+                              setState(() => _popupWindowId = null);
+                              await _controller?.loadUrl(
+                                urlRequest: URLRequest(
+                                  url: WebUri(_homeUri.toString()),
+                                ),
+                              );
+                            },
+                            onCloseWindow: (controller) {
+                              if (mounted) {
+                                setState(() => _popupWindowId = null);
+                              }
+                            },
+                            onReceivedError: (controller, request, error) {
+                              if (request.isForMainFrame != true || !mounted) {
+                                return;
+                              }
+                              AppLogger.instance.warning(
+                                'auth',
+                                'social login popup network error: '
+                                    '${error.type} ${error.description}',
+                              );
+                              setState(() {
+                                _loading = false;
+                                _pageLoadFailed = true;
+                                _popupWindowId = null;
+                              });
+                            },
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-            Expanded(
-              child: InAppWebView(
-                initialUrlRequest: URLRequest(
-                  url: WebUri(_loginUri.toString()),
-                ),
-                initialSettings: InAppWebViewSettings(
-                  javaScriptEnabled: true,
-                  javaScriptCanOpenWindowsAutomatically: true,
-                  supportMultipleWindows: true,
-                  thirdPartyCookiesEnabled: true,
-                  // A desktop Chrome UA makes deviantart.com serve its desktop
-                  // login page, which includes the Google/Apple one-click
-                  // sign-in buttons that the mobile layout omits.
-                  userAgent: webUserAgent,
-                  // Opaque: a transparent platform view uses a slower
-                  // composition path and makes the keyboard animation heavier.
-                  transparentBackground: false,
-                ),
-                onWebViewCreated: (controller) {
-                  _controller = controller;
-                  final pending = _pendingAuthUri;
-                  if (pending != null) {
-                    _pendingAuthUri = null;
-                    controller.loadUrl(
-                      urlRequest: URLRequest(url: WebUri(pending.toString())),
-                    );
-                  }
-                },
-                shouldOverrideUrlLoading: (controller, navigationAction) async {
-                  final uri = navigationAction.request.url;
-                  if (uri != null &&
-                      uri.scheme == 'dakit' &&
-                      uri.host == 'oauth') {
-                    _bridge?.addCallback(uri);
-                    // Navigate back to the deviantart home page; its
-                    // onLoadStop then reports the real web session.
-                    unawaited(
-                      controller.loadUrl(
-                        urlRequest: URLRequest(
-                          url: WebUri(_homeUri.toString()),
-                        ),
-                      ),
-                    );
-                    return NavigationActionPolicy.CANCEL;
-                  }
-                  return NavigationActionPolicy.ALLOW;
-                },
-                onCreateWindow: (controller, action) async {
-                  // DeviantArt opens Google/Apple login with window.open().
-                  // Keep that navigation in the same authenticated WebView so
-                  // its resulting DeviantArt cookies are shared and captured.
-                  final uri = action.request.url;
-                  if (uri == null || uri.toString() == 'about:blank') {
-                    return false;
-                  }
-                  await controller.loadUrl(urlRequest: action.request);
-                  return false;
-                },
-                onLoadStart: (controller, url) {
-                  if (mounted) {
-                    setState(() {
-                      _loading = true;
-                      _pageLoadFailed = false;
-                    });
-                  }
-                },
-                onLoadStop: (controller, url) {
-                  if (mounted) setState(() => _loading = false);
-                  // Report from any deviantart.com page. A sequence counter
-                  // makes the latest page win, so an earlier anonymous page
-                  // cannot overwrite a later signed-in page.
-                  final uri = url;
-                  if (uri != null && uri.host == 'www.deviantart.com') {
-                    unawaited(_reportWebSession());
-                  }
-                },
-                onReceivedHttpError: (controller, request, response) async {
-                  if (request.isForMainFrame != true ||
-                      response.statusCode != 403 ||
-                      _recoveringHttp403) {
-                    return;
-                  }
-                  // DeviantArt can return a transient HTML 403 after accepting
-                  // the first WebView password submission. If the persistent
-                  // userinfo cookie was already committed, move to Home so a
-                  // fresh CSRF can be read instead of leaving the user staring
-                  // at the stale error document.
-                  final username = await _waitForCommittedUsername();
-                  if (!shouldRecoverLogin403(
-                        isMainFrame: request.isForMainFrame == true,
-                        statusCode: response.statusCode ?? 0,
-                        username: username,
-                      ) ||
-                      !mounted) {
-                    if (mounted) setState(() => _pageLoadFailed = true);
-                    AppLogger.instance.warning(
-                      'auth',
-                      'main-frame login returned HTTP 403 before a session '
-                          'cookie was committed',
-                    );
-                    return;
-                  }
-                  AppLogger.instance.warning(
-                    'auth',
-                    'recovering committed WebView login after HTTP 403',
-                  );
-                  _recoveringHttp403 = true;
-                  await controller.loadUrl(
-                    urlRequest: URLRequest(url: WebUri(_homeUri.toString())),
-                  );
-                  _recoveringHttp403 = false;
-                },
-                onReceivedError: (controller, request, error) {
-                  if (request.isForMainFrame != true || !mounted) return;
-                  AppLogger.instance.warning(
-                    'auth',
-                    'login page network error: ${error.type} '
-                        '${error.description}',
-                  );
-                  setState(() {
-                    _loading = false;
-                    _pageLoadFailed = true;
-                  });
-                },
-                onProgressChanged: (controller, progress) {
-                  // onProgressChanged fires continuously while loading; each
-                  // setState rebuilds the whole Scaffold, so only rebuild on
-                  // meaningful progress steps.
-                  final value = progress / 100;
-                  if (mounted && (value - _progress).abs() >= 0.02) {
-                    setState(() => _progress = value);
-                  }
-                },
+                ],
               ),
             ),
-          ],
+    );
+  }
+
+  Widget _buildOnboarding(BuildContext context, AppStrings s) {
+    final theme = Theme.of(context);
+    final proxy = ref.watch(runtimeProvider).proxyController?.config;
+    final currentProxy = proxy == null
+        ? s.proxyCurrentDirect
+        : s.proxyCurrentConfigured(proxy.toString());
+    return SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+            children: <Widget>[
+              Align(
+                child: CircleAvatar(
+                  radius: 34,
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  child: Icon(
+                    Icons.palette_outlined,
+                    size: 36,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                s.signInWelcomeTitle,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                s.signInWelcomeBody,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 28),
+              FilledButton.icon(
+                onPressed: _preparingBrowser ? null : () => _openBrowser(),
+                icon: _preparingBrowser
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.login),
+                label: Text(
+                  _preparingBrowser
+                      ? s.openingOfficialLogin
+                      : s.signInWithDeviantArt,
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _preparingBrowser
+                    ? null
+                    : () => _openBrowser(social: true),
+                icon: const Icon(Icons.account_circle_outlined),
+                label: Text(s.signInWithSocial),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  Text(s.noAccountQuestion),
+                  TextButton(
+                    onPressed: () => launchUrl(
+                      _joinUri,
+                      mode: LaunchMode.externalApplication,
+                    ),
+                    child: Text(s.registerAccount),
+                  ),
+                  TextButton(
+                    onPressed: () => launchUrl(
+                      _forgotUri,
+                      mode: LaunchMode.externalApplication,
+                    ),
+                    child: Text(s.forgotPassword),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          const Icon(Icons.lan_outlined),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              s.networkBeforeLogin,
+                              style: theme.textTheme.titleMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(s.loginNetworkHint),
+                      const SizedBox(height: 8),
+                      Text(
+                        currentProxy,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (_networkStatus.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(_networkStatus, style: theme.textTheme.bodySmall),
+                      ],
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: <Widget>[
+                          OutlinedButton.icon(
+                            onPressed: () => context.push('/settings/proxy'),
+                            icon: const Icon(Icons.settings_ethernet),
+                            label: Text(s.proxy),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: _testingNetwork ? null : _testNetwork,
+                            icon: _testingNetwork
+                                ? const SizedBox.square(
+                                    dimension: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.network_check),
+                            label: Text(s.testConnection),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

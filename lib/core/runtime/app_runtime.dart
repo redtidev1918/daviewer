@@ -9,6 +9,8 @@ import '../auth/migrating_auth_stores.dart';
 import '../diagnostics/app_logger.dart';
 import '../network/dynamic_proxy_dio.dart';
 import '../network/proxy_controller.dart';
+import '../network/system_proxy.dart';
+import '../network/webview_proxy_manager.dart';
 
 /// Public client id baked into the release build so ordinary users don't have
 /// to register their own DeviantArt app. A Public OAuth client has no secret,
@@ -28,6 +30,7 @@ final class AppRuntime {
     this.proxyController,
     this.dio,
     this.webViewOAuthBridge,
+    this.webViewProxyManager,
   });
 
   final String clientId;
@@ -37,6 +40,7 @@ final class AppRuntime {
   final ProxyController? proxyController;
   final Dio? dio;
   final WebViewOAuthBridge? webViewOAuthBridge;
+  final WebViewProxyManager? webViewProxyManager;
 
   void Function()? _proxyListener;
 
@@ -63,6 +67,7 @@ final class AppRuntime {
       ),
     );
     final runtime = _build(null, dio: dio, proxyController: proxyController);
+    await runtime.webViewProxyManager?.prepare();
     await runtime.transfers.initialize();
     runtime._listenForProxyChanges();
     return runtime;
@@ -89,6 +94,9 @@ final class AppRuntime {
     }
 
     final webViewOAuthBridge = WebViewOAuthBridge();
+    final webViewProxyManager = proxyController == null
+        ? null
+        : WebViewProxyManager(proxyController);
     final oauth = DAKitOAuthClient(
       config: OAuthConfig(
         clientId: clientId,
@@ -145,6 +153,7 @@ final class AppRuntime {
       proxyController: proxyController,
       dio: dio,
       webViewOAuthBridge: webViewOAuthBridge,
+      webViewProxyManager: webViewProxyManager,
     );
   }
 
@@ -160,6 +169,12 @@ final class AppRuntime {
               : ProxyConfiguration(host: config.host, port: config.port),
         ),
       );
+      // Android/macOS proxy overrides are process-wide. Windows environments
+      // are prepared immediately and reused by every WebView in the app.
+      final manager = webViewProxyManager;
+      if (manager != null) {
+        unawaited(manager.prepare().then<void>((_) {}));
+      }
     };
     proxyController.addListener(_proxyListener!);
     _proxyListener!();
@@ -172,33 +187,30 @@ final class AppRuntime {
       proxyController.removeListener(listener);
     }
     proxyController?.dispose();
+    unawaited(webViewProxyManager?.dispose() ?? Future<void>.value());
     unawaited(webViewOAuthBridge?.dispose() ?? Future<void>.value());
   }
 
   static NetworkProfile _environmentNetworkProfile() {
-    final rawProxy =
-        Platform.environment['https_proxy'] ??
-        Platform.environment['HTTPS_PROXY'] ??
-        Platform.environment['http_proxy'] ??
-        Platform.environment['HTTP_PROXY'] ??
-        Platform.environment['all_proxy'] ??
-        Platform.environment['ALL_PROXY'];
-    if (rawProxy == null || rawProxy.trim().isEmpty) {
-      return NetworkProfile.environment();
+    SystemProxyConfig? proxy;
+    for (final name in const <String>[
+      'https_proxy',
+      'HTTPS_PROXY',
+      'http_proxy',
+      'HTTP_PROXY',
+      'all_proxy',
+      'ALL_PROXY',
+    ]) {
+      final raw = Platform.environment[name];
+      if (raw == null || raw.trim().isEmpty) continue;
+      proxy = parseProxyAddress(raw);
+      if (proxy != null) break;
     }
-    final uri = Uri.tryParse(rawProxy.trim());
-    if (uri == null || uri.host.isEmpty) {
+    if (proxy == null) {
       return NetworkProfile.environment();
     }
     return NetworkProfile.httpProxy(
-      proxyServer: HttpProxyServer(
-        host: uri.host,
-        port: uri.hasPort
-            ? uri.port
-            : uri.scheme == 'https'
-            ? 443
-            : 80,
-      ),
+      proxyServer: HttpProxyServer(host: proxy.host, port: proxy.port),
     );
   }
 }

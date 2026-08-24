@@ -30,6 +30,8 @@ and the web-session snapshot.
 
 ## Login WebView
 
+- A native entry screen presents DeviantArt, Google / Apple, registration,
+  password recovery, and network checks before opening any website.
 - Mobile presents DeviantArt's desktop login layout so Google and Apple buttons
   remain visible.
 - `window.open()` navigation is kept in the same WebView and third-party cookies
@@ -39,6 +41,9 @@ and the web-session snapshot.
   records a fresh CSRF; otherwise the app shows a recoverable connection state.
 - The login screen always exposes Settings. Proxy, diagnostics, update checking,
   About, language, and appearance do not require authentication.
+- Interactive and headless WebViews use the effective app proxy where the OS
+  allows it, and Windows cookie reads share the same WebView2 environment. See
+  [Networking and proxy](networking.md) for platform limits.
 
 ## Mature content
 

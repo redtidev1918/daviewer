@@ -97,19 +97,43 @@ Future<SystemProxyConfig?> _detectWindowsProxy(AppLogger logger) async {
       return null;
     }
 
-    final hostAndPort = server.split(':');
-    final host = hostAndPort.first;
-    final port = hostAndPort.length > 1 ? int.tryParse(hostAndPort[1]) : 8080;
-    if (host.isEmpty || port == null || port <= 0 || port > 65535) {
+    final parsed = parseWindowsProxyServer(server);
+    if (parsed == null) {
       logger.warning('proxy', 'Windows: invalid proxy server "$server"');
       return null;
     }
-    logger.info('proxy', 'Windows: detected $host:$port');
-    return SystemProxyConfig(host: host, port: port);
+    logger.info('proxy', 'Windows: detected $parsed');
+    return parsed;
   } on Object catch (error, stack) {
     logger.warning('proxy', 'Windows proxy detection failed', error, stack);
     return null;
   }
+}
+
+/// Parses both Windows' single `host:port` value and its protocol-specific
+/// `http=host:port;https=host:port` form. HTTPS takes precedence because all
+/// DeviantArt endpoints are HTTPS.
+SystemProxyConfig? parseWindowsProxyServer(String value) {
+  var candidate = value.trim();
+  if (candidate.contains('=')) {
+    final entries = <String, String>{};
+    for (final part in candidate.split(';')) {
+      final separator = part.indexOf('=');
+      if (separator <= 0) continue;
+      entries[part.substring(0, separator).trim().toLowerCase()] = part
+          .substring(separator + 1)
+          .trim();
+    }
+    candidate = entries['https'] ?? entries['http'] ?? '';
+  }
+  if (candidate.isEmpty) return null;
+  final uri = Uri.tryParse(
+    candidate.contains('://') ? candidate : 'http://$candidate',
+  );
+  if (uri == null || uri.host.isEmpty || uri.userInfo.isNotEmpty) return null;
+  final port = uri.hasPort ? uri.port : 8080;
+  if (port <= 0 || port > 65535) return null;
+  return SystemProxyConfig(host: uri.host, port: port);
 }
 
 Future<SystemProxyConfig?> _detectLinuxProxy(AppLogger logger) async {

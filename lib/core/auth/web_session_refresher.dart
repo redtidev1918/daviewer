@@ -6,8 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/web_session.dart';
 import '../data/web_user_agent.dart';
+import '../runtime/runtime_provider.dart';
+import 'session_state.dart';
 import 'web_session_controller.dart';
 
 /// Refreshes the embedded DeviantArt *web* session on a cold start without
@@ -41,7 +42,10 @@ final class WebSessionRefresher {
     final completion = Completer<void>();
     _completion = completion;
     try {
+      final runtime = _ref.read(runtimeProvider);
+      final environment = await runtime.webViewProxyManager?.prepare();
       final headless = HeadlessInAppWebView(
+        webViewEnvironment: environment,
         initialSize: const Size(480, 800),
         initialSettings: InAppWebViewSettings(
           javaScriptEnabled: true,
@@ -85,7 +89,7 @@ final class WebSessionRefresher {
       final csrf = (data['csrf'] as String?) ?? '';
       // Anonymous/partial pages may lack a CSRF token; keep the prior snapshot.
       if (csrf.isEmpty) return;
-      final username = await const WebSession().webUsername();
+      final username = await _ref.read(webSessionProvider).webUsername();
       debugPrint(
         '[web-session] cold-start csrf=${csrf.length} username=$username',
       );

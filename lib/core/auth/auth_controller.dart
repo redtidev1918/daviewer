@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../diagnostics/app_logger.dart';
@@ -211,7 +210,7 @@ final class AuthController extends StateNotifier<AuthState> {
     }
     // Clear the embedded web session too (cookies + snapshot + state).
     try {
-      await CookieManager.instance().deleteAllCookies();
+      await runtime.webViewProxyManager?.cookieManager.deleteAllCookies();
     } on Object catch (error, stack) {
       _log.warning('auth', 'logout: web cookie clear failed', error, stack);
     }

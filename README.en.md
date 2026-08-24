@@ -148,11 +148,17 @@ flutter run -d windows   # Windows
 
 ## Proxy
 
-The app auto-detects the system proxy at runtime (macOS via `scutil`, Windows via
-the registry), or you can set `host:port` manually in Settings → Proxy. The app
-also reads `http_proxy`, `https_proxy`, `all_proxy`, and their uppercase forms;
-apps launched from Finder usually do not inherit terminal variables — use the
-system proxy or in-app settings in that case.
+The runtime network path is selected in this order: in-app manual setting,
+system proxy, `https_proxy` / `http_proxy` / `all_proxy`, then build setting.
+Settings → Proxy accepts `127.0.0.1:7892` or `http://127.0.0.1:7892`, persists
+the choice, and applies it to API, media, downloads, background web sessions,
+and sign-in. The page includes a direct DeviantArt connectivity check.
+
+Apps launched from Finder usually do not inherit terminal variables. On macOS
+12/13 an app-only proxy cannot be injected into the system WebView, so use the
+macOS system proxy; macOS 14+, Android, and Windows can route the sign-in WebView
+through the in-app setting. See [Networking and proxy](docs/networking.md) for
+the full priority, platform matrix, and troubleshooting flow.
 
 Environment variables for proxying `flutter pub get` and Gradle builds are in
 [Build notes](docs/build.md#proxying-builds).
@@ -194,7 +200,10 @@ The app has two independent sign-in states:
   no manual login is needed each time.
 - **App OAuth session**: decides whether favourites / watch / download work.
 
-When they drift out of sync, a banner at the top of Home offers a one-tap fix.
+Sign-in starts with a native choice screen for DeviantArt, Google / Apple,
+registration, password recovery, or proxy setup, and opens DeviantArt's page
+only after an explicit action. When the two sessions drift out of sync, a
+banner at the top of Home offers a one-tap fix.
 OAuth authorization happens in the built-in WebView first (reusing the web
 session, no password re-entry), falling back to the system browser if the
 WebView is unavailable.
@@ -208,9 +217,9 @@ explicit logout require authorization again.
 ## Login FAQ
 
 - **DAViewer has no account of its own**: you sign in with your DeviantArt account — the app never registers an account or stores a password.
-- **Forgot your password?** Use the "Forgot Password" link on the login page, or tap "?" → "Forgot password" in the app's login screen to open the reset page in your browser.
-- **Register an account**: tap "?" → "Register a DeviantArt account" in the app's login screen to open the sign-up page in your browser.
-- **Google / Apple sign-in**: mobile uses the desktop login layout to expose the one-click buttons and keeps their window navigation in the same WebView so the DeviantArt cookie is retained.
+- **Password reset / registration**: the native sign-in screen exposes both actions; the system browser opens only after you tap one.
+- **Google / Apple sign-in**: tap the native social-sign-in action first, then choose the provider on DeviantArt's page. Mobile uses the desktop layout and keeps provider navigation in the same WebView so the DeviantArt cookie is retained.
+- **Check proxy before sign-in**: the native screen shows the effective route and provides both proxy settings and a connectivity test before any web page is opened.
 - **Mature content**: DeviantArt account browsing preferences override the app request. Open Settings → DeviantArt account settings → Mature content settings.
 - **Settings while sign-in is broken**: the gear on the login screen keeps language, proxy, diagnostics, updates, and About reachable without authentication.
 - **macOS Keychain prompt**: on first sign-in or after an upgrade, macOS may ask for your Mac login password once (a normal macOS confirmation for apps outside the App Store). That prompt belongs to macOS and DAViewer never reads the password — it only accesses the DeviantArt token it saved for you.

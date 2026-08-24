@@ -12,6 +12,8 @@ deeper developer and architecture notes.
 - [Authentication and session recovery](authentication.md) — the two-session
   model, cold-start recovery, Keychain migration, login WebView, and mature
   content settings.
+- [Networking and proxy](networking.md) — runtime priority, persisted manual
+  settings, WebView coverage by platform, connectivity tests, and recovery.
 - [Web adapter](web_adapter.md) — the compatibility contract for the
   reverse-engineered website endpoints (endpoint registry, fallbacks, and the
   change runbook).
