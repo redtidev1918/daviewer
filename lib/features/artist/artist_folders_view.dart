@@ -16,11 +16,13 @@ final class FoldersView extends ConsumerWidget {
   const FoldersView({
     required this.username,
     this.kind = FolderKind.gallery,
+    this.shrinkWrap = false,
     super.key,
   });
 
   final String username;
   final FolderKind kind;
+  final bool shrinkWrap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,18 +33,23 @@ final class FoldersView extends ConsumerWidget {
     );
     final s = strings(ref.watch(appLanguageProvider));
     return folders.when(
-      loading: () => const SkeletonList(),
+      loading: () => shrinkWrap
+          ? const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          : const SkeletonList(),
       error: (error, stackTrace) =>
           AppErrorState(message: friendlyErrorMessage(error)),
       data: (items) {
         if (items.isEmpty) {
-          return Center(
-            child: Text(
-              kind == FolderKind.collection ? s.noCollections : s.noFolders,
-            ),
-          );
+          return Center(child: Text(s.noFolders));
         }
         return GridView.builder(
+          shrinkWrap: shrinkWrap,
+          physics: shrinkWrap
+              ? const NeverScrollableScrollPhysics()
+              : const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(12),
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: 200,
@@ -129,6 +136,41 @@ final class FoldersView extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+}
+
+/// A combined "Categories" view listing the artist's gallery folders and
+/// favourites collections in one scrollable page, so the artist screen needs
+/// only a single folders tab instead of two confusingly named ones.
+final class FoldersOverviewView extends ConsumerWidget {
+  const FoldersOverviewView({required this.username, super.key});
+
+  final String username;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = strings(ref.watch(appLanguageProvider));
+    final titleStyle = Theme.of(context).textTheme.titleSmall;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+      children: <Widget>[
+        Text(s.galleryFolders, style: titleStyle),
+        const SizedBox(height: 8),
+        FoldersView(
+          username: username,
+          kind: FolderKind.gallery,
+          shrinkWrap: true,
+        ),
+        const SizedBox(height: 16),
+        Text(s.favouriteFolders, style: titleStyle),
+        const SizedBox(height: 8),
+        FoldersView(
+          username: username,
+          kind: FolderKind.collection,
+          shrinkWrap: true,
+        ),
+      ],
     );
   }
 }
