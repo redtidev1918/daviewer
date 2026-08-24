@@ -52,6 +52,9 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     'https://www.deviantart.com/users/forgot?kind=password',
   );
   static final Uri _joinUri = Uri.parse('https://www.deviantart.com/join');
+  static final Uri _contentSettingsUri = Uri.parse(
+    'https://www.deviantart.com/settings/browsing',
+  );
 
   InAppWebViewController? _controller;
   StreamSubscription<Uri>? _launchSub;
@@ -214,6 +217,20 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                   Navigator.of(context).pop();
                   unawaited(
                     launchUrl(_joinUri, mode: LaunchMode.externalApplication),
+                  );
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.visibility_outlined),
+                title: Text(s.contentSettings),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  unawaited(
+                    launchUrl(
+                      _contentSettingsUri,
+                      mode: LaunchMode.externalApplication,
+                    ),
                   );
                 },
               ),

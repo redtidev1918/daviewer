@@ -74,18 +74,24 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '登录帮助' : 'Sign-in help';
   String get loginHelpBody => _lang == AppLanguage.zh
       ? '本页登录的是 DeviantArt 官方账号。DAViewer 不注册账号、不保存密码。\n\n'
-            '• 注册：支持任意邮箱注册，登录页也提供一键登录。\n'
+            '• 登录页支持 DeviantArt 账号与 Google / Apple 一键登录。\n'
+            '• 注册：支持任意邮箱注册。\n'
             '• 找回密码：点击登录页的「Forgot Password」，或使用下方「找回密码」在浏览器中重置。\n'
+            '• 成人内容默认被 DeviantArt 隐藏/模糊，需在下方「成人内容设置」里改为显示。\n'
             '• 找回密码与注册均在系统浏览器中完成，完成后返回本页登录。'
       : 'This page signs in to your DeviantArt account. DAViewer does not create accounts or store passwords.\n\n'
-            '• Register: any email works; the page also offers one-click sign-in.\n'
+            '• Sign-in supports a DeviantArt account or Google / Apple one-click sign-in.\n'
+            '• Register: any email works.\n'
             '• Forgot password: tap "Forgot Password" on the page, or use "Forgot password" below to reset it in your browser.\n'
+            '• Mature content is hidden/blurred by default on DeviantArt; enable it under "Mature content settings" below.\n'
             '• Password reset and registration open in your browser; return here to sign in afterwards.';
   String get forgotPassword =>
       _lang == AppLanguage.zh ? '找回密码' : 'Forgot password';
   String get registerAccount => _lang == AppLanguage.zh
       ? '注册 DeviantArt 账号'
       : 'Register a DeviantArt account';
+  String get contentSettings =>
+      _lang == AppLanguage.zh ? '成人内容设置' : 'Mature content settings';
   String get webLoginSuccess =>
       _lang == AppLanguage.zh ? '网页登录成功' : 'Web sign-in succeeded';
   String get loginSuccess => _lang == AppLanguage.zh ? '登录成功' : 'Signed in';
@@ -403,12 +409,13 @@ final class AppStrings {
   String get watchStateOn => _lang == AppLanguage.zh ? '已关注' : 'Following';
   String get watchStateOff => _lang == AppLanguage.zh ? '关注' : 'Watch';
   String get journal => _lang == AppLanguage.zh ? '文章' : 'Journal';
-  String get folders => _lang == AppLanguage.zh ? '画集' : 'Folders';
-  String get collections => _lang == AppLanguage.zh ? '收藏夹' : 'Collections';
+  String get folders => _lang == AppLanguage.zh ? '分类' : 'Folders';
+  String get galleryFolders =>
+      _lang == AppLanguage.zh ? '画廊分类' : 'Gallery folders';
+  String get favouriteFolders =>
+      _lang == AppLanguage.zh ? '收藏分类' : 'Favourite folders';
   String get noJournals => _lang == AppLanguage.zh ? '暂无文章' : 'No journals';
-  String get noFolders => _lang == AppLanguage.zh ? '暂无画集' : 'No folders';
-  String get noCollections =>
-      _lang == AppLanguage.zh ? '暂无收藏夹' : 'No collections';
+  String get noFolders => _lang == AppLanguage.zh ? '暂无分类' : 'No folders';
   String get emptyFolderBadge => _lang == AppLanguage.zh ? '空画集' : 'Empty';
   String folderArtworkCount(int count) =>
       _lang == AppLanguage.zh ? '$count 作品' : '$count artworks';
