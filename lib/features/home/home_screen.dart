@@ -14,6 +14,11 @@ import '../../shared/widgets/artwork_feed_grid.dart';
 import 'home_feeds.dart';
 import 'home_providers.dart';
 
+int initialHomeTabIndex({
+  required bool oauthSignedIn,
+  required bool? webLoggedIn,
+}) => oauthSignedIn && webLoggedIn != true ? 1 : 0;
+
 /// Native home: two tabs, all rendered with the native feed UI.
 ///
 /// - 推荐: the personalized `rfy/deviations` web feed (fetched natively with
@@ -44,7 +49,7 @@ final class HomeScreen extends ConsumerWidget {
         closeLabel: s.close,
         onAction: () => context.push('/web-login'),
       );
-    } else if (!auth.isLoggingIn && webLoggedIn == false && oauthSignedIn) {
+    } else if (!auth.isLoggingIn && webLoggedIn != true && oauthSignedIn) {
       syncBanner = LoginSyncBanner(
         message: s.webLoggedOutOAuthActive,
         actionLabel: s.webLogin,
@@ -54,7 +59,19 @@ final class HomeScreen extends ConsumerWidget {
     }
 
     return DefaultTabController(
+      // Recreate the controller when session capabilities change while the
+      // login route is covering Home; otherwise Flutter keeps the old signed-
+      // out index and ignores the new initialIndex after a successful callback.
+      key: ValueKey<String>('home-tabs-$oauthSignedIn-${webLoggedIn == true}'),
       length: 2,
+      // A system-browser social login establishes the official App OAuth
+      // session but cannot export protected browser cookies into the embedded
+      // WebView. Land on the fully functional OAuth-backed feed instead of
+      // making a successful login look like a recommendation failure.
+      initialIndex: initialHomeTabIndex(
+        oauthSignedIn: oauthSignedIn,
+        webLoggedIn: webLoggedIn,
+      ),
       child: Scaffold(
         appBar: AppBar(
           title: Text(s.appTitle),

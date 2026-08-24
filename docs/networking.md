@@ -40,13 +40,20 @@ in-app setting.
 
 ## Traffic coverage
 
-| Platform | API / media / downloads | Login and background WebView |
-| --- | --- | --- |
-| Android | Android system proxy, VPN path, or dynamic app proxy | process-wide WebView override |
-| Windows | dynamic app proxy | shared WebView2 environment with `--proxy-server` |
-| macOS 14+ | dynamic app proxy | `WKWebsiteDataStore.proxyConfigurations` |
-| macOS 12/13 | dynamic app proxy | OS system proxy only |
-| Linux | dynamic app proxy | OS WebView/system behavior |
+| Platform | API / media / downloads | Embedded account login | Social login |
+| --- | --- | --- | --- |
+| Android | system proxy, VPN path, or dynamic app proxy | process-wide WebView override | system browser; system proxy/VPN |
+| Windows | dynamic app proxy | shared WebView2 `--proxy-server` | system browser; system proxy/VPN |
+| macOS 14+ | dynamic app proxy | `WKWebsiteDataStore.proxyConfigurations` | system browser; system proxy/VPN |
+| macOS 12/13 | dynamic app proxy | OS system proxy only | system browser; system proxy/VPN |
+| Linux | dynamic app proxy | OS WebView/system behavior | not exposed until packaged callback registration exists |
+
+An in-app manual proxy, shell environment variable, or build define controls
+DAViewer clients but cannot reconfigure an already-running external browser.
+When one of those app-only sources is active, the login UI warns that social
+sign-in additionally requires a working OS proxy or VPN. A system-proxy source
+or direct route has no warning. This boundary is deliberate: claiming that an
+app-only proxy covers Google in the system browser would be false.
 
 On GNOME, `none` mode ignores stale host/port values and `manual` mode prefers
 the HTTPS endpoint before HTTP. PAC `auto` mode is not representable through
@@ -63,8 +70,9 @@ from another makes a successful sign-in appear anonymous.
 The login route starts with native UI and does not immediately navigate to a
 website. It exposes:
 
-- DeviantArt account sign-in;
-- Google / Apple sign-in;
+- embedded DeviantArt username/email sign-in using the app route;
+- provider-neutral system-browser OAuth for the social providers currently
+  shown by DeviantArt (Google, Apple, Facebook at the time of writing);
 - registration and password recovery (explicit external-browser actions);
 - the current effective proxy, proxy settings, and a connectivity test;
 - public Settings and Diagnostics routes.
@@ -72,6 +80,14 @@ website. It exposes:
 Opening or retrying the official page prepares the WebView route again. A proxy
 changed while troubleshooting therefore applies to the newly created browser,
 rather than leaving the user in a stale failed WebView.
+
+Google's OAuth endpoint rejects embedded user-agents, so DAViewer does not
+attempt to bypass that policy with a desktop User-Agent or synthetic DOM click.
+The external OAuth launch is one-shot: subsequent embedded logins return to the
+WebView route. The waiting screen can reopen the same authorize URI or cancel
+and clear the pending PKCE state. On Windows, the ZIP build registers the
+callback protocol under `HKCU\\Software\\Classes\\dakit` on normal startup and
+forwards a callback activation to the existing app process.
 
 Proxy exits can trigger an interactive DeviantArt or edge-provider human
 verification document. Such pages may intentionally use HTTP 403, 429, or 503;
@@ -94,9 +110,14 @@ Before a network-related release:
 1. verify direct/automatic/manual selection and clearing;
 2. test `all_proxy=http://127.0.0.1:<port>` from a shell;
 3. run the in-app connectivity test with a working and stopped proxy;
-4. verify both password and social-login WebView navigation;
+4. verify embedded password login plus system-browser Google, Apple, and
+   Facebook authorization, callback, reopen, cancellation, and a cold-start
+   callback;
 5. verify a 403/429/503 human-verification document remains interactive and is
    not labelled as a connection failure, including a challenge iframe inserted
-   after `loadStop` and one hosted in a Google/Apple popup;
+   after `loadStop` and one hosted in an embedded popup;
 6. verify the headless web-session refresh uses the same cookie environment;
-7. keep raw proxy, HTTP, and parsing details in Diagnostics only.
+7. on Windows, verify protocol registration, second-process forwarding, and a
+   moved release folder;
+8. verify an app-only proxy produces the external-browser boundary warning;
+9. keep raw proxy, HTTP, and parsing details in Diagnostics only.

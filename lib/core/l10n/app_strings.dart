@@ -57,31 +57,51 @@ final class AppStrings {
   String get signInWelcomeTitle =>
       _lang == AppLanguage.zh ? '登录 DeviantArt' : 'Sign in to DeviantArt';
   String get signInWelcomeBody => _lang == AppLanguage.zh
-      ? '选择登录方式后会进入 DeviantArt 官方授权流程，一次完成网页会话与 App 授权。DAViewer 不读取或保存你的密码。'
-      : 'Choose a sign-in method to complete the official DeviantArt web session and app authorization in one flow. DAViewer never reads or stores your password.';
+      ? '选择与你账号匹配的安全登录链路。DAViewer 不读取或保存你的 DeviantArt、Google、Apple 或 Facebook 密码。'
+      : 'Choose the secure route that matches your account. DAViewer never reads or stores your DeviantArt, Google, Apple or Facebook password.';
   String get signInWithDeviantArt => _lang == AppLanguage.zh
       ? '使用 DeviantArt 账号登录'
       : 'Sign in with DeviantArt';
-  String get signInWithGoogle =>
-      _lang == AppLanguage.zh ? '使用 Google 登录' : 'Continue with Google';
-  String get signInWithApple =>
-      _lang == AppLanguage.zh ? '使用 Apple 登录' : 'Continue with Apple';
-  String socialSignInHint(String provider) => _lang == AppLanguage.zh
-      ? '正在通过 DeviantArt 官方页面连接 $provider；完成后会自动继续 App 授权，无需再次登录。'
-      : 'Connecting $provider through the official DeviantArt page. App authorization continues automatically without another sign-in.';
-  String finishingSocialSignIn(String provider) => _lang == AppLanguage.zh
-      ? '正在完成 $provider 登录并继续原授权流程…'
-      : 'Finishing $provider sign-in and resuming authorization…';
-  String socialSignInIncomplete(String provider) => _lang == AppLanguage.zh
-      ? '$provider 登录窗口已关闭，但 DeviantArt 尚未确认登录。请重试；不会要求重新输入已保存的 Google / Apple 账号。'
-      : '$provider closed before DeviantArt confirmed the sign-in. Retry; your saved Google or Apple account should not need to be entered again.';
+  String signInWithSocialBrowser(List<String> providers) {
+    final available = providers.join(' / ');
+    if (_lang == AppLanguage.zh) {
+      return available.isEmpty ? '使用社交账号（系统浏览器）' : '$available 登录（系统浏览器）';
+    }
+    return available.isEmpty
+        ? 'Social sign-in (system browser)'
+        : '$available sign-in (system browser)';
+  }
+
+  String get socialBrowserDescription => _lang == AppLanguage.zh
+      ? '在系统安全浏览器打开 DeviantArt 官方授权页，再选择社交账号；适用于 Google 对内嵌 WebView 的限制。'
+      : 'Opens DeviantArt authorization in your secure system browser, where you choose the social provider. This avoids Google\'s embedded-WebView restriction.';
+  String get embeddedAccountDescription => _lang == AppLanguage.zh
+      ? '在 App 内使用 DeviantArt 用户名/邮箱和密码；此链路会使用 App 当前代理并同步网页推荐会话。'
+      : 'Use a DeviantArt username/email and password inside the app. This route follows the app proxy and also syncs the personalized web session.';
+  String get syncPersonalizedWebSession => _lang == AppLanguage.zh
+      ? '同步个性化网页推荐（可选）'
+      : 'Sync personalized web recommendations (optional)';
+  String get syncPersonalizedWebSessionDescription => _lang == AppLanguage.zh
+      ? 'App 授权已经完成。仅当你需要首页个性化推荐时，才需要在 App 内再建立 DeviantArt 网页会话。'
+      : 'App authorization is already complete. Only establish the embedded DeviantArt web session if you want personalized home recommendations.';
+  String get externalBrowserWaiting => _lang == AppLanguage.zh
+      ? '官方授权页已交给系统浏览器。请在那里完成登录与授权，成功后会自动返回 DAViewer；不要再次发起登录。'
+      : 'The official authorization page is open in your system browser. Finish sign-in there and DAViewer will resume automatically; do not start another login.';
+  String get externalBrowserDelayed => _lang == AppLanguage.zh
+      ? '仍在等待系统浏览器回传。如果浏览器尚未完成，请继续登录；如果已显示成功但没有返回，可重新打开同一授权页或取消后重试。'
+      : 'Still waiting for the browser callback. Continue if sign-in is unfinished; if the browser already reported success, reopen the same authorization or cancel and retry.';
+  String get reopenBrowser =>
+      _lang == AppLanguage.zh ? '重新打开授权页' : 'Reopen authorization';
+  String get externalBrowserProxyHint => _lang == AppLanguage.zh
+      ? '当前使用的是 App 专用代理，它无法接管系统浏览器。社交登录还需要系统代理或 VPN 可用。'
+      : 'The selected proxy is app-only and cannot control your system browser. Social sign-in also needs a working system proxy or VPN.';
   String get noAccountQuestion =>
       _lang == AppLanguage.zh ? '还没有账号？' : 'No account yet?';
   String get networkBeforeLogin =>
       _lang == AppLanguage.zh ? '登录前检查网络' : 'Check network before sign-in';
   String get loginNetworkHint => _lang == AppLanguage.zh
-      ? '能直连时无需代理；连接失败时再填写你自己的 HTTP 代理地址。该设置同时用于 API、图片、下载和登录页。'
-      : 'No proxy is needed when direct access works. If it fails, enter your own HTTP proxy. The same route is used by API, media, downloads and sign-in.';
+      ? '能直连时无需代理；连接失败时填写你自己的 HTTP/Mixed 代理。App 内登录、API、图片和下载走这里；系统浏览器登录遵循系统代理或 VPN。'
+      : 'No proxy is needed when direct access works. Otherwise enter your HTTP/Mixed proxy. In-app sign-in, API, media and downloads use it; browser sign-in follows the system proxy or VPN.';
   String get openingOfficialLogin =>
       _lang == AppLanguage.zh ? '正在打开官方登录页…' : 'Opening official sign-in…';
   String get openingOfficialAuthorization => _lang == AppLanguage.zh
@@ -91,14 +111,14 @@ final class AppStrings {
   String get loginFirst =>
       _lang == AppLanguage.zh ? '请先登录。' : 'Please sign in.';
   String get webSessionExpired => _lang == AppLanguage.zh
-      ? '网页会话已过期，请重新登录网页版以刷新首页推荐。'
-      : 'Your web session expired. Sign in again to refresh home recommendations.';
+      ? 'App 登录已经可用；个性化网页推荐还需要单独建立网页会话。你也可以直接使用每日推荐、关注、收藏和下载。'
+      : 'App sign-in is ready. Personalized web recommendations need a separate web session; Daily, watching, favourites and downloads already work.';
   String get webLoggedInOAuthMissing => _lang == AppLanguage.zh
       ? '网页版已登录，补全 App 登录后可使用收藏 / 关注 / 下载。'
       : 'Web session is signed in. Complete app login for favourites, watching and downloads.';
   String get webLoggedOutOAuthActive => _lang == AppLanguage.zh
-      ? 'App 已登录，但网页版尚未登录，首页推荐可能不是个性化内容。'
-      : 'App is signed in, but the web home is not. Home recommendations may not be personalized.';
+      ? 'App 登录已完成。个性化网页推荐尚未同步，不影响每日推荐、关注、收藏和下载。'
+      : 'App sign-in is complete. Personalized web recommendations are not synced; Daily, watching, favourites and downloads are unaffected.';
 
   // --- login help ---
   String get loginHelpTooltip =>
@@ -107,13 +127,15 @@ final class AppStrings {
       _lang == AppLanguage.zh ? '登录帮助' : 'Sign-in help';
   String get loginHelpBody => _lang == AppLanguage.zh
       ? '本页登录的是 DeviantArt 官方账号。DAViewer 不注册账号、不保存密码。\n\n'
-            '• 登录页支持 DeviantArt 账号与 Google / Apple 一键登录。\n'
+            '• Google / Apple / Facebook：使用系统浏览器完成官方 OAuth/PKCE 授权，避免 Google 禁止内嵌 WebView。\n'
+            '• DeviantArt 用户名/邮箱与密码：可在 App 内登录，同时建立网页推荐会话。\n'
             '• 注册：支持任意邮箱注册。\n'
             '• 找回密码：点击登录页的「Forgot Password」，或使用下方「找回密码」在浏览器中重置。\n'
             '• 成人内容默认被 DeviantArt 隐藏/模糊，需在下方「成人内容设置」里改为显示。\n'
             '• 找回密码与注册均在系统浏览器中完成，完成后返回本页登录。'
       : 'This page signs in to your DeviantArt account. DAViewer does not create accounts or store passwords.\n\n'
-            '• Sign-in supports a DeviantArt account or Google / Apple one-click sign-in.\n'
+            '• Google / Apple / Facebook: use the system browser for official OAuth/PKCE, avoiding Google\'s embedded-WebView restriction.\n'
+            '• DeviantArt username/email and password: sign in inside the app and establish the personalized web session too.\n'
             '• Register: any email works.\n'
             '• Forgot password: tap "Forgot Password" on the page, or use "Forgot password" below to reset it in your browser.\n'
             '• Mature content is hidden/blurred by default on DeviantArt; enable it under "Mature content settings" below.\n'
