@@ -35,6 +35,14 @@ and the web-session snapshot.
 - On first sign-in, the WebView starts at the OAuth authorize URL. Its redirect
   to the password page or selected social provider remains part of that same
   PKCE transaction, establishing the web and OAuth sessions in one navigation.
+- An OAuth transaction belongs to one visible login attempt. Leaving, retrying,
+  disposing the route, or failing to start WebView navigation within 20 seconds
+  cancels and awaits that transaction, clears its queued authorize URL, and
+  lets the next attempt create a fresh PKCE state. A cancelled transaction must
+  never keep `isLoggingIn` true or absorb the next login request.
+- Do not add a separate client-id preflight ahead of authorization: a request
+  without the generated PKCE challenge is not equivalent to the real flow and
+  only delays proxy users on a blank WebView.
 - Mobile presents DeviantArt's desktop login layout so Google and Apple buttons
   remain visible.
 - `window.open()` navigation is attached as a second in-app WebView and

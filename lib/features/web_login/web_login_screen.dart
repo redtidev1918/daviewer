@@ -32,6 +32,11 @@ bool shouldRecoverLogin403({
   required String username,
 }) => isMainFrame && statusCode == 403 && username.isNotEmpty;
 
+bool shouldReplaceAbandonedOAuth({
+  required bool authBusy,
+  required bool requestedByThisScreen,
+}) => authBusy && !requestedByThisScreen;
+
 enum LoginHttpPageKind {
   ignored,
   humanVerification,
@@ -196,6 +201,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   Uri? _lastMainFrameUri;
   int _reportSeq = 0;
   int _humanVerificationInspectionSeq = 0;
+  Timer? _authorizationPageTimer;
   double _progress = 0;
   late final AuthController _authController;
   app_proxy.ProxyController? _proxyController;
@@ -223,8 +229,15 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
 
   @override
   void dispose() {
+    _authorizationPageTimer?.cancel();
     _proxyController?.removeListener(_onProxyChanged);
     unawaited(_launchSub?.cancel());
+    final auth = ref.read(authControllerProvider);
+    if (!auth.oauthSignedIn &&
+        !_oauthCallbackSeen &&
+        (_oauthRequested || auth.isLoggingIn)) {
+      unawaited(_authController.cancelLogin());
+    }
     super.dispose();
   }
 
@@ -233,6 +246,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   }
 
   void _loadAuthRequest(Uri uri) {
+    if (!mounted) return;
     _activeAuthorizeUri = uri;
     final controller = _controller;
     if (controller == null) {
@@ -241,6 +255,32 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       return;
     }
     controller.loadUrl(urlRequest: URLRequest(url: WebUri(uri.toString())));
+  }
+
+  void _armAuthorizationPageTimeout() {
+    _authorizationPageTimer?.cancel();
+    _authorizationPageTimer = Timer(const Duration(seconds: 20), () {
+      if (!mounted || !_waitingForAuthorizationPage) return;
+      AppLogger.instance.warning(
+        'auth',
+        'OAuth authorize URL did not reach the WebView within 20 seconds',
+      );
+      unawaited(_abortAuthorizationStartup());
+    });
+  }
+
+  Future<void> _abortAuthorizationStartup() async {
+    await _authController.cancelLogin();
+    if (!mounted) return;
+    _pendingAuthUri = null;
+    _activeAuthorizeUri = null;
+    setState(() {
+      _oauthRequested = false;
+      _launchOAuthWhenReady = false;
+      _waitingForAuthorizationPage = false;
+      _loading = false;
+      _pageLoadFailed = true;
+    });
   }
 
   /// Reads the web session (CSRF + login state + username) from the WebView
@@ -312,12 +352,27 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     );
   }
 
-  void _startUnifiedOAuth() {
-    final auth = ref.read(authControllerProvider);
-    if (auth.oauthSignedIn || auth.isLoggingIn || _oauthRequested) return;
+  Future<void> _startUnifiedOAuth() async {
+    var auth = ref.read(authControllerProvider);
+    if (auth.oauthSignedIn || _oauthRequested) return;
+    if (shouldReplaceAbandonedOAuth(
+      authBusy: auth.isLoggingIn,
+      requestedByThisScreen: _oauthRequested,
+    )) {
+      AppLogger.instance.warning(
+        'auth',
+        'replacing an abandoned OAuth transaction before opening login',
+      );
+      await _authController.cancelLogin();
+      if (!mounted) return;
+      auth = ref.read(authControllerProvider);
+      if (auth.oauthSignedIn) return;
+    }
     _oauthRequested = true;
+    _armAuthorizationPageTimeout();
     unawaited(
       _authController.login().whenComplete(() {
+        _authorizationPageTimer?.cancel();
         _oauthRequested = false;
         if (mounted && _activeAuthorizeUri == null) {
           setState(() => _waitingForAuthorizationPage = false);
@@ -330,12 +385,17 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     if (!_closeAfterReport || !mounted) return;
     _closeAfterReport = false;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _leaveLogin();
+      if (mounted) unawaited(_leaveLogin());
     });
   }
 
-  void _leaveLogin() {
+  Future<void> _leaveLogin() async {
     if (!mounted) return;
+    final auth = ref.read(authControllerProvider);
+    if (!auth.oauthSignedIn && (_oauthRequested || auth.isLoggingIn)) {
+      await _authController.cancelLogin();
+      if (!mounted) return;
+    }
     if (context.canPop()) {
       context.pop();
     } else {
@@ -358,13 +418,32 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     return '';
   }
 
-  void _retryPage() {
+  Future<void> _retryPage() async {
+    _authorizationPageTimer?.cancel();
     _controller = null;
+    await _authController.cancelLogin();
+    if (!mounted) return;
+    _pendingAuthUri = null;
+    _activeAuthorizeUri = null;
     setState(() {
       _showBrowser = false;
       _pageLoadFailed = false;
     });
-    unawaited(_openBrowser(method: _loginMethod));
+    await _openBrowser(method: _loginMethod);
+  }
+
+  Future<void> _closeBrowser() async {
+    _authorizationPageTimer?.cancel();
+    _controller = null;
+    await _authController.cancelLogin();
+    if (!mounted) return;
+    _pendingAuthUri = null;
+    _activeAuthorizeUri = null;
+    setState(() {
+      _showBrowser = false;
+      _waitingForAuthorizationPage = false;
+      _pageLoadFailed = false;
+    });
   }
 
   Future<void> _openBrowser({
@@ -604,6 +683,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                 _loading = false;
                 _waitingForAuthorizationPage = false;
               });
+              _authorizationPageTimer?.cancel();
               AppLogger.instance.info(
                 'auth',
                 'human-verification page detected; keeping the interactive '
@@ -806,7 +886,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
         Future<void>.delayed(const Duration(seconds: 8), () {
           if (mounted && _closeAfterReport) {
             _closeAfterReport = false;
-            _leaveLogin();
+            unawaited(_leaveLogin());
           }
         });
       }
@@ -828,8 +908,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                     setState(() => _popupWindowId = null);
                     return;
                   }
-                  _controller = null;
-                  setState(() => _showBrowser = false);
+                  unawaited(_closeBrowser());
                 },
                 icon: const Icon(Icons.arrow_back),
               )
@@ -848,7 +927,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
           ),
           IconButton(
             tooltip: s.done,
-            onPressed: _leaveLogin,
+            onPressed: () => unawaited(_leaveLogin()),
             icon: const Icon(Icons.check),
           ),
         ],
@@ -1005,6 +1084,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                             final pending = _pendingAuthUri;
                             if (pending != null) {
                               _pendingAuthUri = null;
+                              _launchOAuthWhenReady = false;
                               controller.loadUrl(
                                 urlRequest: URLRequest(
                                   url: WebUri(pending.toString()),
@@ -1013,7 +1093,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                             } else if (_launchOAuthWhenReady) {
                               _launchOAuthWhenReady = false;
                               WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (mounted) _startUnifiedOAuth();
+                                if (mounted) unawaited(_startUnifiedOAuth());
                               });
                             }
                           },
@@ -1024,6 +1104,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                                     uri.scheme == 'dakit' &&
                                     uri.host == 'oauth') {
                                   _oauthCallbackSeen = true;
+                                  _authorizationPageTimer?.cancel();
                                   _bridge?.addCallback(uri);
                                   // Navigate back to the deviantart home page; its
                                   // onLoadStop then reports the real web session.
@@ -1061,6 +1142,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                             if (mounted) {
                               setState(() {
                                 if (url != null && url.scheme != 'about') {
+                                  _authorizationPageTimer?.cancel();
                                   _waitingForAuthorizationPage = false;
                                 }
                                 _loading = true;
@@ -1070,6 +1152,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                           },
                           onLoadStop: (controller, url) {
                             if (url != null && url.scheme != 'about') {
+                              _authorizationPageTimer?.cancel();
                               _lastMainFrameUri = Uri.tryParse(url.toString());
                             }
                             if (mounted) setState(() => _loading = false);
@@ -1160,6 +1243,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                             );
                             if (challenge != false || !mounted) return;
                             if (_humanVerificationActive) return;
+                            _authorizationPageTimer?.cancel();
                             AppLogger.instance.warning(
                               'auth',
                               'login page network error: ${error.type} '
@@ -1201,6 +1285,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                                       uri.scheme == 'dakit' &&
                                       uri.host == 'oauth') {
                                     _oauthCallbackSeen = true;
+                                    _authorizationPageTimer?.cancel();
                                     _bridge?.addCallback(uri);
                                     if (mounted) {
                                       setState(() => _popupWindowId = null);

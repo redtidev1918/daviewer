@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:dakit_flutter/dakit_flutter.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../diagnostics/app_logger.dart';
@@ -39,6 +38,7 @@ final class AuthController extends StateNotifier<AuthState> {
   final Ref _ref;
   bool _initializing = false;
   bool _loggingIn = false;
+  Future<void>? _loginOperation;
 
   AppRuntime get _runtime => _ref.read(runtimeProvider);
   AppLogger get _log => AppLogger.instance;
@@ -112,7 +112,20 @@ final class AuthController extends StateNotifier<AuthState> {
   }
 
   /// Starts the standard OAuth browser flow.
-  Future<void> login() async {
+  Future<void> login() {
+    if (state.status == AuthStatus.signedIn) return Future<void>.value();
+    final active = _loginOperation;
+    if (active != null) return active;
+
+    late final Future<void> tracked;
+    tracked = _performLogin().whenComplete(() {
+      if (identical(_loginOperation, tracked)) _loginOperation = null;
+    });
+    _loginOperation = tracked;
+    return tracked;
+  }
+
+  Future<void> _performLogin() async {
     final runtime = _runtime;
     if (!runtime.isConfigured || runtime.oauth == null) {
       _log.warning('auth', 'OAuth login requires DAKIT_CLIENT_ID');
@@ -131,12 +144,17 @@ final class AuthController extends StateNotifier<AuthState> {
       isLoggingIn: true,
     );
     try {
-      await _preflightClientId(runtime);
       _log.info('auth', 'login: starting OAuth authorize');
       await runtime.oauth!.authorize();
       _log.info('auth', 'login: authorize returned, loading account');
       await _loadAccount(runtime);
     } on DAKitException catch (error) {
+      if (error.kind == DAKitFailureKind.cancelled ||
+          error.code == 'oauth.transaction.cancelled') {
+        _log.info('auth', 'OAuth login cancelled cleanly');
+        state = const AuthState(status: AuthStatus.signedOut);
+        return;
+      }
       _log.error('auth', 'OAuth login failed: ${error.code}', error);
       state = AuthState(status: AuthStatus.signedOut, error: error);
     } catch (error, stack) {
@@ -147,48 +165,36 @@ final class AuthController extends StateNotifier<AuthState> {
     }
   }
 
-  /// Verifies the configured client id is accepted by DeviantArt.
-  Future<void> _preflightClientId(AppRuntime runtime) async {
-    final dio = runtime.dio;
-    if (dio == null) return;
-    final authorize = Uri.https(
-      'www.deviantart.com',
-      '/oauth2/authorize',
-      <String, String>{
-        'response_type': 'code',
-        'client_id': runtime.clientId,
-        'redirect_uri': 'dakit://oauth/callback',
-      },
-    );
-    try {
-      final response = await dio.getUri<Object?>(
-        authorize,
-        options: Options(
-          followRedirects: false,
-          validateStatus: (status) => status != null && status < 500,
-        ),
-      );
-      final location = response.headers.value('location') ?? '';
-      if (location.contains('redirect_error') ||
-          location.contains('unauthorized_client') ||
-          location.contains('invalid_client')) {
-        _log.error('auth', 'client id rejected by DeviantArt: $location');
-        throw DAKitException(
-          kind: DAKitFailureKind.configuration,
-          code: 'oauth.client_id.invalid',
-          message: strings(_ref.read(appLanguageProvider)).oauthClientIdInvalid,
-          details: <String, Object?>{'location': location},
+  /// Ends an abandoned PKCE transaction and waits until single-flight state is
+  /// clear, so the next login creates a new authorize URL immediately.
+  Future<void> cancelLogin() async {
+    if (state.status == AuthStatus.signedIn) return;
+    final runtime = _runtime;
+    final active = _loginOperation;
+    if (runtime.oauth != null) {
+      try {
+        await runtime.oauth!.authorization.cancelPending();
+      } on Object catch (error, stack) {
+        _log.warning(
+          'auth',
+          'could not cancel pending OAuth login',
+          error,
+          stack,
         );
       }
-      _log.info(
-        'auth',
-        'client id preflight ok (status=${response.statusCode})',
-      );
-    } on DAKitException {
-      rethrow;
-    } on Object catch (error, stack) {
-      // Preflight is best-effort; a network hiccup should not block login.
-      _log.warning('auth', 'client id preflight skipped', error, stack);
+    }
+    if (active != null) {
+      try {
+        await active.timeout(const Duration(seconds: 2));
+      } on Object {
+        // The cancellation signal is authoritative. Do not keep the UI busy
+        // merely because an old callback future is slow to unwind.
+      }
+    }
+    _loggingIn = false;
+    _loginOperation = null;
+    if (state.status != AuthStatus.signedIn) {
+      state = const AuthState(status: AuthStatus.signedOut);
     }
   }
 
