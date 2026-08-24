@@ -46,6 +46,10 @@ and the web-session snapshot.
   authorize URI; otherwise the app shows a recoverable connection state.
 - The login screen always exposes Settings. Proxy, diagnostics, update checking,
   About, language, and appearance do not require authentication.
+- An interactive human-verification response is part of the official sign-in
+  page even when its HTTP status is 403, 429, or 503. The app keeps that page
+  visible and resumes the same OAuth transaction after verification; only a
+  response without challenge UI is classified as a connection failure.
 - Interactive and headless WebViews use the effective app proxy where the OS
   allows it, and Windows cookie reads share the same WebView2 environment. See
   [Networking and proxy](networking.md) for platform limits.

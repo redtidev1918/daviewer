@@ -55,6 +55,69 @@ void main() {
     );
   });
 
+  test(
+    'human-verification pages are not classified as connection failures',
+    () {
+      expect(
+        looksLikeHumanVerificationPage(
+          title: 'Security verification',
+          visibleText: 'Press & Hold to confirm you are a human',
+        ),
+        isTrue,
+      );
+      expect(
+        looksLikeHumanVerificationPage(
+          pageUri: Uri.parse(
+            'https://www.deviantart.com/_sec/cp_challenge/verify',
+          ),
+        ),
+        isTrue,
+      );
+      expect(
+        looksLikeHumanVerificationPage(
+          title: 'Log in | DeviantArt',
+          visibleText: 'Log in with your username or email and password.',
+        ),
+        isFalse,
+      );
+
+      expect(
+        classifyLoginHttpPage(
+          isMainFrame: true,
+          statusCode: 403,
+          username: '',
+          isHumanVerification: true,
+        ),
+        LoginHttpPageKind.humanVerification,
+      );
+      expect(
+        classifyLoginHttpPage(
+          isMainFrame: true,
+          statusCode: 403,
+          username: '',
+          isHumanVerification: false,
+        ),
+        LoginHttpPageKind.connectionFailure,
+      );
+    },
+  );
+
+  test('edge throttling statuses can carry an interactive challenge', () {
+    expect(isPotentialHumanVerificationStatus(403), isTrue);
+    expect(isPotentialHumanVerificationStatus(429), isTrue);
+    expect(isPotentialHumanVerificationStatus(503), isTrue);
+    expect(isPotentialHumanVerificationStatus(500), isFalse);
+    expect(
+      classifyLoginHttpPage(
+        isMainFrame: true,
+        statusCode: 503,
+        username: '',
+        isHumanVerification: true,
+      ),
+      LoginHttpPageKind.humanVerification,
+    );
+  });
+
   test('social sign-in resumes the same OAuth transaction only from login', () {
     expect(
       shouldResumeOAuthAfterSocialSignIn(

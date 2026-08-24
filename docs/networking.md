@@ -67,6 +67,14 @@ Opening or retrying the official page prepares the WebView route again. A proxy
 changed while troubleshooting therefore applies to the newly created browser,
 rather than leaving the user in a stale failed WebView.
 
+Proxy exits can trigger an interactive DeviantArt or edge-provider human
+verification document. Such pages may intentionally use HTTP 403, 429, or 503;
+the status alone is not a transport failure. The login UI inspects the visible
+document and challenge controls, keeps the WebView (including Google/Apple
+popups) interactive, and tells the user to finish the check. Network/proxy
+recovery is shown only when no challenge document is present. A navigation
+generation guard prevents a late inspection from overwriting the next page.
+
 ## Maintainer checks
 
 Before a network-related release:
@@ -75,5 +83,7 @@ Before a network-related release:
 2. test `all_proxy=http://127.0.0.1:<port>` from a shell;
 3. run the in-app connectivity test with a working and stopped proxy;
 4. verify both password and social-login WebView navigation;
-5. verify the headless web-session refresh uses the same cookie environment;
-6. keep raw proxy, HTTP, and parsing details in Diagnostics only.
+5. verify a 403/429/503 human-verification document remains interactive and is
+   not labelled as a connection failure;
+6. verify the headless web-session refresh uses the same cookie environment;
+7. keep raw proxy, HTTP, and parsing details in Diagnostics only.

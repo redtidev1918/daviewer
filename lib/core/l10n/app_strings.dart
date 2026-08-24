@@ -136,6 +136,9 @@ final class AppStrings {
   String get loginPageLoadFailed => _lang == AppLanguage.zh
       ? '登录页暂时无法连接。你的登录数据没有被清除，可重试或检查应用网络代理。'
       : 'The sign-in page could not connect. Your session data was not cleared; retry or check the app proxy.';
+  String get humanVerificationHint => _lang == AppLanguage.zh
+      ? 'DeviantArt 正在进行人机验证，这不是网络故障。请在当前页面完成验证，通过后登录会自动继续。'
+      : 'DeviantArt is asking for human verification. This is not a network failure; complete the check on this page and sign-in will continue automatically.';
   String get noArtworks =>
       _lang == AppLanguage.zh ? '暂无作品' : 'No artworks found.';
   String get homeFeedLoadFailure => _lang == AppLanguage.zh
