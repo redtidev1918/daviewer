@@ -5,6 +5,7 @@ import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:dio/dio.dart';
 
 import '../auth/webview_oauth_bridge.dart';
+import '../auth/migrating_auth_stores.dart';
 import '../diagnostics/app_logger.dart';
 import '../network/dynamic_proxy_dio.dart';
 import '../network/proxy_controller.dart';
@@ -110,11 +111,17 @@ final class AppRuntime {
       // product name instead of the plugin default
       // "flutter_secure_storage_service" (which reads like an arbitrary secret
       // being exfiltrated). Only DAViewer's own OAuth tokens are stored there.
-      tokenStore: SecureTokenStore(
-        storage: clientSecureStorage(serviceName: 'DAViewer'),
+      tokenStore: MigratingTokenStore(
+        primary: SecureTokenStore(
+          storage: clientSecureStorage(serviceName: 'DAViewer'),
+        ),
+        legacy: SecureTokenStore(),
       ),
-      pendingStore: SecurePendingAuthorizationStore(
-        storage: clientSecureStorage(serviceName: 'DAViewer'),
+      pendingStore: MigratingPendingAuthorizationStore(
+        primary: SecurePendingAuthorizationStore(
+          storage: clientSecureStorage(serviceName: 'DAViewer'),
+        ),
+        legacy: SecurePendingAuthorizationStore(),
       ),
       launcher: webViewOAuthBridge,
       callbacks: MergedCallbackUriSource(

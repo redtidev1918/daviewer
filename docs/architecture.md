@@ -141,6 +141,16 @@ Signed-out state is onboarding, not a feed error. First login commits the web
 session before OAuth authorization, and a transient post-login 403 is only
 recoverable after that commit has been observed.
 
+Session restoration is non-destructive. Renaming a macOS Keychain item requires
+a dual-read migration from the legacy account name. Temporary network,
+upstream, parsing, or secure-storage failures preserve the authenticated route;
+only missing/revoked credentials or explicit logout enter signed-out state.
+Background WebView refreshes may rotate CSRF only after positively identifying
+the cookie username. An anonymous or partial page is never proof of logout.
+
+Settings, proxy, diagnostics, updates, and About are public recovery routes and
+must stay reachable from the login screen.
+
 ## Release contract
 
 - `pubspec.yaml` is the only source version edited by the release workflow.
@@ -151,7 +161,8 @@ recoverable after that commit has been observed.
 - Android releases require the configured upload keystore. macOS artifacts are
   ad-hoc signed and must use the `macos-unsigned-preview` filename until stable
   Developer ID signing, Hardened Runtime, and notarization are configured.
-- Historical releases and tags are part of the project record and are retained.
+- Publishing keeps only the newest GitHub Release visible. Git tags remain as
+  the source-history record and are not deleted by the release job.
 
 ## App-local state
 

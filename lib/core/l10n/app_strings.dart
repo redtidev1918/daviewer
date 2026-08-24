@@ -100,8 +100,14 @@ final class AppStrings {
   String get loginSuccess => _lang == AppLanguage.zh ? '登录成功' : 'Signed in';
   String loginFailed(String detail) =>
       _lang == AppLanguage.zh ? '登录失败：$detail' : 'Sign-in failed: $detail';
+  String get loginPageLoadFailed => _lang == AppLanguage.zh
+      ? '登录页暂时无法连接。你的登录数据没有被清除，可重试或检查应用网络代理。'
+      : 'The sign-in page could not connect. Your session data was not cleared; retry or check the app proxy.';
   String get noArtworks =>
       _lang == AppLanguage.zh ? '暂无作品' : 'No artworks found.';
+  String get homeFeedLoadFailure => _lang == AppLanguage.zh
+      ? '首页推荐暂时无法加载，应用已停止自动重试。请下拉刷新，或在设置中检查网络代理。'
+      : 'Home recommendations could not load. Automatic retries have stopped; pull to refresh or check the proxy in Settings.';
   String get noImage => _lang == AppLanguage.zh ? '暂无图片' : 'No image';
   String get imageLoadFailed =>
       _lang == AppLanguage.zh ? '图片加载失败' : 'Failed to load';
@@ -412,11 +418,17 @@ final class AppStrings {
   String get watchStateOn => _lang == AppLanguage.zh ? '已关注' : 'Following';
   String get watchStateOff => _lang == AppLanguage.zh ? '关注' : 'Watch';
   String get journal => _lang == AppLanguage.zh ? '文章' : 'Journal';
-  String get folders => _lang == AppLanguage.zh ? '分类' : 'Folders';
-  String get galleryFolders =>
-      _lang == AppLanguage.zh ? '画廊分类' : 'Gallery folders';
-  String get favouriteFolders =>
-      _lang == AppLanguage.zh ? '收藏分类' : 'Favourite folders';
+  String get artistWorks => _lang == AppLanguage.zh ? '作品' : 'Works';
+  String get artistSavedWorks =>
+      _lang == AppLanguage.zh ? '收藏作品' : 'Saved works';
+  String get folders =>
+      _lang == AppLanguage.zh ? '画集与收藏夹' : 'Sets & collections';
+  String get galleryFolders => _lang == AppLanguage.zh
+      ? '画集 · 作者自己的作品分类'
+      : 'Sets · the artist’s own work';
+  String get favouriteFolders => _lang == AppLanguage.zh
+      ? '收藏夹 · 作者收藏的他人作品'
+      : 'Collections · work saved by the artist';
   String get noJournals => _lang == AppLanguage.zh ? '暂无文章' : 'No journals';
   String get noFolders => _lang == AppLanguage.zh ? '暂无分类' : 'No folders';
   String get emptyFolderBadge => _lang == AppLanguage.zh ? '空画集' : 'Empty';

@@ -31,17 +31,33 @@ final class ArtworkFeedController extends StateNotifier<ArtworkFeedState> {
   }
 
   final Future<Page<Artwork>> Function(PageRequest request) _fetch;
+  Future<void>? _activeFirstPageFetch;
 
-  Future<void> refresh() async {
+  Future<void> refresh() => _runFirstPageFetch(silent: false);
+
+  Future<void> _runFirstPageFetch({required bool silent}) {
+    final active = _activeFirstPageFetch;
+    if (active != null) return active;
+    late final Future<void> tracked;
+    tracked = _performFirstPageFetch(silent: silent).whenComplete(() {
+      if (identical(_activeFirstPageFetch, tracked)) {
+        _activeFirstPageFetch = null;
+      }
+    });
+    _activeFirstPageFetch = tracked;
+    return tracked;
+  }
+
+  Future<void> _performFirstPageFetch({required bool silent}) async {
     if (!mounted) return;
-    state = const ArtworkFeedState(isLoading: true);
+    if (!silent) state = const ArtworkFeedState(isLoading: true);
     try {
       final page = await _fetch(const PageRequest(limit: 24));
       if (!mounted) return;
       state = ArtworkFeedState(items: page.items, nextCursor: page.nextCursor);
     } catch (error) {
       if (!mounted) return;
-      state = ArtworkFeedState(error: error);
+      if (!silent) state = ArtworkFeedState(error: error);
     }
   }
 
@@ -74,12 +90,6 @@ final class ArtworkFeedController extends StateNotifier<ArtworkFeedState> {
   /// updates in place without a spinner flicker (e.g. when the app resumes).
   Future<void> refreshSilently() async {
     if (!mounted || state.isLoading) return;
-    try {
-      final page = await _fetch(const PageRequest(limit: 24));
-      if (!mounted) return;
-      state = ArtworkFeedState(items: page.items, nextCursor: page.nextCursor);
-    } on Object {
-      // Keep the current items when a silent refresh fails.
-    }
+    await _runFirstPageFetch(silent: true);
   }
 }

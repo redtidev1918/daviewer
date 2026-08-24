@@ -23,12 +23,13 @@ Download the package for your platform from
 [Releases](https://github.com/redtidev1918/daviewer/releases):
 
 - **Android**: `DAViewer-<version>.apk`
-- **macOS 12+ preview**:
+- **macOS 12+ unsigned test preview**:
   `DAViewer-<version>-macos-unsigned-preview.zip` (universal Intel and Apple
   Silicon build; unzip and drag to Applications)
 - **Windows**: `DAViewer-<version>-windows.zip` (unzip and run `DAViewer.exe`)
 
-> **A note on the macOS build:** this preview isn't part of the Apple Developer
+> **A note on the macOS build:** this is explicitly an **unsigned, unnotarized
+> test preview** and isn't part of the Apple Developer
 > Program yet, so macOS may ask you to confirm on first launch — right-click the
 > app and choose Open to proceed. Keychain may ask for your Mac password once;
 > that prompt is handled by macOS and DAViewer never reads or stores it.
@@ -105,9 +106,9 @@ sparse-data hydration, and native interaction live in DAViewer. Dependencies:
 
 ```yaml
 dependencies:
-  dakit_core: ^0.1.11
-  dakit_api: ^0.1.18
-  dakit_flutter: ^0.1.8
+  dakit_core: ^0.1.12
+  dakit_api: ^0.1.19
+  dakit_flutter: ^0.1.9
 ```
 
 First sign-in commits the web Cookie/CSRF session before OAuth; signed-out state
@@ -198,12 +199,24 @@ OAuth authorization happens in the built-in WebView first (reusing the web
 session, no password re-entry), falling back to the system browser if the
 WebView is unavailable.
 
+Upgrades do not proactively delete sessions. If the macOS Keychain item name
+changes, the app reads the new location first and then non-destructively copies
+tokens from the legacy location. Temporary network, upstream, or Keychain
+failures are not treated as sign-out; only missing/revoked credentials or an
+explicit logout require authorization again.
+
 ## Login FAQ
 
 - **DAViewer has no account of its own**: you sign in with your DeviantArt account — the app never registers an account or stores a password.
 - **Forgot your password?** Use the "Forgot Password" link on the login page, or tap "?" → "Forgot password" in the app's login screen to open the reset page in your browser.
 - **Register an account**: tap "?" → "Register a DeviantArt account" in the app's login screen to open the sign-up page in your browser.
+- **Google / Apple sign-in**: mobile uses the desktop login layout to expose the one-click buttons and keeps their window navigation in the same WebView so the DeviantArt cookie is retained.
+- **Mature content**: DeviantArt account browsing preferences override the app request. Open Settings → DeviantArt account settings → Mature content settings.
+- **Settings while sign-in is broken**: the gear on the login screen keeps language, proxy, diagnostics, updates, and About reachable without authentication.
 - **macOS Keychain prompt**: on first sign-in or after an upgrade, macOS may ask for your Mac login password once (a normal macOS confirmation for apps outside the App Store). That prompt belongs to macOS and DAViewer never reads the password — it only accesses the DeviantArt token it saved for you.
+
+See [Authentication and session recovery](docs/authentication.md) for the full
+state contract.
 
 ## Contributing
 

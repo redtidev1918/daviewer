@@ -61,7 +61,10 @@ final rfyFeedProvider =
       ref.listen<String>(
         webSessionControllerProvider.select((web) => web.csrf),
         (previous, next) {
-          if (previous != null && previous != next) {
+          if (previous != null &&
+              previous.isNotEmpty &&
+              next.isNotEmpty &&
+              previous != next) {
             controller.refreshSilently();
           }
         },

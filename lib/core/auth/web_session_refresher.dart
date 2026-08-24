@@ -7,6 +7,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/web_session.dart';
+import '../data/web_user_agent.dart';
 import 'web_session_controller.dart';
 
 /// Refreshes the embedded DeviantArt *web* session on a cold start without
@@ -42,7 +43,10 @@ final class WebSessionRefresher {
     try {
       final headless = HeadlessInAppWebView(
         initialSize: const Size(480, 800),
-        initialSettings: InAppWebViewSettings(javaScriptEnabled: true),
+        initialSettings: InAppWebViewSettings(
+          javaScriptEnabled: true,
+          userAgent: webUserAgent,
+        ),
         initialUrlRequest: URLRequest(
           url: WebUri('https://www.deviantart.com/'),
         ),
@@ -87,7 +91,7 @@ final class WebSessionRefresher {
       );
       await _ref
           .read(webSessionControllerProvider.notifier)
-          .report(csrf: csrf, username: username);
+          .reportRefresh(csrf: csrf, username: username);
     } on Object catch (error) {
       debugPrint('[web-session] headless report failed: $error');
     }

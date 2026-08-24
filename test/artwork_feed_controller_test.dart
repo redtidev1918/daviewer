@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dakit_core/dakit_core.dart';
 import 'package:daviewer/core/feed/artwork_feed_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -80,5 +82,26 @@ void main() {
     await controller.refresh();
     await controller.refreshSilently();
     expect(controller.state.items.map((a) => a.id), <String>['art-2', 'art-3']);
+  });
+
+  test('coalesces overlapping first-page refreshes', () async {
+    var calls = 0;
+    final gate = Completer<Page<Artwork>>();
+    final controller = ArtworkFeedController((request) {
+      calls += 1;
+      return gate.future;
+    }, autoLoad: false);
+
+    final first = controller.refresh();
+    final second = controller.refresh();
+    final silent = controller.refreshSilently();
+    expect(calls, 1);
+
+    gate.complete(
+      Page<Artwork>(items: <Artwork>[artwork(1)], hasMore: false),
+    );
+    await Future.wait(<Future<void>>[first, second, silent]);
+    expect(calls, 1);
+    expect(controller.state.items.single.id, 'art-1');
   });
 }

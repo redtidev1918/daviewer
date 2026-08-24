@@ -65,6 +65,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   bool _announcedWebLogin = false;
   bool _oauthRequested = false;
   bool _recoveringHttp403 = false;
+  bool _pageLoadFailed = false;
   int _reportSeq = 0;
   double _progress = 0;
   late final AuthController _authController;
@@ -179,6 +180,30 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     }
   }
 
+  Future<String> _waitForCommittedUsername() async {
+    for (final delay in <Duration>[
+      Duration.zero,
+      const Duration(milliseconds: 250),
+      const Duration(milliseconds: 750),
+      const Duration(milliseconds: 1500),
+    ]) {
+      if (delay != Duration.zero) await Future<void>.delayed(delay);
+      final username = await const WebSession().webUsername();
+      if (username.isNotEmpty) return username;
+    }
+    return '';
+  }
+
+  void _retryPage() {
+    setState(() => _pageLoadFailed = false);
+    unawaited(
+      _controller?.loadUrl(
+            urlRequest: URLRequest(url: WebUri(_loginUri.toString())),
+          ) ??
+          Future<void>.value(),
+    );
+  }
+
   /// Shows sign-in help: the account model, that any email can register, and
   /// browser shortcuts for password reset and registration.
   void _showLoginHelp() {
@@ -283,6 +308,11 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
         title: Text(s.webLogin),
         actions: <Widget>[
           IconButton(
+            tooltip: s.settings,
+            onPressed: () => context.push('/settings'),
+            icon: const Icon(Icons.settings_outlined),
+          ),
+          IconButton(
             tooltip: s.loginHelpTooltip,
             onPressed: _showLoginHelp,
             icon: const Icon(Icons.help_outline),
@@ -307,6 +337,30 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
         color: theme.scaffoldBackgroundColor,
         child: Column(
           children: <Widget>[
+            if (_pageLoadFailed)
+              Material(
+                color: theme.colorScheme.errorContainer,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          s.loginPageLoadFailed,
+                          style: TextStyle(
+                            color: theme.colorScheme.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => context.push('/settings/proxy'),
+                        child: Text(s.proxy),
+                      ),
+                      TextButton(onPressed: _retryPage, child: Text(s.retry)),
+                    ],
+                  ),
+                ),
+              ),
             if (auth.error case final error?)
               Material(
                 color: theme.colorScheme.errorContainer,
@@ -339,6 +393,9 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                 ),
                 initialSettings: InAppWebViewSettings(
                   javaScriptEnabled: true,
+                  javaScriptCanOpenWindowsAutomatically: true,
+                  supportMultipleWindows: true,
+                  thirdPartyCookiesEnabled: true,
                   // A desktop Chrome UA makes deviantart.com serve its desktop
                   // login page, which includes the Google/Apple one-click
                   // sign-in buttons that the mobile layout omits.
@@ -376,8 +433,24 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                   }
                   return NavigationActionPolicy.ALLOW;
                 },
+                onCreateWindow: (controller, action) async {
+                  // DeviantArt opens Google/Apple login with window.open().
+                  // Keep that navigation in the same authenticated WebView so
+                  // its resulting DeviantArt cookies are shared and captured.
+                  final uri = action.request.url;
+                  if (uri == null || uri.toString() == 'about:blank') {
+                    return false;
+                  }
+                  await controller.loadUrl(urlRequest: action.request);
+                  return false;
+                },
                 onLoadStart: (controller, url) {
-                  if (mounted) setState(() => _loading = true);
+                  if (mounted) {
+                    setState(() {
+                      _loading = true;
+                      _pageLoadFailed = false;
+                    });
+                  }
                 },
                 onLoadStop: (controller, url) {
                   if (mounted) setState(() => _loading = false);
@@ -400,13 +473,19 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                   // userinfo cookie was already committed, move to Home so a
                   // fresh CSRF can be read instead of leaving the user staring
                   // at the stale error document.
-                  final username = await const WebSession().webUsername();
+                  final username = await _waitForCommittedUsername();
                   if (!shouldRecoverLogin403(
                         isMainFrame: request.isForMainFrame == true,
                         statusCode: response.statusCode ?? 0,
                         username: username,
                       ) ||
                       !mounted) {
+                    if (mounted) setState(() => _pageLoadFailed = true);
+                    AppLogger.instance.warning(
+                      'auth',
+                      'main-frame login returned HTTP 403 before a session '
+                          'cookie was committed',
+                    );
                     return;
                   }
                   AppLogger.instance.warning(
@@ -418,6 +497,18 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
                     urlRequest: URLRequest(url: WebUri(_homeUri.toString())),
                   );
                   _recoveringHttp403 = false;
+                },
+                onReceivedError: (controller, request, error) {
+                  if (request.isForMainFrame != true || !mounted) return;
+                  AppLogger.instance.warning(
+                    'auth',
+                    'login page network error: ${error.type} '
+                        '${error.description}',
+                  );
+                  setState(() {
+                    _loading = false;
+                    _pageLoadFailed = true;
+                  });
                 },
                 onProgressChanged: (controller, progress) {
                   // onProgressChanged fires continuously while loading; each

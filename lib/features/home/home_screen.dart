@@ -228,6 +228,7 @@ final class _RfyFeedState extends ConsumerState<_RfyFeed>
     return ArtworkFeedGrid(
       feed: feed,
       emptyMessage: s.noArtworks,
+      errorMessage: s.homeFeedLoadFailure,
       onRefresh: () => ref.read(rfyFeedProvider.notifier).refresh(),
       onLoadMore: () => ref.read(rfyFeedProvider.notifier).loadMore(),
     );
