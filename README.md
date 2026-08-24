@@ -21,11 +21,11 @@
 从 [Releases](https://github.com/redtidev1918/daviewer/releases) 下载对应平台的安装包：
 
 - **Android**：`DAViewer-<版本>.apk`
-- **macOS 12+ 预览版**：`DAViewer-<版本>-macos-unsigned-preview.zip`
+- **macOS 12+ 未签名测试版**：`DAViewer-<版本>-macos-unsigned-preview.zip`
   （同时支持 Intel 与 Apple Silicon；解压后拖入「应用程序」）
 - **Windows**：`DAViewer-<版本>-windows.zip`（解压后运行 `DAViewer.exe`）
 
-> **关于 macOS 版本的说明**：这是暂未加入 Apple 开发者计划的预览版。首次打开时 macOS
+> **关于 macOS 版本的说明**：这是明确标记的**未签名、未公证测试版**，暂未加入 Apple 开发者计划。首次打开时 macOS
 > 可能提示「已阻止来自未验证开发者的 App」，只需右键点 App 图标选「打开」即可；个别情况
 > 钥匙串会询问一次 Mac 登录密码，这是 macOS 自身的确认，DAViewer 不会读取或保存。
 > 除此之外与普通应用无异，可放心使用。
@@ -84,9 +84,9 @@
 
 ```yaml
 dependencies:
-  dakit_core: ^0.1.11
-  dakit_api: ^0.1.18
-  dakit_flutter: ^0.1.8
+  dakit_core: ^0.1.12
+  dakit_api: ^0.1.19
+  dakit_flutter: ^0.1.9
 ```
 
 首次登录先提交网页 Cookie/CSRF，再完成 OAuth；未登录是正常引导状态。详细边界
@@ -167,12 +167,21 @@ App 里存在两条独立的登录态：
 两者不同步时，首页顶部会显示提示条，一键补全。OAuth 授权优先在内置 WebView 内
 完成（复用网页登录态，无需重输密码），WebView 不可用时自动回退系统浏览器。
 
+升级不会主动删除会话：macOS 钥匙串项目名称发生迁移时，App 会先读新位置，再无损
+读取并复制旧位置的令牌；网络、DeviantArt 服务或钥匙串临时失败也不会被当成“已登出”。
+只有明确没有令牌、令牌被撤销或用户主动退出时，才要求重新登录。
+
 ## 登录常见问题
 
 - **DAViewer 没有自己的账号**：你登录的是 DeviantArt 官方账号，应用不额外注册账号、不保存密码。
 - **忘记密码**：登录页有「Forgot Password」链接；也可以在应用登录页点右上角「?」→「找回密码」，在系统浏览器打开重置页面。
 - **注册账号**：应用登录页右上角「?」→「注册 DeviantArt 账号」，在系统浏览器打开注册页。
+- **Google / Apple 登录**：移动端使用桌面登录布局显示一键登录入口，并在同一个 WebView 中承接其跳转，避免登录 Cookie 丢失。
+- **成人内容**：DeviantArt 的账号浏览偏好优先于 App 请求。可在「设置 → DeviantArt 账号设置 → 成人内容设置」直达修改。
+- **登录失败时仍可使用设置**：登录页右上角齿轮可进入语言、网络代理、日志与诊断、检查更新和关于；这些页面不受登录路由限制。
 - **macOS 的「钥匙串」提示**：首次登录或升级后，macOS 偶尔会询问一次 Mac 登录密码（这是 macOS 对非 App Store 应用的常规确认）。这是 macOS 自己的确认框，DAViewer 不会读取密码，只访问它为你保存的 DeviantArt 登录令牌。
+
+登录与会话恢复的完整状态规则见 [登录与会话说明](docs/authentication.md)。
 
 ## 贡献
 

@@ -9,6 +9,9 @@ deeper developer and architecture notes.
 - [Architecture](architecture.md) — SDK/app boundaries, artwork data flow,
   related-content state, gesture ownership, authentication, app-local state,
   and the release contract.
+- [Authentication and session recovery](authentication.md) — the two-session
+  model, cold-start recovery, Keychain migration, login WebView, and mature
+  content settings.
 - [Web adapter](web_adapter.md) — the compatibility contract for the
   reverse-engineered website endpoints (endpoint registry, fallbacks, and the
   change runbook).

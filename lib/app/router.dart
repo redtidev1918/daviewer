@@ -198,11 +198,18 @@ String? authRedirect(AuthStatus status, String location) {
   }
   // Home remains available after the user dismisses sign-in or logs out. The
   // watched tab also stays reachable so it can show its own prompt.
-  if (status != AuthStatus.signedIn &&
-      location != '/' &&
-      location != '/watch' &&
-      location != '/web-login') {
+  if (status != AuthStatus.signedIn && !isSignedOutRoute(location)) {
     return '/';
   }
   return null;
 }
+
+/// Login is required for account data, never for recovery and product info.
+/// Settings includes proxy, diagnostics, update checking and About, all of
+/// which must remain reachable when authentication itself is broken.
+bool isSignedOutRoute(String location) =>
+    location == '/' ||
+    location == '/watch' ||
+    location == '/web-login' ||
+    location == '/settings' ||
+    location.startsWith('/settings/');

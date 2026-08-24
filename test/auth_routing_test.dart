@@ -11,8 +11,14 @@ void main() {
     expect(authRedirect(AuthStatus.signedIn, '/splash'), '/');
   });
 
-  test('explicit logout returns protected routes to public Home', () {
-    expect(authRedirect(AuthStatus.signedOut, '/settings'), '/');
+  test('settings, updates and diagnostics remain available while signed out', () {
+    expect(authRedirect(AuthStatus.signedOut, '/settings'), isNull);
+    expect(authRedirect(AuthStatus.signedOut, '/settings/proxy'), isNull);
+    expect(authRedirect(AuthStatus.signedOut, '/settings/diagnostics'), isNull);
+  });
+
+  test('explicit logout returns account routes to public Home', () {
+    expect(authRedirect(AuthStatus.signedOut, '/favourites'), '/');
     expect(authRedirect(AuthStatus.signedOut, '/web-login'), isNull);
   });
 }

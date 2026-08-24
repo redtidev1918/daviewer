@@ -16,6 +16,21 @@ final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
   (ref) => AuthController(ref),
 );
 
+/// Only the absence/revocation of credentials is allowed to force sign-out.
+/// Network, upstream and Keychain failures are recoverable and must not turn a
+/// temporarily unreachable persisted session into a destructive first-run
+/// experience.
+bool shouldPreserveSessionAfterRestoreFailure(Object error) {
+  if (error is TimeoutException) return true;
+  if (error is! DAKitException) return true;
+  if (error.code == 'oauth.session.missing' ||
+      error.code == 'oauth.refresh.missing' ||
+      error.code.contains('invalid_grant')) {
+    return false;
+  }
+  return true;
+}
+
 /// Owns the OAuth sign-in lifecycle only. The embedded DeviantArt web session
 /// is managed by the separate [WebSessionController].
 final class AuthController extends StateNotifier<AuthState> {
@@ -68,9 +83,28 @@ final class AuthController extends StateNotifier<AuthState> {
         _initializing = false;
         return;
       } on DAKitException catch (error) {
-        _log.warning('auth', 'initialize: no usable oauth session', error);
+        if (shouldPreserveSessionAfterRestoreFailure(error)) {
+          _log.warning(
+            'auth',
+            'initialize: persisted session temporarily unavailable; '
+                'preserving signed-in state',
+            error,
+          );
+          state = const AuthState(status: AuthStatus.signedIn);
+          _initializing = false;
+          return;
+        }
+        _log.info('auth', 'initialize: authorization is required', error);
       } on Object catch (error, stack) {
-        _log.error('auth', 'initialize: oauth error', error, stack);
+        _log.warning(
+          'auth',
+          'initialize: session restore failed transiently; preserving state',
+          error,
+          stack,
+        );
+        state = const AuthState(status: AuthStatus.signedIn);
+        _initializing = false;
+        return;
       }
     }
 

@@ -109,8 +109,8 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
           bottom: TabBar(
             isScrollable: true,
             tabs: <Widget>[
-              Tab(text: s.gallery),
-              Tab(text: s.favourites),
+              Tab(text: s.artistWorks),
+              Tab(text: s.artistSavedWorks),
               Tab(text: s.journal),
               Tab(text: s.folders),
             ],

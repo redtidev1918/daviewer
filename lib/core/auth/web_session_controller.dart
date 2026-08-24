@@ -27,6 +27,11 @@ final class WebSessionState {
   bool get canLoadPersonalizedFeed => signedIn && csrf.isNotEmpty;
 }
 
+bool shouldCommitBackgroundWebSession({
+  required String csrf,
+  required String username,
+}) => csrf.isNotEmpty && username.isNotEmpty;
+
 final webSessionControllerProvider =
     StateNotifierProvider<WebSessionController, WebSessionState>(
       (ref) => WebSessionController(ref),
@@ -75,6 +80,20 @@ final class WebSessionController extends StateNotifier<WebSessionState> {
       username: username,
     );
     await _store.write(csrf: csrf, isLoggedIn: loggedIn, username: username);
+  }
+
+  /// Accepts a background refresh only when it positively identifies an
+  /// account. A bot-check, partial page or network error can expose a CSRF but
+  /// omit the `userinfo` cookie; that is not proof the user signed out and must
+  /// never overwrite a valid persisted session.
+  Future<void> reportRefresh({
+    required String csrf,
+    required String username,
+  }) async {
+    if (!shouldCommitBackgroundWebSession(csrf: csrf, username: username)) {
+      return;
+    }
+    await report(csrf: csrf, username: username);
   }
 
   Future<void> clear() async {
