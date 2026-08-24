@@ -49,6 +49,20 @@ Rules:
 4. A hydration failure may hide that optional section, but must not make the
    artwork detail page unusable.
 
+### Preview-card presentation
+
+All artwork feeds use the shared `ArtworkCard` and preview-aspect helper. On a
+phone-width viewport, extreme landscape media is capped at 1.6:1 in the grid;
+`BoxFit.cover` may crop the outside edges so the subject remains useful at
+thumbnail size. Desktop keeps the wider 2:1 cap.
+
+Metadata responds to the rendered card rather than the source orientation. A
+short or landscape card gets one compact row (one-line title plus subdued
+author); a tall card can use two title lines and the full author row. New feed
+surfaces must reuse these helpers instead of restoring a fixed-height overlay.
+Tests must cover both layouts because a readable portrait overlay can obscure
+nearly all of a two-column banner card.
+
 ## Related-content state
 
 Website recommendation data has two supported server-rendered shapes: the

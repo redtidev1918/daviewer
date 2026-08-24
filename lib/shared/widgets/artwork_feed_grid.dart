@@ -81,7 +81,7 @@ final class ArtworkFeedGrid extends ConsumerWidget {
           }
           final artwork = feed.items[index];
           return AspectRatio(
-            aspectRatio: artworkAspectRatio(artwork),
+            aspectRatio: artworkPreviewAspectRatio(context, artwork),
             child: ArtworkCard(
               artwork: artwork,
               onTap: () => openArtworkFromList(
