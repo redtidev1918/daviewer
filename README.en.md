@@ -103,6 +103,10 @@ path.
   highest-quality preview; open file/folder and delete confirmation
 - **Appearance & settings**: light / dark / system theme; persisted language and
   theme; clear cache; check for updates
+- **Update reminders**: a slim dismissible Home banner when a newer version is
+  available; ignored versions never nag again — no modals, no auto-download
+- **Problem reporting**: Diagnostics generates a pre-filled GitHub issue (with
+  an optional redacted log); the app collects and uploads nothing
 - **Bilingual**: Chinese / English toggle
 - **Proxy**: auto-detect the system proxy + manual configuration (required in
   mainland China)
