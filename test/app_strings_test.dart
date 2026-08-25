@@ -46,24 +46,16 @@ void main() {
     expect(en.relativeTime(now.subtract(const Duration(days: 3))), '3d ago');
   });
 
-  test('login help strings are localized', () {
-    expect(zh.loginHelpTooltip, '登录帮助');
-    expect(en.loginHelpTooltip, 'Login help');
-    expect(zh.forgotPassword, '找回密码');
-    expect(en.forgotPassword, 'Forgot password');
+  test('login strings are localized', () {
     expect(zh.signInOrRegister, '登录或注册');
     expect(en.signInOrRegister, 'Sign in or create an account');
     expect(zh.signInWelcomeBody, contains('不需要再次登录'));
-    expect(en.loginHelpBody, contains('DeviantArt account'));
     expect(zh.loginFailed('网络错误'), '登录失败：网络错误');
     expect(en.loginFailed('Network error'), 'Sign-in failed: Network error');
     expect(zh.signInWelcomeBody, contains('Facebook'));
-    expect(en.singleSignInDescription, contains('system browser'));
-    expect(zh.singleSignInDescription, contains('立即返回'));
-    expect(zh.localLogoutHint, contains('不会退出系统浏览器'));
-    expect(zh.home, '发现');
-    expect(en.home, 'Discover');
-    expect(zh.externalBrowserProxyHint, contains('系统代理'));
+    expect(zh.localLogoutHint, contains('一并退出'));
+    expect(zh.home, '推荐');
+    expect(en.home, 'For you');
   });
 
   test('download deletion warning states that local files are removed', () {

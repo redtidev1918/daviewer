@@ -39,7 +39,7 @@ final class AppStrings {
   static const AppStrings en = AppStrings._(AppLanguage.en);
 
   String get appTitle => _lang == AppLanguage.zh ? 'DA 查看器' : 'DA Viewer';
-  String get home => _lang == AppLanguage.zh ? '发现' : 'Discover';
+  String get home => _lang == AppLanguage.zh ? '推荐' : 'For you';
   String get daily => _lang == AppLanguage.zh ? '每日精选' : 'Daily';
   String get following => _lang == AppLanguage.zh ? '关注动态' : 'Watched';
   String get search => _lang == AppLanguage.zh ? '搜索' : 'Search';
@@ -53,8 +53,8 @@ final class AppStrings {
   String get logout => _lang == AppLanguage.zh ? '退出登录' : 'Logout';
   String get signedOut => _lang == AppLanguage.zh ? '已登出' : 'Signed out';
   String get localLogoutHint => _lang == AppLanguage.zh
-      ? '退出 DAViewer；不会退出系统浏览器中的 DeviantArt 网站账号。'
-      : 'Sign out of DAViewer. Your DeviantArt website session in the system browser is unchanged.';
+      ? '退出 DAViewer；会一并退出 App 内的 DeviantArt 网站会话。'
+      : 'Sign out of DAViewer. This also signs out the DeviantArt website session in the app.';
   String get login => _lang == AppLanguage.zh ? '登录' : 'Login';
   String get signInWelcomeTitle =>
       _lang == AppLanguage.zh ? '登录 DeviantArt' : 'Sign in to DeviantArt';
@@ -63,45 +63,10 @@ final class AppStrings {
       : 'Open the official DeviantArt sign-in once and choose DeviantArt, Google, Apple or Facebook. The app is ready when you return—no second sign-in.';
   String get signInOrRegister =>
       _lang == AppLanguage.zh ? '登录或注册' : 'Sign in or create an account';
-  String get singleSignInDescription => _lang == AppLanguage.zh
-      ? '系统浏览器只负责账号验证并回传授权；如果网站已登录，可能会立即返回 DAViewer。退出 App 不会退出浏览器中的网站账号。'
-      : 'The system browser verifies the account and returns authorization. If the website is already signed in, it may return immediately. App sign-out does not sign out the website.';
-  String get externalBrowserWaiting => _lang == AppLanguage.zh
-      ? '官方授权页已交给系统浏览器。请在那里完成登录与授权，成功后会自动返回 DAViewer；不要再次发起登录。'
-      : 'The official authorization page is open in your system browser. Finish sign-in there and DAViewer will resume automatically; do not start another login.';
-  String get externalBrowserDelayed => _lang == AppLanguage.zh
-      ? '仍在等待系统浏览器回传。如果浏览器尚未完成，请继续登录；如果已显示成功但没有返回，可重新打开同一授权页或取消后重试。'
-      : 'Still waiting for the browser callback. Continue if sign-in is unfinished; if the browser already reported success, reopen the same authorization or cancel and retry.';
-  String get reopenBrowser =>
-      _lang == AppLanguage.zh ? '重新打开授权页' : 'Reopen authorization';
-  String get externalBrowserProxyHint => _lang == AppLanguage.zh
-      ? '当前是 App 专用代理，系统浏览器不会使用它。登录前请同时开启系统代理或 VPN。'
-      : 'The selected proxy is app-only and is not used by your system browser. Enable a system proxy or VPN before signing in.';
-  String get networkBeforeLogin =>
-      _lang == AppLanguage.zh ? '登录前检查网络' : 'Check network before sign-in';
-  String get loginNetworkHint => _lang == AppLanguage.zh
-      ? 'API、图片和下载使用 App 当前网络设置；登录页由系统浏览器打开，使用系统代理或 VPN。'
-      : 'API, media and downloads use the app network setting. The sign-in page opens in your system browser and uses its system proxy or VPN.';
   String get notLoggedIn => _lang == AppLanguage.zh ? '未登录' : 'Not signed in';
   String get loginFirst =>
       _lang == AppLanguage.zh ? '请先登录。' : 'Please sign in.';
 
-  // --- login help ---
-  String get loginHelpTooltip =>
-      _lang == AppLanguage.zh ? '登录帮助' : 'Login help';
-  String get loginHelpTitle =>
-      _lang == AppLanguage.zh ? '登录帮助' : 'Sign-in help';
-  String get loginHelpBody => _lang == AppLanguage.zh
-      ? '点击“登录或注册”后会打开 DeviantArt 官方页面。你可以在那里使用 DeviantArt 账号，或选择 Google、Apple、Facebook。完成后会自动返回 App。\n\n'
-            'DAViewer 不会看到或保存密码。若登录页要求安全验证，请直接按浏览器中的页面提示完成；App 不会再自行判断或弹出另一套人机验证提示。\n\n'
-            '系统浏览器与 DAViewer 是两个安全边界：浏览器只回传一次性授权结果，不会把网站 Cookie 交给 App；退出 DAViewer 也不会退出浏览器中的 DeviantArt 网站账号。\n\n'
-            '成人内容是否显示由 DeviantArt 账号设置决定。'
-      : '“Sign in or create an account” opens the official DeviantArt page. Choose a DeviantArt account, Google, Apple or Facebook there; the browser returns to the app when finished.\n\n'
-            'DAViewer never sees or stores your password. If the provider requests a security check, complete the instructions shown in the browser; the app does not display a separate verification warning.\n\n'
-            'The system browser and DAViewer are separate security boundaries: the browser returns a one-time authorization result, not website cookies. Signing out of DAViewer does not sign out the DeviantArt website.\n\n'
-            'Mature-content visibility is controlled by your DeviantArt account settings.';
-  String get forgotPassword =>
-      _lang == AppLanguage.zh ? '找回密码' : 'Forgot password';
   String get contentSettings =>
       _lang == AppLanguage.zh ? '成人内容设置' : 'Mature content settings';
   String get devartSettings => _lang == AppLanguage.zh
@@ -117,22 +82,27 @@ final class AppStrings {
       ? '官方授权已返回，但系统无法安全保存登录。请重新启动 DAViewer 后再试，这不是账号或网络错误。'
       : 'Authorization returned, but the system could not securely save the session. Restart DAViewer and try again; this is not an account or network error.';
   String get loginCallbackTimeout => _lang == AppLanguage.zh
-      ? '没有收到浏览器回传。请确认浏览器已完成授权，然后重新尝试。'
-      : 'No browser callback arrived. Confirm authorization finished in the browser, then try again.';
+      ? '没有收到登录回传。请稍后重新尝试。'
+      : 'No sign-in callback arrived. Try again shortly.';
   String get loginBrowserOpenFailed => _lang == AppLanguage.zh
-      ? '系统没有打开官方授权页。请检查默认浏览器设置后重试。'
-      : 'The system could not open the official authorization page. Check the default browser and try again.';
+      ? '无法打开官方登录页。请检查网络后重试。'
+      : 'Could not open the official sign-in page. Check the network and try again.';
   String get loginNetworkFailure => _lang == AppLanguage.zh
-      ? '授权服务暂时无法连接。请分别检查 App 代理和系统浏览器代理后重试。'
-      : 'The authorization service is temporarily unreachable. Check both the app proxy and the system-browser proxy, then try again.';
+      ? '授权服务暂时无法连接。请在设置中检查网络代理后重试。'
+      : 'The authorization service is temporarily unreachable. Check the proxy in Settings and try again.';
   String get loginUnexpectedFailure => _lang == AppLanguage.zh
       ? '登录流程没有完成，请取消后重新尝试。'
       : 'Sign-in did not finish. Cancel it and try again.';
   String get noArtworks =>
       _lang == AppLanguage.zh ? '暂无作品' : 'No artworks found.';
-  String get homeFeedLoadFailure => _lang == AppLanguage.zh
-      ? '发现内容暂时无法加载。请下拉刷新，或在设置中检查网络代理。'
-      : 'Discovery could not load. Pull to refresh or check the proxy in Settings.';
+  String get noRecommendations =>
+      _lang == AppLanguage.zh ? '暂无推荐' : 'No recommendations yet.';
+  String get recommendedSignInHint => _lang == AppLanguage.zh
+      ? '登录后即可看到为你推荐的作品。'
+      : 'Sign in to see artwork recommended for you.';
+  String get recommendedFeedLoadFailure => _lang == AppLanguage.zh
+      ? '推荐内容暂时无法加载。请下拉刷新，或在设置中检查网络代理。'
+      : 'Recommendations could not load. Pull to refresh or check the proxy in Settings.';
   String get noImage => _lang == AppLanguage.zh ? '暂无图片' : 'No image';
   String get imageLoadFailed =>
       _lang == AppLanguage.zh ? '图片加载失败' : 'Failed to load';
@@ -377,8 +347,8 @@ final class AppStrings {
   String get testingConnection =>
       _lang == AppLanguage.zh ? '正在测试…' : 'Testing…';
   String proxyTestSucceeded(int milliseconds) => _lang == AppLanguage.zh
-      ? '连接成功（${milliseconds}ms），App 内的 API、图片和下载将使用此网络路径。登录页由系统浏览器打开，请另外确保系统代理或 VPN 可用。'
-      : 'Connected (${milliseconds}ms). In-app API, image, and download traffic will use this route. Sign-in opens in the system browser, so its system proxy or VPN must also work.';
+      ? '连接成功（${milliseconds}ms），App 内的 API、图片、下载和登录页都将使用此网络路径。'
+      : 'Connected (${milliseconds}ms). In-app API, image, download, and sign-in traffic will all use this route.';
   String get proxyTestFailed => _lang == AppLanguage.zh
       ? '连接失败。请确认代理软件已启动、端口正确，并允许局域网/本机连接。'
       : 'Connection failed. Check that the proxy is running, the port is correct, and local connections are allowed.';
@@ -395,8 +365,8 @@ final class AppStrings {
       ? '代理已保存，但测试失败。请核对代理 App 的 HTTP/Mixed 端口；跨设备时还要核对局域网 IP 和“允许局域网”。'
       : 'The proxy was saved, but the test failed. Check the HTTP/Mixed port; for another device also check its LAN IP and LAN-access setting.';
   String get proxyMacLegacyHint => _lang == AppLanguage.zh
-      ? 'macOS 12/13 无法将 App 内手动代理注入后台网页适配器；请改用 macOS 系统代理。登录始终使用系统浏览器的系统代理或 VPN。'
-      : 'On macOS 12/13, an app-only proxy cannot be injected into background web adapters; use the macOS system proxy. Sign-in always follows the system browser proxy or VPN.';
+      ? 'macOS 12/13 无法将 App 内手动代理注入网页；请改用 macOS 系统代理。登录在内嵌网页中完成，遵循同一网络路径。'
+      : 'On macOS 12/13, an app-only proxy cannot be injected into web views; use the macOS system proxy. Sign-in happens in the embedded web view on the same network path.';
 
   // --- diagnostics ---
   String get noLogFile =>
