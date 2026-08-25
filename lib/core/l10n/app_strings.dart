@@ -170,6 +170,20 @@ final class AppStrings {
   String get markAllRead => _lang == AppLanguage.zh ? '全部已读' : 'Mark all read';
   String get proxy => _lang == AppLanguage.zh ? '网络代理' : 'Proxy';
   String get diagnostics => _lang == AppLanguage.zh ? '日志与诊断' : 'Diagnostics';
+  String get reportProblem =>
+      _lang == AppLanguage.zh ? '报告问题' : 'Report a problem';
+  String get reportPreviewTitle =>
+      _lang == AppLanguage.zh ? '报告内容预览' : 'Review report';
+  String get reportPreviewBody => _lang == AppLanguage.zh
+      ? '将在你的浏览器中打开 GitHub Issue，只包含下方内容（不含账号、令牌或 Cookie）。提交前可自行编辑。'
+      : 'This opens a GitHub issue in your browser with only the content below (no account, tokens, or cookies). You can edit it before submitting.';
+  String get includeLog => _lang == AppLanguage.zh
+      ? '附带日志片段（已脱敏）'
+      : 'Include a redacted log excerpt';
+  String get openReport => _lang == AppLanguage.zh ? '打开报告页' : 'Open report';
+  String get crashDetectedHint => _lang == AppLanguage.zh
+      ? '上次运行似乎异常退出。可在下方查看日志或报告问题。'
+      : 'The previous run ended unexpectedly. Review the log or report the issue below.';
   String get downloadOriginal =>
       _lang == AppLanguage.zh ? '下载原图' : 'Download original';
   String get original => _lang == AppLanguage.zh ? '原图' : 'Original';

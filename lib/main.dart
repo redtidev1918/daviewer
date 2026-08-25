@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
 import 'core/diagnostics/app_logger.dart';
+import 'core/diagnostics/crash_marker.dart';
 import 'core/downloads/shared_storage_saver.dart';
 import 'core/l10n/app_strings.dart';
 import 'core/runtime/app_runtime.dart';
@@ -42,6 +43,8 @@ Future<void> main() async {
   final logger = await AppLogger.initialize();
   installGlobalErrorHandlers(logger);
   logger.info('app', 'DAViewer starting');
+  // Detect whether the previous run ended with an uncaught error (local only).
+  final crashedLastSession = await CrashMarker.consume();
 
   final runtime = await AppRuntime.create();
   _sharedStorageSaver = SharedStorageSaver(runtime.transfers);
@@ -67,6 +70,7 @@ Future<void> main() async {
     ProviderScope(
       overrides: <Override>[
         runtimeProvider.overrideWithValue(runtime),
+        crashDetectedProvider.overrideWithValue(crashedLastSession),
         appLanguageProvider.overrideWith(
           (ref) => AppLanguageController(initialLanguage),
         ),

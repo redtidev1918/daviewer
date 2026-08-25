@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:dakit_core/dakit_core.dart';
 import 'package:flutter/foundation.dart' hide DiagnosticLevel;
 import 'package:path_provider/path_provider.dart';
+
+import 'crash_marker.dart';
 
 /// Level-filtered, file-backed logger that also implements DAKit's
 /// [DiagnosticSink] so every OAuth/network/transfer diagnostic event is
@@ -188,7 +191,8 @@ final class NullSink implements IOSink {
 }
 
 /// Installs global handlers so unexpected Dart/Flutter errors are captured
-/// into the log file instead of only the console.
+/// into the log file instead of only the console, and a local crash marker is
+/// written so the next launch can offer to report it.
 void installGlobalErrorHandlers(AppLogger logger) {
   final previousFlutterError = FlutterError.onError;
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -198,12 +202,14 @@ void installGlobalErrorHandlers(AppLogger logger) {
       details.exception,
       details.stack,
     );
+    unawaited(CrashMarker.record());
     previousFlutterError?.call(details);
   };
 
   final previousPlatformError = PlatformDispatcher.instance.onError;
   PlatformDispatcher.instance.onError = (error, stack) {
     logger.error('platform', error.toString(), error, stack);
+    unawaited(CrashMarker.record());
     return previousPlatformError?.call(error, stack) ?? false;
   };
 }

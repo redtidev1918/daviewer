@@ -2,11 +2,16 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/diagnostics/app_logger.dart';
+import '../../core/diagnostics/crash_marker.dart';
+import '../../core/diagnostics/report_builder.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/updates/update_checker.dart';
 
-/// Shows the current session's log tail and error summary.
+/// Shows the current session's log tail and error summary, plus a
+/// user-initiated, privacy-preserving bug report.
 final class DiagnosticsScreen extends ConsumerStatefulWidget {
   const DiagnosticsScreen({super.key});
 
@@ -59,14 +64,70 @@ final class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
     }
   }
 
+  Future<void> _reportProblem(AppStrings s) async {
+    var includeLog = false;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(s.reportPreviewTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(s.reportPreviewBody),
+              const SizedBox(height: 12),
+              Text(
+                'DAViewer v$appVersion · ${ReportBuilder.currentPlatform()}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: includeLog,
+                onChanged: (value) =>
+                    setState(() => includeLog = value ?? false),
+                title: Text(s.includeLog),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(s.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(s.openReport),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final url = ReportBuilder.issueUrl(
+      version: appVersion,
+      platform: ReportBuilder.currentPlatform(),
+      logExcerpt: includeLog ? _logTail : null,
+    );
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  }
+
   @override
   Widget build(BuildContext context) {
     final logger = AppLogger.instance;
     final s = strings(ref.watch(appLanguageProvider));
+    final crashedLastSession = ref.watch(crashDetectedProvider);
     return Scaffold(
       appBar: AppBar(
         title: Text(s.diagnostics),
         actions: <Widget>[
+          IconButton(
+            tooltip: s.reportProblem,
+            onPressed: () => _reportProblem(s),
+            icon: const Icon(Icons.bug_report_outlined),
+          ),
           IconButton(
             tooltip: s.refresh,
             onPressed: _loadLog,
@@ -76,6 +137,34 @@ final class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
       ),
       body: Column(
         children: <Widget>[
+          if (crashedLastSession)
+            Material(
+              color: Theme.of(context).colorScheme.errorContainer,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Icon(
+                      Icons.warning_amber_outlined,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        s.crashDetectedHint,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
