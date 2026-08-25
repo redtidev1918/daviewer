@@ -124,9 +124,20 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   void _maybeClose() {
     if (!_closeAfterReport || !mounted) return;
     _closeAfterReport = false;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) Navigator.of(context).pop();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _closeScreen());
+  }
+
+  /// Pops back to the screen the login came from. When the login screen IS the
+  /// root route (first run reached it via the splash redirect), popping would
+  /// leave an empty navigator and a black screen — go Home instead.
+  void _closeScreen() {
+    if (!mounted) return;
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      context.go('/');
+    }
   }
 
   @override
@@ -146,11 +157,10 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
         _closeAfterReport = true;
         // Fallback: if the home page never reports (navigation stalls), close
         // after a generous timeout so the user isn't stuck.
-        final navigator = Navigator.of(context);
         Future<void>.delayed(const Duration(seconds: 8), () {
           if (mounted && _closeAfterReport) {
             _closeAfterReport = false;
-            navigator.pop();
+            _closeScreen();
           }
         });
       }
@@ -170,7 +180,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
           ),
           IconButton(
             tooltip: s.done,
-            onPressed: () => context.pop(),
+            onPressed: _closeScreen,
             icon: const Icon(Icons.check),
           ),
         ],
@@ -184,68 +194,119 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
               )
             : null,
       ),
-      body: ColoredBox(
-        color: theme.scaffoldBackgroundColor,
-        child: InAppWebView(
-          initialUrlRequest: URLRequest(url: WebUri(_loginUri.toString())),
-          initialSettings: InAppWebViewSettings(
-            javaScriptEnabled: true,
-            // A desktop Chrome UA makes deviantart.com serve its desktop login
-            // page, which includes the Google/Apple one-click sign-in buttons
-            // that the mobile layout omits.
-            userAgent: webUserAgent,
-            // Keep the WebView opaque: transparentBackground forces software
-            // compositing on Android, which causes severe jank when the soft
-            // keyboard resizes the surface.
-          ),
-          onWebViewCreated: (controller) {
-            _controller = controller;
-            final pending = _pendingAuthUri;
-            if (pending != null) {
-              _pendingAuthUri = null;
-              controller.loadUrl(
-                urlRequest: URLRequest(url: WebUri(pending.toString())),
-              );
-            }
-          },
-          shouldOverrideUrlLoading: (controller, navigationAction) async {
-            final uri = navigationAction.request.url;
-            if (uri != null && uri.scheme == 'dakit' && uri.host == 'oauth') {
-              _bridge?.addCallback(uri);
-              // Navigate back to the deviantart home page; its onLoadStop then
-              // reports the real web session (CSRF + login state). Do NOT read
-              // the session here — the callback page has no __INITIAL_STATE__.
-              unawaited(
-                controller.loadUrl(
-                  urlRequest: URLRequest(url: WebUri(_homeUri.toString())),
+      body: Column(
+        children: <Widget>[
+          if (!ref.watch(authControllerProvider).oauthSignedIn)
+            _VerificationHint(s: s),
+          Expanded(
+            child: ColoredBox(
+              color: theme.scaffoldBackgroundColor,
+              child: InAppWebView(
+                initialUrlRequest: URLRequest(
+                  url: WebUri(_loginUri.toString()),
                 ),
-              );
-              return NavigationActionPolicy.CANCEL;
-            }
-            return NavigationActionPolicy.ALLOW;
-          },
-          onLoadStart: (controller, url) {
-            if (mounted) setState(() => _loading = true);
-          },
-          onLoadStop: (controller, url) {
-            if (mounted) setState(() => _loading = false);
-            // Report from any deviantart.com page. A sequence counter makes
-            // the latest page win, so an earlier anonymous page (login) cannot
-            // overwrite a later signed-in page (home).
-            final uri = url;
-            if (uri != null && uri.host == 'www.deviantart.com') {
-              unawaited(_reportWebSession());
-            }
-          },
-          onProgressChanged: (controller, progress) {
-            // Only rebuild while the loading bar is visible, and only on a
-            // meaningful change, so progress ticks don't churn the tree while
-            // the soft keyboard is animating.
-            if (!mounted || !_loading) return;
-            final next = (progress / 100).clamp(0.0, 1.0).toDouble();
-            if ((next - _progress).abs() < 0.02) return;
-            setState(() => _progress = next);
-          },
+                initialSettings: InAppWebViewSettings(
+                  javaScriptEnabled: true,
+                  // A desktop Chrome UA makes deviantart.com serve its desktop login
+                  // page, which includes the Google/Apple one-click sign-in buttons
+                  // that the mobile layout omits.
+                  userAgent: webUserAgent,
+                  // Keep the WebView opaque: transparentBackground forces software
+                  // compositing on Android, which causes severe jank when the soft
+                  // keyboard resizes the surface.
+                ),
+                onWebViewCreated: (controller) {
+                  _controller = controller;
+                  final pending = _pendingAuthUri;
+                  if (pending != null) {
+                    _pendingAuthUri = null;
+                    controller.loadUrl(
+                      urlRequest: URLRequest(url: WebUri(pending.toString())),
+                    );
+                  }
+                },
+                shouldOverrideUrlLoading: (controller, navigationAction) async {
+                  final uri = navigationAction.request.url;
+                  if (uri != null &&
+                      uri.scheme == 'dakit' &&
+                      uri.host == 'oauth') {
+                    _bridge?.addCallback(uri);
+                    // Navigate back to the deviantart home page; its onLoadStop then
+                    // reports the real web session (CSRF + login state). Do NOT read
+                    // the session here — the callback page has no __INITIAL_STATE__.
+                    unawaited(
+                      controller.loadUrl(
+                        urlRequest: URLRequest(
+                          url: WebUri(_homeUri.toString()),
+                        ),
+                      ),
+                    );
+                    return NavigationActionPolicy.CANCEL;
+                  }
+                  return NavigationActionPolicy.ALLOW;
+                },
+                onLoadStart: (controller, url) {
+                  if (mounted) setState(() => _loading = true);
+                },
+                onLoadStop: (controller, url) {
+                  if (mounted) setState(() => _loading = false);
+                  // Report from any deviantart.com page. A sequence counter makes
+                  // the latest page win, so an earlier anonymous page (login) cannot
+                  // overwrite a later signed-in page (home).
+                  final uri = url;
+                  if (uri != null && uri.host == 'www.deviantart.com') {
+                    unawaited(_reportWebSession());
+                  }
+                },
+                onProgressChanged: (controller, progress) {
+                  // Only rebuild while the loading bar is visible, and only on a
+                  // meaningful change, so progress ticks don't churn the tree while
+                  // the soft keyboard is animating.
+                  if (!mounted || !_loading) return;
+                  final next = (progress / 100).clamp(0.0, 1.0).toDouble();
+                  if ((next - _progress).abs() < 0.02) return;
+                  setState(() => _progress = next);
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A slim hint shown while sign-in is in progress. It sets expectations for
+/// DeviantArt's human-verification challenges without trying to detect them
+/// through brittle DOM inspection.
+final class _VerificationHint extends StatelessWidget {
+  const _VerificationHint({required this.s});
+
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: scheme.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Row(
+          children: <Widget>[
+            Icon(
+              Icons.shield_outlined,
+              size: 16,
+              color: scheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                s.verificationHint,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ),
+          ],
         ),
       ),
     );
