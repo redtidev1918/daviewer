@@ -167,6 +167,7 @@ jobs:
           printf '%s' "$PREVIEW_ROOT_CERTIFICATE_B64" | openssl base64 -d -A \
             > "$SIGN_DIR/root.pem"
           security create-keychain -p "$PREVIEW_CERTIFICATE_PASSWORD" "$SIGN_KEYCHAIN"
+          echo "MACOS_SIGN_KEYCHAIN=$SIGN_KEYCHAIN" >> "$GITHUB_ENV"
           security set-keychain-settings -lut 21600 "$SIGN_KEYCHAIN"
           security unlock-keychain -p "$PREVIEW_CERTIFICATE_PASSWORD" "$SIGN_KEYCHAIN"
           security import "$SIGN_DIR/preview.p12" \
@@ -182,6 +183,13 @@ jobs:
             -d -r trustRoot -p codeSign \
             -k /Library/Keychains/System.keychain \
             "$SIGN_DIR/root.pem"
+          # codesign only resolves private keys from the user's active search
+          # list. --keychain narrows that list; it does not activate a newly
+          # created keychain on every hosted-runner image.
+          DEFAULT_KEYCHAIN="$(security default-keychain -d user | tr -d '\"')"
+          security list-keychains -d user -s \
+            "$SIGN_KEYCHAIN" \
+            "$DEFAULT_KEYCHAIN"
           security find-identity -v -p codesigning "$SIGN_KEYCHAIN"
           SIGN_FINGERPRINT="$(
             security find-identity -v -p codesigning "$SIGN_KEYCHAIN" |
@@ -196,7 +204,6 @@ jobs:
             --keychain "$SIGN_KEYCHAIN" \
             --entitlements macos/Runner/Release.entitlements \
             build/macos/Build/Products/Release/DAViewer.app
-          echo "MACOS_SIGN_KEYCHAIN=$SIGN_KEYCHAIN" >> "$GITHUB_ENV"
       - name: Validate and launch macOS app
         run: |
           APP_PATH="build/macos/Build/Products/Release/DAViewer.app"
