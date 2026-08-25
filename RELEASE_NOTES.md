@@ -3,6 +3,16 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.146
+
+- 修复 Android 版本点击后闪退、打不开的问题（包名变更后主界面类未同步迁移）。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- Fixed the Android build crashing on launch (the entry activity wasn't moved to the new package name).
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.145
 
 - 首页新增轻量更新提醒：有新版本时显示可关闭的提示条，被忽略的版本不再打扰。
