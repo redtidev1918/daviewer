@@ -3,6 +3,18 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.144
+
+- 首页「推荐」恢复为网页版个性化推荐流，与官网推荐一致。
+- 清理登录与网络设置中残留的“系统浏览器”旧文案。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- Home “For you” is back to the website's personalized recommendation feed.
+- Removed stale “system browser” wording from sign-in and network settings.
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.143
 
 - 作者主页、画廊分组、收藏集和标签页现在都能直接分享。

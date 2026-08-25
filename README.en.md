@@ -79,8 +79,8 @@ path.
   official login page in the app's embedded WebView; choose DeviantArt, Google,
   Apple, or Facebook right on that page. One login establishes both the OAuth
   session and the web session (personalized feed, collections)
-- **Discovery**: Home “Discover” uses the official generic OAuth `browse/home`
-  stream and is not presented as the website's personalized feed
+- **Recommendations**: Home “For you” is the website's personalized
+  `rfy/deviations` feed (web Cookie + CSRF), matching the site's recommendations
 - **Search**: live search (results as you type) + history + paste a DeviantArt
   link to jump straight to an artwork or artist
 - **Artwork detail**: swipe or top-bar buttons to browse previous/next works
@@ -208,12 +208,11 @@ the macOS unsigned-preview contract are detailed in
 
 ## Home & sign-in state
 
-Home is a **native UI** (Discover / Daily tabs), plus a first-class **Watched**
+Home is a **native UI** (For you / Daily tabs), plus a first-class **Watched**
 bottom tab (DeviantArt's `/watch/deviations` — new artwork from watched artists,
-with a recency-sorted avatar strip). Discover is the official generic
-`browse/home` stream; it is not equivalent to the cookie-backed website
-`rfy/deviations` personalized feed. Discover and Daily use official OAuth APIs
-and share the same identity as favourites, watch, and downloads. DeviantArt's
+with a recency-sorted avatar strip). “For you” is the website's personalized
+`rfy/deviations` feed, fetched with the web Cookie + CSRF session and matching
+the site's recommendations. Daily uses the official OAuth API. DeviantArt's
 official page inside the app's embedded WebView owns account sign-in,
 registration, social providers, and security checks. `dakit://oauth/callback` is
 intercepted in the WebView to complete sign-in; there is no second browser
