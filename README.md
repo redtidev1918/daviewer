@@ -152,7 +152,7 @@ flutter run -d windows   # Windows
 ## 构建与发布
 
 推送到 `main` 会触发 CI 的质量检查与 Android/macOS/Windows 构建；打 `v*` 标签会
-自动创建 GitHub Release 并上传构建产物（说明取自对应版本的 `CHANGELOG.md` 章节）。
+自动创建 GitHub Release 并上传构建产物（说明取自对应版本的 `RELEASE_NOTES.md` 用户文案）。
 
 **一键发布（推荐）**：Actions → **Release** → Run workflow → 选 `patch` / `minor`
 / `major`（或填具体版本号）→ 运行。它会自动改版本号、提交、推 tag，随后 CI
