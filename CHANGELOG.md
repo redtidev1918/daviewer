@@ -3,6 +3,14 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.153（登录状态持久化修复）
+
+### Fixed
+
+- 升级 `dakit_flutter` 0.1.10：Android 安全存储默认的 `resetOnError` 会在任何解密失败时
+  删除已存值，导致 OAuth 令牌在重启后丢失、被强制重新登录。现在令牌在瞬时
+  Keystore/解密错误下会保留，下次启动重试读取。
+
 ## 0.2.152（登录页键盘流畅度）
 
 ### Changed
