@@ -3,6 +3,22 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.143
+
+- 作者主页、画廊分组、收藏集和标签页现在都能直接分享。
+- 修复退出登录或切换账号后，首页、收藏和通知仍显示上一账号内容的问题。
+- 登录失败时给出可执行的提示，不再显示 “Unable to access” 之类的内部错误。
+- 已登录用户误入登录页时会自动回到首页。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- Share is now available from the artist, gallery folder, collection, and tag screens.
+- Fixed stale content from a previous account remaining after logout or account switch.
+- Login failures now show actionable guidance instead of internal errors like “Unable to access”.
+- A signed-in user who lands on the login screen is sent back to Home.
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.142
 
 - 登录回到应用内网页：打开官方登录页一次即可，Google、Apple 等入口都在页面上。
