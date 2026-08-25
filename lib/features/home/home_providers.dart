@@ -6,13 +6,17 @@ import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../artwork/artwork_store.dart';
 
-/// The official OAuth home discovery feed. It deliberately replaces the
-/// website-only personalized feed so one browser authorization is a complete
-/// app login and no second WebView session is ever requested from the user.
+/// The official OAuth generic discovery feed. DeviantArt does not expose its
+/// website-personalized `rfy/deviations` stream through OAuth, so this must not
+/// be labelled as equivalent to the website's recommendations.
 final homeFeedProvider =
     StateNotifierProvider<ArtworkFeedController, ArtworkFeedState>((ref) {
       final runtime = ref.watch(runtimeProvider);
-      ref.watch(authControllerProvider.select((auth) => auth.account?.id));
+      ref.watch(
+        authControllerProvider.select(
+          (auth) => (auth.status, auth.account?.id),
+        ),
+      );
       final controller = ArtworkFeedController((request) async {
         final page = await OfficialArtworkRepository(runtime.transport!)
             .browse(request);
@@ -25,7 +29,9 @@ final homeFeedProvider =
 /// Daily deviations (official API, requires an OAuth session). Rebuilds when
 /// the signed-in account changes. Kept alive so tab switches don't re-fetch.
 final dailyDeviationsProvider = FutureProvider<List<Artwork>>((ref) async {
-  ref.watch(authControllerProvider.select((auth) => auth.account?.id));
+  ref.watch(
+    authControllerProvider.select((auth) => (auth.status, auth.account?.id)),
+  );
   final runtime = ref.watch(runtimeProvider);
   return OfficialDiscoveryRepository(runtime.transport!).dailyDeviations();
 });
@@ -35,7 +41,11 @@ final dailyDeviationsProvider = FutureProvider<List<Artwork>>((ref) async {
 final followingFeedProvider =
     StateNotifierProvider<ArtworkFeedController, ArtworkFeedState>((ref) {
       final runtime = ref.watch(runtimeProvider);
-      ref.watch(authControllerProvider.select((auth) => auth.account?.id));
+      ref.watch(
+        authControllerProvider.select(
+          (auth) => (auth.status, auth.account?.id),
+        ),
+      );
       final controller = ArtworkFeedController((request) {
         return OfficialDiscoveryRepository(runtime.transport!).watched(request);
       });

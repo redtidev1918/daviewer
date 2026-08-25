@@ -59,6 +59,10 @@ void main() {
     expect(en.loginFailed('Network error'), 'Sign-in failed: Network error');
     expect(zh.signInWelcomeBody, contains('Facebook'));
     expect(en.singleSignInDescription, contains('system browser'));
+    expect(zh.singleSignInDescription, contains('立即返回'));
+    expect(zh.localLogoutHint, contains('不会退出系统浏览器'));
+    expect(zh.home, '发现');
+    expect(en.home, 'Discover');
     expect(zh.externalBrowserProxyHint, contains('系统代理'));
   });
 

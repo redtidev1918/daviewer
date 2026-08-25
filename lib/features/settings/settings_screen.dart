@@ -137,13 +137,16 @@ final class SettingsScreen extends ConsumerWidget {
               ListTile(
                 leading: Icon(signedIn ? Icons.logout : Icons.login),
                 title: Text(signedIn ? s.logout : s.login),
-                onTap: () {
+                subtitle: signedIn ? Text(s.localLogoutHint) : null,
+                onTap: () async {
                   if (signedIn) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(SnackBar(content: Text(s.signedOut)));
-                    ref.read(authControllerProvider.notifier).logout();
+                    await ref.read(authControllerProvider.notifier).logout();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(SnackBar(content: Text(s.signedOut)));
+                    }
                   } else {
-                    context.push('/web-login');
+                    await context.push('/web-login');
                   }
                 },
               ),

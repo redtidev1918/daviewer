@@ -107,4 +107,9 @@ void main() {
       isFalse,
     );
   });
+
+  test('local logout tombstone prevents stale secure token restoration', () {
+    expect(shouldAttemptPersistedSessionRestore(false), isFalse);
+    expect(shouldAttemptPersistedSessionRestore(true), isTrue);
+  });
 }

@@ -189,7 +189,10 @@ Page<void> artworkDetailPage(BuildContext context, GoRouterState state) {
 /// tested without constructing a platform WebView.
 String? authRedirect(AuthStatus status, String location) {
   if (status == AuthStatus.unknown) return '/splash';
-  if (status == AuthStatus.signedIn && location == '/splash') return '/';
+  if (status == AuthStatus.signedIn &&
+      (location == '/splash' || location == '/web-login')) {
+    return '/';
+  }
   // A first-run user should see the actual sign-in flow, never a home-feed
   // request or error state. Explicit logout still lands on public Home through
   // the general signed-out redirect below.
