@@ -3,6 +3,18 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.150
+
+- 修复重启后又要重新登录的问题：登录状态现在会在下次打开时恢复。
+- 推荐流在登录会话过期时会自动刷新并重试，不再一直转圈。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- Fixed having to sign in again after restarting the app; the session is restored on the next launch.
+- Recommendations now refresh their session and retry instead of spinning forever.
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.149
 
 - 修复登录完成后出现黑屏的问题。

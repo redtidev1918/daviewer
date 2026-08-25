@@ -1,4 +1,5 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_controller.dart';
@@ -13,6 +14,9 @@ import '../artwork/artwork_store.dart';
 /// The website-personalized `rfy/deviations` recommendation feed, fetched with
 /// the embedded WebView's web session (Cookie + CSRF). Requires a signed-in web
 /// session and rebuilds when the web session identity changes.
+///
+/// A persisted session can be stale after a restart, so a failed fetch refreshes
+/// the CSRF once from the stored cookies before giving up.
 final personalizedFeedProvider =
     StateNotifierProvider<ArtworkFeedController, ArtworkFeedState>((ref) {
       final runtime = ref.watch(runtimeProvider);
@@ -21,22 +25,57 @@ final personalizedFeedProvider =
         webSessionControllerProvider.select((web) => (web.csrf, web.username)),
       );
       final controller = ArtworkFeedController((request) async {
+        final dio = runtime.dio;
+        if (dio == null) {
+          throw const DAKitException(
+            kind: DAKitFailureKind.configuration,
+            code: 'app.runtime.dio',
+            message: 'The network layer is not available.',
+          );
+        }
         var csrf = ref.read(webSessionControllerProvider).csrf;
-        if (csrf.isEmpty) {
+        var cookieHeader = await webSession.cookieHeader();
+        var page = await _tryFetchRfy(dio, csrf, cookieHeader, request);
+        if (page == null) {
+          // Stale session after a restart: re-read the CSRF from the persisted
+          // cookies (headless page load) and retry once.
           await ref.read(webSessionRefresherProvider).refresh();
           csrf = ref.read(webSessionControllerProvider).csrf;
+          cookieHeader = await webSession.cookieHeader();
+          page = await _tryFetchRfy(dio, csrf, cookieHeader, request);
         }
-        final cookieHeader = await webSession.cookieHeader();
-        final page = await RfyFeedFetcher(runtime.dio!).fetch(
-          cookieHeader: cookieHeader,
-          csrfToken: csrf,
-          cursor: request.cursor,
-        );
+        if (page == null) {
+          throw const DAKitException(
+            kind: DAKitFailureKind.authentication,
+            code: 'web.session.unavailable',
+            message: 'The personalized feed requires a signed-in web session.',
+          );
+        }
         ref.read(artworkStoreProvider.notifier).putAll(page.items);
         return page;
       });
       return controller;
     });
+
+/// Fetches one rfy page, or `null` when the web session is missing or the
+/// request failed (the caller then refreshes the session and retries).
+Future<Page<Artwork>?> _tryFetchRfy(
+  Dio dio,
+  String csrf,
+  String cookieHeader,
+  PageRequest request,
+) async {
+  if (csrf.isEmpty || cookieHeader.isEmpty) return null;
+  try {
+    return await RfyFeedFetcher(dio).fetch(
+      cookieHeader: cookieHeader,
+      csrfToken: csrf,
+      cursor: request.cursor,
+    );
+  } on Object {
+    return null;
+  }
+}
 
 /// Daily deviations (official API, requires an OAuth session). Rebuilds when
 /// the signed-in account changes. Kept alive so tab switches don't re-fetch.
