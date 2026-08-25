@@ -29,9 +29,10 @@ Download the package for your platform from
 - **Windows**: `DAViewer-<version>-windows.zip` (unzip and run `DAViewer.exe`)
 
 On a normal first launch, the Windows ZIP build registers only the current-user
-`HKCU\\Software\\Classes\\dakit` OAuth callback so browser sign-in can return to
-DAViewer. It needs no administrator rights, installs no service, and reads no
-system password. Launching again after moving the folder refreshes the path.
+`HKCU\\Software\\Classes\\dakit` OAuth callback scheme (used for external-browser
+fallback sign-in). It needs no administrator rights, installs no service, and
+reads no system password. Launching again after moving the folder refreshes the
+path.
 
 > **A note on the macOS build:** this is explicitly a **non-Apple-signed,
 > unnotarized test preview**. CI uses a stable project-owned preview identity
@@ -74,11 +75,12 @@ system password. Launching again after moving the folder refreshes the path.
 
 ## Features
 
-- **Sign in**: one "Sign in or create an account" action opens the official
-  OAuth/PKCE page in the system browser; choose DeviantArt, Google, Apple, or
-  Facebook there
-- **Recommendations**: Home "For you" uses official OAuth `browse/home` and is
-  ready immediately after sign-in
+- **Sign in**: one "Sign in or create an account" action opens DeviantArt's
+  official login page in the app's embedded WebView; choose DeviantArt, Google,
+  Apple, or Facebook right on that page. One login establishes both the OAuth
+  session and the web session (personalized feed, collections)
+- **Discovery**: Home “Discover” uses the official generic OAuth `browse/home`
+  stream and is not presented as the website's personalized feed
 - **Search**: live search (results as you type) + history + paste a DeviantArt
   link to jump straight to an artwork or artist
 - **Artwork detail**: swipe or top-bar buttons to browse previous/next works
@@ -92,6 +94,8 @@ system password. Launching again after moving the folder refreshes the path.
   automatic tag hydration from official metadata
 - **Artist**: profile (including bio), gallery, **custom sub-galleries
   (folders)**, favourites, watch
+- **Sharing**: native system sharing for artwork, artists, gallery folders,
+  favourite collections, and tags; artwork links can still be copied separately
 - **Social**: favourite (with state), watch/unwatch, watched-user list,
   notifications (unread dot + local mark-as-read)
 - **Download**: real-time original-file permission check; thumbnail previews;
@@ -113,14 +117,15 @@ native interaction live in DAViewer. Dependencies:
 ```yaml
 dependencies:
   dakit_core: ^0.1.12
-  dakit_api: ^0.1.24
+  dakit_api: ^0.1.25
   dakit_flutter: ^0.1.9
 ```
 
 Each attempt creates one official OAuth/PKCE transaction. Account selection,
-passwords, and provider security checks stay in the system browser. After the
-callback, every feature uses that one OAuth identity; there is no second web
-sign-in to synchronize. Signed-out state is onboarding, not a feed error. See
+passwords, and provider security checks stay on DeviantArt's official page inside
+the app's embedded WebView. After the callback, every feature uses that one
+OAuth identity plus the WebView's web session; there is no second web sign-in to
+synchronize. Signed-out state is onboarding, not a feed error. See
 [Architecture](docs/architecture.md) for the full boundaries.
 
 ## Before you start
@@ -161,9 +166,9 @@ system proxy, `https_proxy` / `http_proxy` / `all_proxy`, then build setting.
 Settings → Proxy accepts `127.0.0.1:<YOUR_PORT>` or
 `http://127.0.0.1:<YOUR_PORT>`, persists
 the choice, and applies it to API, media, downloads, and hidden public website
-adapters. The page tests the App route to DeviantArt. Sign-in uses the system
-browser and therefore follows its OS proxy or VPN; an app-only proxy cannot
-reconfigure that external browser.
+adapters. The page tests the App route to DeviantArt. Sign-in happens in the
+app's embedded WebView and therefore follows the app network path (a manual
+proxy applies to the login page too).
 
 The port is never fixed: use the HTTP/Mixed port shown by your proxy app. On a
 phone, `127.0.0.1` is correct only when the proxy runs on that same phone. If it
@@ -203,33 +208,38 @@ the macOS unsigned-preview contract are detailed in
 
 ## Home & sign-in state
 
-Home is a **native UI** (For you / Daily tabs), plus a first-class **Watched**
+Home is a **native UI** (Discover / Daily tabs), plus a first-class **Watched**
 bottom tab (DeviantArt's `/watch/deviations` — new artwork from watched artists,
-with a recency-sorted avatar strip). Both "For you" and Daily use official OAuth
-APIs and share the same identity as favourites, watch, and downloads. The
-official system-browser page owns account sign-in, registration, social
-providers, and security checks. After `dakit://oauth/callback` returns to the
-app, sign-in is complete; there is no second browser identity to synchronize.
+with a recency-sorted avatar strip). Discover is the official generic
+`browse/home` stream; it is not equivalent to the cookie-backed website
+`rfy/deviations` personalized feed. Discover and Daily use official OAuth APIs
+and share the same identity as favourites, watch, and downloads. DeviantArt's
+official page inside the app's embedded WebView owns account sign-in,
+registration, social providers, and security checks. `dakit://oauth/callback` is
+intercepted in the WebView to complete sign-in; there is no second browser
+identity to synchronize.
 
-Starting with 0.2.138, macOS previews use a stable project identity and a new
-Keychain item, so later updates should not request the Mac login password. This
-release deliberately does not query old ad-hoc items because doing so can open
-that suspicious system prompt. Upgrading from an older build therefore needs
-one fresh official sign-in; downloads, settings, and other local data remain.
+macOS previews use a stable project identity. Version 0.2.139 moves sign-in data
+to a fresh `DAViewer Account` Keychain item and no longer queries the 0.2.138
+`DAViewer OAuth` item or older ad-hoc items. This prevents an inaccessible legacy
+record from turning a completed authorization into “Unable to access”. The
+upgrade needs one fresh official sign-in, while downloads, settings, and other
+local data remain. Pending PKCE data is now recovery-only and cannot block a
+live sign-in when it cannot be stored or cleared.
 
 ## Login FAQ
 
 - **DAViewer has no account of its own**: you sign in with your DeviantArt account — the app never registers an account or stores a password.
 - **Password reset / registration**: tap "Sign in or create an account" and use the actions offered by DeviantArt's official page.
-- **Google / Apple / Facebook sign-in**: use the secure system browser, then choose a provider on DeviantArt's current official OAuth/PKCE page. Google prohibits embedded WebViews, so the app no longer forges a User-Agent or simulates a DOM click. The callback returns to DAViewer after one authorization.
-- **Social sign-in and proxies**: the system browser follows the OS proxy or VPN. A manually entered app proxy covers DAViewer traffic only; when that boundary matters, the login screen warns before authorization.
+- **Google / Apple / Facebook sign-in**: open DeviantArt's official login page in the app's embedded WebView, then choose a provider right on the page (Google, Apple, and other options are on the page itself). The callback returns to DAViewer after one login.
+- **Sign-in and proxies**: sign-in happens in the app's embedded WebView and follows the app network path; a manually entered proxy covers the login page too. If the page cannot open, run the connectivity test before signing in.
 - **Check proxy before sign-in**: the native screen shows the effective route and provides both proxy settings and a connectivity test before any web page is opened.
-- **Human verification**: this belongs to the official page or identity provider and is completed in the system browser. DAViewer no longer guesses that 403/429/503 means an outage or uses brittle DOM inspection to interfere with it.
-- **The page did not open or return**: the waiting screen can reopen the same authorize URI without creating another state. Cancel before starting a completely new transaction.
+- **Human verification**: this belongs to the official page or identity provider and is completed inside the embedded WebView. DAViewer does not guess that 403/429/503 means an outage or interfere with it.
+- **The page did not open or is stuck**: tap the top-right "Done" to close and reopen the login screen. Cancel before starting a completely new transaction.
 - **First run and offline recovery**: the app preserves sign-in through a temporary network or provider failure only after this installation has successfully stored an OAuth session. A never-signed-in user is not routed into a failing Home, while an established user's token is not erased by an outage.
 - **Mature content**: DeviantArt account browsing preferences override the app request. Open Settings → DeviantArt account settings → Mature content settings.
 - **Settings while sign-in is broken**: the gear on the login screen keeps language, proxy, diagnostics, updates, and About reachable without authentication.
-- **macOS asks for your Mac password**: builds from 0.2.138 onward should not do this. Deny the request, do not enter the password, and report the version and a screenshot. One fresh sign-in is expected when upgrading from an older build because the app intentionally does not query its prompt-producing legacy Keychain item.
+- **macOS asks for your Mac password**: deny the request, do not enter the password, and report the version and a screenshot. Version 0.2.139 uses a fresh Keychain item, so the upgrade needs one new sign-in without deleting downloads or settings.
 
 See [Authentication and session recovery](docs/authentication.md) for the full
 state contract.
