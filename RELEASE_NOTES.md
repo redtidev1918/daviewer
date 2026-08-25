@@ -3,6 +3,16 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.153
+
+- 修复登录状态偶尔在重启后丢失、又要重新登录的问题。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- Fixed the sign-in occasionally being lost after a restart (no more forced re-login).
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.152
 
 - 进一步优化登录页弹出键盘时的卡顿。
