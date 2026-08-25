@@ -97,9 +97,15 @@ final followingFeedProvider =
           (auth) => (auth.status, auth.account?.id),
         ),
       );
-      final controller = ArtworkFeedController((request) {
-        return OfficialDiscoveryRepository(runtime.transport!).watched(request);
-      });
+      final controller = ArtworkFeedController(
+        (request) {
+          return OfficialDiscoveryRepository(runtime.transport!)
+              .watched(request);
+        },
+        // A larger first page surfaces more distinct watched artists in the
+        // top avatar strip instead of a few heavy posters dominating it.
+        pageSize: 50,
+      );
       return controller;
     });
 

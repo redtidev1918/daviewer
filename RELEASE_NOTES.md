@@ -3,6 +3,16 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.155
+
+- 关注动态顶部会显示更多关注用户，不再只有零星几个。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- The Watched tab now surfaces many more watched artists at the top.
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.154
 
 - 登录成功后立即显示「登录成功」界面（正在同步登录状态），不再停留在登录页让首次用户困惑。

@@ -23,7 +23,7 @@ final class ArtworkFeedState {
 /// (so screens never sit on a spinner), then supports pull-to-refresh and
 /// infinite scroll via [refresh] / [loadMore].
 final class ArtworkFeedController extends StateNotifier<ArtworkFeedState> {
-  ArtworkFeedController(this._fetch, {bool autoLoad = true})
+  ArtworkFeedController(this._fetch, {bool autoLoad = true, this.pageSize = 24})
     : super(const ArtworkFeedState(isLoading: true)) {
     if (autoLoad) {
       unawaited(refresh());
@@ -31,6 +31,10 @@ final class ArtworkFeedController extends StateNotifier<ArtworkFeedState> {
   }
 
   final Future<Page<Artwork>> Function(PageRequest request) _fetch;
+
+  /// Items requested per page. Feeds whose first page should surface more
+  /// distinct authors (e.g. the watched feed's avatar strip) use a larger size.
+  final int pageSize;
   Future<void>? _activeFirstPageFetch;
 
   Future<void> refresh() => _runFirstPageFetch(silent: false);
@@ -52,7 +56,7 @@ final class ArtworkFeedController extends StateNotifier<ArtworkFeedState> {
     if (!mounted) return;
     if (!silent) state = const ArtworkFeedState(isLoading: true);
     try {
-      final page = await _fetch(const PageRequest(limit: 24));
+      final page = await _fetch(PageRequest(limit: pageSize));
       if (!mounted) return;
       state = ArtworkFeedState(items: page.items, nextCursor: page.nextCursor);
     } catch (error) {
@@ -70,7 +74,7 @@ final class ArtworkFeedController extends StateNotifier<ArtworkFeedState> {
       isLoading: true,
     );
     try {
-      final page = await _fetch(PageRequest(cursor: cursor, limit: 24));
+      final page = await _fetch(PageRequest(cursor: cursor, limit: pageSize));
       if (!mounted) return;
       state = ArtworkFeedState(
         items: <Artwork>[...state.items, ...page.items],
