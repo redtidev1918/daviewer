@@ -12,6 +12,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
 import 'home_feeds.dart';
 import 'home_providers.dart';
+import 'update_banner.dart';
 
 /// Native home: two tabs, all rendered with the native feed UI.
 ///
@@ -88,8 +89,15 @@ final class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
-        body: const TabBarView(
-          children: <Widget>[_PersonalizedFeed(), DailyFeed()],
+        body: Column(
+          children: <Widget>[
+            const UpdateBanner(),
+            const Expanded(
+              child: TabBarView(
+                children: <Widget>[_PersonalizedFeed(), DailyFeed()],
+              ),
+            ),
+          ],
         ),
       ),
     );

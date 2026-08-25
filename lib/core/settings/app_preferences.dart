@@ -109,6 +109,56 @@ final class AppPreferences {
     map['oauthSessionKnown'] = value;
   });
 
+  /// The last release version the user dismissed from the update banner.
+  /// Persisted so the same version is never re-shown.
+  static Future<String?> loadDismissedUpdateVersion() async {
+    try {
+      final file = await _file();
+      if (!await file.exists()) return null;
+      final decoded = jsonDecode(await file.readAsString());
+      if (decoded is Map) {
+        final value = decoded['dismissedUpdateVersion'];
+        if (value is String && value.trim().isNotEmpty) return value.trim();
+      }
+    } on Object catch (error, stack) {
+      AppLogger.instance.warning(
+        'prefs',
+        'failed to load dismissed update version',
+        error,
+        stack,
+      );
+    }
+    return null;
+  }
+
+  static Future<void> saveDismissedUpdateVersion(String version) =>
+      _update((map) => map['dismissedUpdateVersion'] = version);
+
+  /// Millisecond timestamp of the last automatic update check, used to throttle
+  /// the check to once per day.
+  static Future<int?> loadLastUpdateCheck() async {
+    try {
+      final file = await _file();
+      if (!await file.exists()) return null;
+      final decoded = jsonDecode(await file.readAsString());
+      if (decoded is Map) {
+        final value = decoded['lastUpdateCheck'];
+        if (value is int) return value;
+      }
+    } on Object catch (error, stack) {
+      AppLogger.instance.warning(
+        'prefs',
+        'failed to load last update check',
+        error,
+        stack,
+      );
+    }
+    return null;
+  }
+
+  static Future<void> saveLastUpdateCheck(int timestamp) =>
+      _update((map) => map['lastUpdateCheck'] = timestamp);
+
   static Future<void> _update(void Function(Map<String, Object?>) mutate) {
     final next = _writeTail.then((_) => _performUpdate(mutate));
     // _performUpdate catches and logs storage failures, so the tail remains

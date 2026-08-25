@@ -11,15 +11,12 @@ import '../../core/auth/auth_state.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../../core/theme/theme_mode_provider.dart';
+import '../../core/updates/update_checker.dart';
 
 const String _githubUrl = 'https://github.com/redtidev1918/daviewer';
 const String _releasesUrl = 'https://github.com/redtidev1918/daviewer/releases';
 const String _devartSettingsUrl =
     'https://www.deviantart.com/settings/browsing';
-const String versionLabel = String.fromEnvironment(
-  'FLUTTER_BUILD_NAME',
-  defaultValue: 'development',
-);
 
 final class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -99,7 +96,7 @@ final class SettingsScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.system_update_outlined),
                 title: Text(s.checkUpdates),
-                subtitle: const Text('DAViewer · $versionLabel'),
+                subtitle: const Text('DAViewer · $appVersion'),
                 onTap: () => _checkUpdates(context, ref, s),
               ),
             ],
@@ -125,7 +122,7 @@ final class SettingsScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.info_outline),
                 title: Text(s.about),
-                subtitle: const Text('DAViewer · $versionLabel'),
+                subtitle: const Text('DAViewer · $appVersion'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showAbout(context, s),
               ),
@@ -237,7 +234,7 @@ final class SettingsScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const Text('DAViewer v$versionLabel'),
+            const Text('DAViewer v$appVersion'),
             const SizedBox(height: 8),
             Text(s.aboutDescription),
             const SizedBox(height: 16),
@@ -407,9 +404,8 @@ Future<void> _checkUpdates(
     }
     // Only compare when both sides are plain semver; a `development` build has
     // no release number to compare against, so just show the latest + download.
-    final currentIsVersion = RegExp(r'^\d+(\.\d+)*$').hasMatch(versionLabel);
-    final newer =
-        currentIsVersion && _compareVersions(latest, versionLabel) > 0;
+    final currentIsVersion = isSemver(appVersion);
+    final newer = currentIsVersion && compareVersions(latest, appVersion) > 0;
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -418,7 +414,7 @@ Future<void> _checkUpdates(
           newer
               ? s.newVersionAvailable('v$latest')
               : currentIsVersion
-              ? '${s.upToDate}（$versionLabel）'
+              ? '${s.upToDate}（$appVersion）'
               : s.newVersionAvailable('v$latest'),
         ),
         actions: <Widget>[
@@ -445,16 +441,4 @@ Future<void> _checkUpdates(
           .showSnackBar(SnackBar(content: Text(s.upToDate)));
     }
   }
-}
-
-int _compareVersions(String a, String b) {
-  final av = a.split('.').map((e) => int.tryParse(e) ?? 0).toList();
-  final bv = b.split('.').map((e) => int.tryParse(e) ?? 0).toList();
-  final length = av.length > bv.length ? av.length : bv.length;
-  for (var i = 0; i < length; i++) {
-    final x = i < av.length ? av[i] : 0;
-    final y = i < bv.length ? bv[i] : 0;
-    if (x != y) return x - y;
-  }
-  return 0;
 }
