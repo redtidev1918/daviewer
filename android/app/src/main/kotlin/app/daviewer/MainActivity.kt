@@ -1,4 +1,4 @@
-package io.github.redtidev1918.daviewer
+package app.daviewer
 
 import android.content.Context
 import android.net.ConnectivityManager
