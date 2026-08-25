@@ -3,6 +3,18 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.148
+
+- 修复登录后「推荐」不显示、点击登录一直跳回首页的问题。
+- 修复从「关注动态」等标签页登录后没有回到原页面的问题。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- Fixed recommendations not appearing after sign-in (tapping sign-in kept bouncing back to Home).
+- Fixed sign-in from the Watched tab returning to the wrong page.
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.147
 
 - 修复登录页弹出键盘时卡顿、掉帧的问题。

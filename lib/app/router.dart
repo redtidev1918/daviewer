@@ -189,8 +189,7 @@ Page<void> artworkDetailPage(BuildContext context, GoRouterState state) {
 /// tested without constructing a platform WebView.
 String? authRedirect(AuthStatus status, String location) {
   if (status == AuthStatus.unknown) return '/splash';
-  if (status == AuthStatus.signedIn &&
-      (location == '/splash' || location == '/web-login')) {
+  if (status == AuthStatus.signedIn && location == '/splash') {
     return '/';
   }
   // A first-run user should see the actual sign-in flow, never a home-feed
