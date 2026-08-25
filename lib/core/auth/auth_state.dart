@@ -16,8 +16,9 @@ final class AuthState {
   final UserProfile? account;
   final Object? error;
 
-  /// Whether an OAuth authorization is currently in flight. The UI suppresses
-  /// the login-sync banner while this is true to avoid a transient flash.
+  /// Whether an OAuth authorization is currently in flight. The login screen
+  /// skips auto-starting a new attempt while this is true to avoid a duplicate
+  /// authorize transaction.
   final bool isLoggingIn;
 
   bool get oauthSignedIn => status == AuthStatus.signedIn;
