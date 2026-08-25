@@ -296,7 +296,6 @@ final class AuthController extends StateNotifier<AuthState> {
     // the user back in on the next launch.
     state = const AuthState(status: AuthStatus.signedOut);
     await AppPreferences.saveOAuthSessionKnown(false);
-    runtime.webViewOAuthBridge?.finishExternalAuthorization();
     if (runtime.isConfigured && runtime.oauth != null) {
       try {
         _log.info('auth', 'logout: revoking oauth session');
