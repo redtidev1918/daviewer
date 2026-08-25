@@ -15,64 +15,6 @@ import '../../shared/widgets/skeleton.dart';
 import '../artwork/artwork_navigation.dart';
 import 'home_providers.dart';
 
-/// The banner shown when the web session and the OAuth session are out of sync.
-final class LoginSyncBanner extends StatefulWidget {
-  const LoginSyncBanner({
-    super.key,
-    required this.message,
-    required this.actionLabel,
-    required this.closeLabel,
-    required this.onAction,
-  });
-
-  final String message;
-  final String actionLabel;
-  final String closeLabel;
-  final VoidCallback onAction;
-
-  @override
-  State<LoginSyncBanner> createState() => _LoginSyncBannerState();
-}
-
-final class _LoginSyncBannerState extends State<LoginSyncBanner> {
-  bool _dismissed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    if (_dismissed) return const SizedBox.shrink();
-    final theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 6, 4, 6),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                widget.message,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSecondaryContainer,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            TextButton(
-              onPressed: widget.onAction,
-              child: Text(widget.actionLabel),
-            ),
-            IconButton(
-              tooltip: widget.closeLabel,
-              visualDensity: VisualDensity.compact,
-              onPressed: () => setState(() => _dismissed = true),
-              icon: const Icon(Icons.close, size: 18),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// The official "daily deviations" feed (OAuth).
 final class DailyFeed extends ConsumerStatefulWidget {
   const DailyFeed({super.key});

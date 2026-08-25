@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/session_state.dart';
 import '../../core/auth/web_session_controller.dart';
+import '../../core/auth/web_session_refresher.dart';
 import '../../core/data/web_collection_contents.dart';
 import '../../core/runtime/runtime_provider.dart';
 
@@ -31,9 +32,13 @@ final collectionContentsProvider = FutureProvider.autoDispose
     .family<List<Artwork>, CollectionContentsKey>((ref, key) async {
       final runtime = ref.watch(runtimeProvider);
       final webSession = ref.watch(webSessionProvider);
-      final csrf = ref.watch(
+      var csrf = ref.watch(
         webSessionControllerProvider.select((web) => web.csrf),
       );
+      if (csrf.isEmpty) {
+        await ref.read(webSessionRefresherProvider).refresh();
+        csrf = ref.read(webSessionControllerProvider).csrf;
+      }
       final cookieHeader = await webSession.cookieHeader();
       return WebCollectionContentsSource(
         runtime.dio!,
@@ -50,9 +55,13 @@ final collectionCoverProvider = FutureProvider.autoDispose
     .family<Uri?, CollectionContentsKey>((ref, key) async {
       final runtime = ref.watch(runtimeProvider);
       final webSession = ref.watch(webSessionProvider);
-      final csrf = ref.watch(
+      var csrf = ref.watch(
         webSessionControllerProvider.select((web) => web.csrf),
       );
+      if (csrf.isEmpty) {
+        await ref.read(webSessionRefresherProvider).refresh();
+        csrf = ref.read(webSessionControllerProvider).csrf;
+      }
       final cookieHeader = await webSession.cookieHeader();
       try {
         return await WebCollectionContentsFetcher(runtime.dio!).fetchCover(

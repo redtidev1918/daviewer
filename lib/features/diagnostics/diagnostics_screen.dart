@@ -96,7 +96,7 @@ final class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                 ),
                 const Spacer(),
                 Text(
-                  s.logDirectory(logger.logsDirectory),
+                  s.logDirectory(logger.logsDisplayName),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],

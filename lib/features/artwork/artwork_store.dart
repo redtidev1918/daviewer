@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// In-memory cache of [Artwork] objects that have already been loaded by a
 /// feed.
 ///
-/// The web personalized feed (`rfy/deviations`) identifies deviations by a
-/// numeric id (`1365198134`) that the official OAuth API cannot resolve
-/// (`deviation/{id}` only accepts UUIDs). Feeds therefore stash their fully
+/// Public website payloads can identify deviations by a numeric id
+/// (`1365198134`) that the official OAuth API cannot resolve
+/// (`deviation/{id}` only accepts UUIDs). Adapters therefore stash their fully
 /// mapped [Artwork] here and the detail screen renders straight from the cache
 /// instead of round-tripping through an OAuth call that would 404.
 final artworkStoreProvider =

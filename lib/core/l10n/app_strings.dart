@@ -53,37 +53,16 @@ final class AppStrings {
   String get logout => _lang == AppLanguage.zh ? '退出登录' : 'Logout';
   String get signedOut => _lang == AppLanguage.zh ? '已登出' : 'Signed out';
   String get login => _lang == AppLanguage.zh ? '登录' : 'Login';
-  String get webLogin => _lang == AppLanguage.zh ? '登录网页版' : 'Web login';
   String get signInWelcomeTitle =>
       _lang == AppLanguage.zh ? '登录 DeviantArt' : 'Sign in to DeviantArt';
   String get signInWelcomeBody => _lang == AppLanguage.zh
-      ? '选择与你账号匹配的安全登录链路。DAViewer 不读取或保存你的 DeviantArt、Google、Apple 或 Facebook 密码。'
-      : 'Choose the secure route that matches your account. DAViewer never reads or stores your DeviantArt, Google, Apple or Facebook password.';
-  String get signInWithDeviantArt => _lang == AppLanguage.zh
-      ? '使用 DeviantArt 账号登录'
-      : 'Sign in with DeviantArt';
-  String signInWithSocialBrowser(List<String> providers) {
-    final available = providers.join(' / ');
-    if (_lang == AppLanguage.zh) {
-      return available.isEmpty ? '使用社交账号（系统浏览器）' : '$available 登录（系统浏览器）';
-    }
-    return available.isEmpty
-        ? 'Social sign-in (system browser)'
-        : '$available sign-in (system browser)';
-  }
-
-  String get socialBrowserDescription => _lang == AppLanguage.zh
-      ? '在系统安全浏览器打开 DeviantArt 官方授权页，再选择社交账号；适用于 Google 对内嵌 WebView 的限制。'
-      : 'Opens DeviantArt authorization in your secure system browser, where you choose the social provider. This avoids Google\'s embedded-WebView restriction.';
-  String get embeddedAccountDescription => _lang == AppLanguage.zh
-      ? '在 App 内使用 DeviantArt 用户名/邮箱和密码；此链路会使用 App 当前代理并同步网页推荐会话。'
-      : 'Use a DeviantArt username/email and password inside the app. This route follows the app proxy and also syncs the personalized web session.';
-  String get syncPersonalizedWebSession => _lang == AppLanguage.zh
-      ? '同步个性化网页推荐（可选）'
-      : 'Sync personalized web recommendations (optional)';
-  String get syncPersonalizedWebSessionDescription => _lang == AppLanguage.zh
-      ? 'App 授权已经完成。仅当你需要首页个性化推荐时，才需要在 App 内再建立 DeviantArt 网页会话。'
-      : 'App authorization is already complete. Only establish the embedded DeviantArt web session if you want personalized home recommendations.';
+      ? '一次进入 DeviantArt 官方登录页，可选择 DeviantArt、Google、Apple 或 Facebook。完成后直接使用 App，不需要再次登录。'
+      : 'Open the official DeviantArt sign-in once and choose DeviantArt, Google, Apple or Facebook. The app is ready when you return—no second sign-in.';
+  String get signInOrRegister =>
+      _lang == AppLanguage.zh ? '登录或注册' : 'Sign in or create an account';
+  String get singleSignInDescription => _lang == AppLanguage.zh
+      ? '登录在系统浏览器中完成，DAViewer 不读取或保存你的密码。'
+      : 'Sign-in is completed in your system browser. DAViewer never reads or stores your password.';
   String get externalBrowserWaiting => _lang == AppLanguage.zh
       ? '官方授权页已交给系统浏览器。请在那里完成登录与授权，成功后会自动返回 DAViewer；不要再次发起登录。'
       : 'The official authorization page is open in your system browser. Finish sign-in there and DAViewer will resume automatically; do not start another login.';
@@ -93,32 +72,16 @@ final class AppStrings {
   String get reopenBrowser =>
       _lang == AppLanguage.zh ? '重新打开授权页' : 'Reopen authorization';
   String get externalBrowserProxyHint => _lang == AppLanguage.zh
-      ? '当前使用的是 App 专用代理，它无法接管系统浏览器。社交登录还需要系统代理或 VPN 可用。'
-      : 'The selected proxy is app-only and cannot control your system browser. Social sign-in also needs a working system proxy or VPN.';
-  String get noAccountQuestion =>
-      _lang == AppLanguage.zh ? '还没有账号？' : 'No account yet?';
+      ? '当前是 App 专用代理，系统浏览器不会使用它。登录前请同时开启系统代理或 VPN。'
+      : 'The selected proxy is app-only and is not used by your system browser. Enable a system proxy or VPN before signing in.';
   String get networkBeforeLogin =>
       _lang == AppLanguage.zh ? '登录前检查网络' : 'Check network before sign-in';
   String get loginNetworkHint => _lang == AppLanguage.zh
-      ? '能直连时无需代理；连接失败时填写你自己的 HTTP/Mixed 代理。App 内登录、API、图片和下载走这里；系统浏览器登录遵循系统代理或 VPN。'
-      : 'No proxy is needed when direct access works. Otherwise enter your HTTP/Mixed proxy. In-app sign-in, API, media and downloads use it; browser sign-in follows the system proxy or VPN.';
-  String get openingOfficialLogin =>
-      _lang == AppLanguage.zh ? '正在打开官方登录页…' : 'Opening official sign-in…';
-  String get openingOfficialAuthorization => _lang == AppLanguage.zh
-      ? '正在建立 DeviantArt 官方授权流程…'
-      : 'Starting the official DeviantArt authorization…';
+      ? 'API、图片和下载使用 App 当前网络设置；登录页由系统浏览器打开，使用系统代理或 VPN。'
+      : 'API, media and downloads use the app network setting. The sign-in page opens in your system browser and uses its system proxy or VPN.';
   String get notLoggedIn => _lang == AppLanguage.zh ? '未登录' : 'Not signed in';
   String get loginFirst =>
       _lang == AppLanguage.zh ? '请先登录。' : 'Please sign in.';
-  String get webSessionExpired => _lang == AppLanguage.zh
-      ? 'App 登录已经可用；个性化网页推荐还需要单独建立网页会话。你也可以直接使用每日推荐、关注、收藏和下载。'
-      : 'App sign-in is ready. Personalized web recommendations need a separate web session; Daily, watching, favourites and downloads already work.';
-  String get webLoggedInOAuthMissing => _lang == AppLanguage.zh
-      ? '网页版已登录，补全 App 登录后可使用收藏 / 关注 / 下载。'
-      : 'Web session is signed in. Complete app login for favourites, watching and downloads.';
-  String get webLoggedOutOAuthActive => _lang == AppLanguage.zh
-      ? 'App 登录已完成。个性化网页推荐尚未同步，不影响每日推荐、关注、收藏和下载。'
-      : 'App sign-in is complete. Personalized web recommendations are not synced; Daily, watching, favourites and downloads are unaffected.';
 
   // --- login help ---
   String get loginHelpTooltip =>
@@ -126,44 +89,22 @@ final class AppStrings {
   String get loginHelpTitle =>
       _lang == AppLanguage.zh ? '登录帮助' : 'Sign-in help';
   String get loginHelpBody => _lang == AppLanguage.zh
-      ? '本页登录的是 DeviantArt 官方账号。DAViewer 不注册账号、不保存密码。\n\n'
-            '• Google / Apple / Facebook：使用系统浏览器完成官方 OAuth/PKCE 授权，避免 Google 禁止内嵌 WebView。\n'
-            '• DeviantArt 用户名/邮箱与密码：可在 App 内登录，同时建立网页推荐会话。\n'
-            '• 注册：支持任意邮箱注册。\n'
-            '• 找回密码：点击登录页的「Forgot Password」，或使用下方「找回密码」在浏览器中重置。\n'
-            '• 成人内容默认被 DeviantArt 隐藏/模糊，需在下方「成人内容设置」里改为显示。\n'
-            '• 找回密码与注册均在系统浏览器中完成，完成后返回本页登录。'
-      : 'This page signs in to your DeviantArt account. DAViewer does not create accounts or store passwords.\n\n'
-            '• Google / Apple / Facebook: use the system browser for official OAuth/PKCE, avoiding Google\'s embedded-WebView restriction.\n'
-            '• DeviantArt username/email and password: sign in inside the app and establish the personalized web session too.\n'
-            '• Register: any email works.\n'
-            '• Forgot password: tap "Forgot Password" on the page, or use "Forgot password" below to reset it in your browser.\n'
-            '• Mature content is hidden/blurred by default on DeviantArt; enable it under "Mature content settings" below.\n'
-            '• Password reset and registration open in your browser; return here to sign in afterwards.';
+      ? '点击“登录或注册”后会打开 DeviantArt 官方页面。你可以在那里使用 DeviantArt 账号，或选择 Google、Apple、Facebook。完成后会自动返回 App。\n\n'
+            'DAViewer 不会看到或保存密码。若登录页要求安全验证，请直接按浏览器中的页面提示完成；App 不会再自行判断或弹出另一套人机验证提示。\n\n'
+            '成人内容是否显示由 DeviantArt 账号设置决定。'
+      : '“Sign in or create an account” opens the official DeviantArt page. Choose a DeviantArt account, Google, Apple or Facebook there; the browser returns to the app when finished.\n\n'
+            'DAViewer never sees or stores your password. If the provider requests a security check, complete the instructions shown in the browser; the app does not display a separate verification warning.\n\n'
+            'Mature-content visibility is controlled by your DeviantArt account settings.';
   String get forgotPassword =>
       _lang == AppLanguage.zh ? '找回密码' : 'Forgot password';
-  String get registerAccount => _lang == AppLanguage.zh
-      ? '注册 DeviantArt 账号'
-      : 'Register a DeviantArt account';
   String get contentSettings =>
       _lang == AppLanguage.zh ? '成人内容设置' : 'Mature content settings';
   String get devartSettings => _lang == AppLanguage.zh
       ? 'DeviantArt 账号设置'
       : 'DeviantArt account settings';
-  String get webLoginSuccess =>
-      _lang == AppLanguage.zh ? '网页登录成功' : 'Web sign-in succeeded';
   String get loginSuccess => _lang == AppLanguage.zh ? '登录成功' : 'Signed in';
   String loginFailed(String detail) =>
       _lang == AppLanguage.zh ? '登录失败：$detail' : 'Sign-in failed: $detail';
-  String get loginPageLoadFailed => _lang == AppLanguage.zh
-      ? '登录页暂时无法连接。你的登录数据没有被清除，可重试或检查应用网络代理。'
-      : 'The sign-in page could not connect. Your session data was not cleared; retry or check the app proxy.';
-  String get humanVerificationHint => _lang == AppLanguage.zh
-      ? '上游正在要求安全或人机验证，这不是网络故障。请在下方官方页面完成验证，通过后登录会自动继续。'
-      : 'The provider is requesting a security or human-verification check. This is not a network failure; complete it in the official page below and sign-in will continue automatically.';
-  String get humanVerificationChecking => _lang == AppLanguage.zh
-      ? '检测到上游安全拦截，正在载入人机验证。请不要退出；验证控件出现后按页面提示完成。'
-      : 'A provider security check was detected and its verification controls are loading. Stay on this page and complete the check when it appears.';
   String get noArtworks =>
       _lang == AppLanguage.zh ? '暂无作品' : 'No artworks found.';
   String get homeFeedLoadFailure => _lang == AppLanguage.zh
@@ -410,8 +351,8 @@ final class AppStrings {
   String get testingConnection =>
       _lang == AppLanguage.zh ? '正在测试…' : 'Testing…';
   String proxyTestSucceeded(int milliseconds) => _lang == AppLanguage.zh
-      ? '连接成功（${milliseconds}ms），API 与登录页将使用此网络路径。'
-      : 'Connected (${milliseconds}ms). API and sign-in will use this network path.';
+      ? '连接成功（${milliseconds}ms），App 内的 API、图片和下载将使用此网络路径。登录页由系统浏览器打开，请另外确保系统代理或 VPN 可用。'
+      : 'Connected (${milliseconds}ms). In-app API, image, and download traffic will use this route. Sign-in opens in the system browser, so its system proxy or VPN must also work.';
   String get proxyTestFailed => _lang == AppLanguage.zh
       ? '连接失败。请确认代理软件已启动、端口正确，并允许局域网/本机连接。'
       : 'Connection failed. Check that the proxy is running, the port is correct, and local connections are allowed.';
@@ -428,8 +369,8 @@ final class AppStrings {
       ? '代理已保存，但测试失败。请核对代理 App 的 HTTP/Mixed 端口；跨设备时还要核对局域网 IP 和“允许局域网”。'
       : 'The proxy was saved, but the test failed. Check the HTTP/Mixed port; for another device also check its LAN IP and LAN-access setting.';
   String get proxyMacLegacyHint => _lang == AppLanguage.zh
-      ? 'macOS 12/13 的登录 WebView 不能使用 App 内手动代理；请改用 macOS 系统代理。macOS 14 及以上支持 App 内代理。'
-      : 'On macOS 12/13, the sign-in WebView cannot use an app-only proxy; use the macOS system proxy. App proxy is supported on macOS 14+.';
+      ? 'macOS 12/13 无法将 App 内手动代理注入后台网页适配器；请改用 macOS 系统代理。登录始终使用系统浏览器的系统代理或 VPN。'
+      : 'On macOS 12/13, an app-only proxy cannot be injected into background web adapters; use the macOS system proxy. Sign-in always follows the system browser proxy or VPN.';
 
   // --- diagnostics ---
   String get noLogFile =>

@@ -167,7 +167,7 @@ final class WebCollectionContentsFetcher {
   }
 
   /// Parses a `gallection/contents` JSON response: `results` (the same web
-  /// deviation shape as the `rfy` feed, mapped by [RfyFeedFetcher.mapDeviation]),
+  /// shared website deviation shape, mapped by [WebDeviationMapper.mapDeviation]),
   /// the `hasMore` flag, and the collection's own cover (`gallection.thumb`).
   static CollectionContentsPage parseJsonPage(Object? data) {
     if (data is! Map) {
@@ -180,7 +180,7 @@ final class WebCollectionContentsFetcher {
     final items = <Artwork>[];
     for (final raw in rawResults) {
       if (raw is! Map) continue;
-      final artwork = RfyFeedFetcher.mapDeviation(
+      final artwork = WebDeviationMapper.mapDeviation(
         Map<Object?, Object?>.from(raw),
       );
       if (artwork.id.isNotEmpty && artwork.media.isNotEmpty) {
@@ -231,7 +231,7 @@ final class WebCollectionContentsFetcher {
       final items = <Artwork>[];
       for (final raw in rawDeviations) {
         if (raw is! Map) continue;
-        final artwork = RfyFeedFetcher.mapDeviation(
+        final artwork = WebDeviationMapper.mapDeviation(
           Map<Object?, Object?>.from(raw),
         );
         // Journals and other media-less entries have no thumbnail to render
@@ -252,7 +252,7 @@ final class WebCollectionContentsFetcher {
   /// The first image of a deviation-shaped `thumb` object, if any.
   static Uri? _thumbImage(Object? thumb) {
     if (thumb is! Map) return null;
-    final artwork = RfyFeedFetcher.mapDeviation(
+    final artwork = WebDeviationMapper.mapDeviation(
       Map<Object?, Object?>.from(thumb),
     );
     for (final media in artwork.media) {

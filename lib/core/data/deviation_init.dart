@@ -33,14 +33,14 @@ final class DeviationInit {
   final List<String> tags;
 }
 
-/// Resolves a numeric deviation id (the id used by the personalized `rfy`
-/// feed) to the OAuth UUID, the author description, and multi-image pages.
+/// Resolves a numeric website deviation id to the OAuth UUID, the author
+/// description, and multi-image pages.
 ///
 /// The official OAuth API only accepts UUIDs (`deviation/{uuid}`), while the
-/// web feed uses numeric ids. This private web endpoint bridges the two and
+/// public website uses numeric ids. This private web endpoint bridges the two and
 /// also carries the full description (`descriptionText.html.markup`) and the
 /// `extended.additionalMedia` pages that the official API no longer returns. It
-/// is authenticated with the embedded WebView's web session (Cookie + CSRF).
+/// uses an anonymous browser Cookie + CSRF snapshot.
 final class DeviationInitFetcher {
   const DeviationInitFetcher(this._dio);
 

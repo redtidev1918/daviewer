@@ -9,7 +9,6 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/diagnostics/error_text.dart';
-import '../../core/auth/web_session_controller.dart';
 import '../../core/auth/web_session_refresher.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
@@ -252,8 +251,7 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
 
   Future<void> _retryDownloadAvailability() async {
     try {
-      if (isNumericDeviationId(widget.artworkId) &&
-          ref.read(webSessionControllerProvider).signedIn) {
+      if (isNumericDeviationId(widget.artworkId)) {
         await ref.read(webSessionRefresherProvider).refresh();
       }
     } on Object {

@@ -1,8 +1,6 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:dio/dio.dart';
 
-import '../../core/data/web_session.dart';
-
 enum MoreLikeThisFailureKind { network, session, service, pageFormat, unknown }
 
 /// Preserves failures from both related-artwork sources so the UI can explain
@@ -51,7 +49,6 @@ Iterable<Object> _errorChain(Object? error) sync* {
 }
 
 bool _isSessionFailure(Object error) {
-  if (error is WebLoginRequired) return true;
   if (error is DAKitException) {
     return error.kind == DAKitFailureKind.authentication ||
         error.kind == DAKitFailureKind.authorization;

@@ -2,8 +2,8 @@ import 'package:dio/dio.dart';
 
 import 'web_user_agent.dart';
 
-/// dio options for DeviantArt's private web endpoints: a JSON response type,
-/// the embedded WebView's Cookie header, and a browser-like user agent.
+/// Dio options for DeviantArt's private web endpoints: a JSON response type,
+/// an anonymous hidden-browser Cookie header, and a browser-like user agent.
 Options webSessionOptions(String cookieHeader) => Options(
   responseType: ResponseType.json,
   headers: <String, dynamic>{
@@ -13,7 +13,7 @@ Options webSessionOptions(String cookieHeader) => Options(
   },
 );
 
-/// dio options for a DeviantArt HTML page fetched with the embedded browser's
+/// Dio options for a DeviantArt HTML page fetched with the hidden browser's
 /// cookies. This is intentionally separate from [webSessionOptions]: forcing
 /// JSON for an artwork page makes dio try to decode the HTML response.
 Options webPageOptions(String cookieHeader) => Options(

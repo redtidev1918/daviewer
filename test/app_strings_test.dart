@@ -51,20 +51,14 @@ void main() {
     expect(en.loginHelpTooltip, 'Login help');
     expect(zh.forgotPassword, '找回密码');
     expect(en.forgotPassword, 'Forgot password');
-    expect(zh.registerAccount, '注册 DeviantArt 账号');
-    expect(en.registerAccount, 'Register a DeviantArt account');
-    expect(zh.loginHelpBody, contains('任意邮箱'));
+    expect(zh.signInOrRegister, '登录或注册');
+    expect(en.signInOrRegister, 'Sign in or create an account');
+    expect(zh.signInWelcomeBody, contains('不需要再次登录'));
     expect(en.loginHelpBody, contains('DeviantArt account'));
     expect(zh.loginFailed('网络错误'), '登录失败：网络错误');
     expect(en.loginFailed('Network error'), 'Sign-in failed: Network error');
-    expect(
-      zh.signInWithSocialBrowser(<String>['Google', 'Apple', 'Facebook']),
-      contains('Facebook'),
-    );
-    expect(
-      en.signInWithSocialBrowser(const <String>[]),
-      contains('system browser'),
-    );
+    expect(zh.signInWelcomeBody, contains('Facebook'));
+    expect(en.singleSignInDescription, contains('system browser'));
     expect(zh.externalBrowserProxyHint, contains('系统代理'));
   });
 
