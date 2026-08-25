@@ -8,7 +8,7 @@
 PRODUCT_NAME = DAViewer
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = io.github.redtidev1918.daviewer
+PRODUCT_BUNDLE_IDENTIFIER = app.daviewer
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 DAViewer Contributors. All rights reserved.
