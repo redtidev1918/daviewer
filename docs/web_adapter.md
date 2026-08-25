@@ -4,8 +4,8 @@ DAViewer talks to two DeviantArt surfaces:
 
 - **Official OAuth API** (stable, versioned, owned by DAKit).
 - **Website-private JSON/HTML endpoints** (unstable, undocumented) for the few
-  features the official API does not expose: the personalized feed, numeric-id
-  resolution, related-artwork blocks, and collection full contents.
+  detail features the official API does not expose: numeric-id resolution,
+  related-artwork blocks, and collection full contents.
 
 This document is the compatibility contract for that second, private surface.
 Its job is not to prevent DeviantArt from changing — that is out of our
@@ -41,10 +41,9 @@ feature code.
 
 | Feature | Module | Endpoint / source | Session | Fallback | Contract test (snapshot define) |
 | --- | --- | --- | --- | --- | --- |
-| Personalized feed | `rfy_feed.dart` | `_puppy/dabrowse/networkbar/rfy/deviations` | Cookie + CSRF | sign-in prompt | `mapDeviation` via `web_more_like_this_test.dart` (no live snapshot — needs a logged-in capture) |
-| Numeric→UUID + description | `deviation_init.dart` | `_puppy/dadeviation/init` | Cookie + CSRF | tags via `deviation/metadata` | `deviation_init_test.dart` (`DA_DEVIATION_INIT_JSON`) |
+| Numeric→UUID + description | `deviation_init.dart` | `_puppy/dadeviation/init` | anonymous browser CSRF | tags via `deviation/metadata` | `deviation_init_test.dart` (`DA_DEVIATION_INIT_JSON`) |
 | Related artwork | `web_more_like_this.dart` | artwork page `__INITIAL_STATE__` / `__RCACHE__` | none (public) | official `browse/morelikethis` | `web_more_like_this_test.dart` (`DA_MORE_LIKE_THIS_HTML`) |
-| Collection full contents | `web_collection_contents.dart` | `_puppy/dashared/gallection/contents` (JSON), fallback `deviantart.com/{user}/favourites/{id}?page=N` | Cookie + CSRF (JSON) / none (SSR) | preview deviations + open-on-web | `web_collection_contents_test.dart` (`DA_COLLECTION_JSON`, `DA_COLLECTION_HTML`) |
+| Collection full contents | `web_collection_contents.dart` | `_puppy/dashared/gallection/contents` (JSON), fallback `deviantart.com/{user}/favourites/{id}?page=N` | anonymous browser CSRF (JSON) / none (SSR) | preview deviations + open-on-web | `web_collection_contents_test.dart` (`DA_COLLECTION_JSON`, `DA_COLLECTION_HTML`) |
 
 Shared, non-endpoint helpers (no separate fallback, tested directly):
 
@@ -53,7 +52,7 @@ Shared, non-endpoint helpers (no separate fallback, tested directly):
 | Wix media descriptor → URL | `wix_media.dart` | `baseUri` + `prettyName` + `types` resolution | `wix_media_test.dart` |
 | JS literal JSON decoder | `html_state.dart` | `window.__X = JSON.parse("…")` decoding | via the snapshot tests above |
 | HTML / tiptap → text/html | `html_text.dart` | description rendering | `html_text_test.dart` |
-| Web session (Cookie/CSRF) | `web_session.dart` | read WebView cookies + `userinfo` | `web_session_state_test.dart` |
+| Public browser state | `web_session.dart` | read anonymous browser cookies | `web_session_refresh_policy_test.dart` |
 | Link → route | `da_uri.dart` | paste-link parsing (no network) | `web_login_flow_test.dart` (indirect) |
 
 Sections that are derived or use the official API (`more_from_artist`,
@@ -89,8 +88,8 @@ are large and change every time the site does). To capture one:
 
 - **Public pages** (artwork, collection): save the page HTML with a browser
   User-Agent (login not required).
-- **Session-gated endpoints** (`rfy`, `dadeviation/init`): capture from the
-  browser Network tab after logging in, and save the JSON body.
+- **Browser-shaped endpoints** (`dadeviation/init`): capture the JSON response
+  from a public browser session. Do not include account cookies in fixtures.
 
 The `DA_*` dart-defines point at those files; when unset, the gated tests skip,
 so CI never depends on a captured page.

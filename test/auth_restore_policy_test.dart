@@ -52,6 +52,42 @@ void main() {
       ),
       isFalse,
     );
+    expect(
+      shouldPreserveSessionAfterRestoreFailure(
+        const DAKitException(
+          kind: DAKitFailureKind.authentication,
+          code: 'oauth.refresh.invalid',
+          message: 'refresh token invalid',
+        ),
+      ),
+      isFalse,
+    );
+  });
+
+  test('legacy DeviantArt invalid_request refresh response is definitive', () {
+    expect(
+      shouldPreserveSessionAfterRestoreFailure(
+        const DAKitException(
+          kind: DAKitFailureKind.authentication,
+          code: 'oauth.provider.invalid_request',
+          message: 'The refresh_token is invalid.',
+          details: <String, Object?>{
+            'provider_description': 'The refresh_token is invalid.',
+          },
+        ),
+      ),
+      isFalse,
+    );
+    expect(
+      shouldPreserveSessionAfterRestoreFailure(
+        const DAKitException(
+          kind: DAKitFailureKind.authentication,
+          code: 'oauth.provider.invalid_request',
+          message: 'The authorization code is invalid.',
+        ),
+      ),
+      isTrue,
+    );
   });
 
   test('a transient failure preserves only an evidenced prior session', () {

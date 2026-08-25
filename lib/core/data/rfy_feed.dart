@@ -1,72 +1,12 @@
 import 'package:dakit_core/dakit_core.dart';
-import 'package:dio/dio.dart';
 
-import 'web_http.dart';
 import 'wix_media.dart';
 
-/// One page of the DeviantArt web `rfy/deviations` personalized feed.
-final class RfyPage {
-  const RfyPage({required this.items, required this.nextCursor});
-
-  final List<Artwork> items;
-  final String? nextCursor;
-
-  bool get hasMore => nextCursor != null && nextCursor!.isNotEmpty;
-}
-
-/// Fetches the web `rfy/deviations` personalized feed using the embedded
-/// WebView's web session (Cookie + CSRF token), and maps it back to the
-/// standard DAKit [Artwork] model so it renders through the native feed UI.
-///
-/// The official OAuth API does not expose this personalized feed; it is the
-/// private web endpoint behind deviantart.com's home page, authenticated with
-/// the browser Cookie and the page's `csrf_token` (sent as a query parameter).
-///
-/// Because this feed carries numeric deviation ids (which the OAuth API cannot
-/// resolve), the mapped [Artwork] also carries the full-resolution image (and
-/// video transcodes) directly, so the detail screen can render without an
-/// OAuth round-trip.
-final class RfyFeedFetcher {
-  const RfyFeedFetcher(this._dio);
-
-  final Dio _dio;
-
-  static final Uri _endpoint = Uri.parse(
-    'https://www.deviantart.com/_puppy/dabrowse/networkbar/rfy/deviations',
-  );
-
-  Future<RfyPage> fetch({
-    required String cookieHeader,
-    required String csrfToken,
-    String? cursor,
-  }) async {
-    final response = await _dio.get<Object?>(
-      _endpoint.toString(),
-      queryParameters: <String, dynamic>{
-        'csrf_token': csrfToken,
-        if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
-      },
-      options: webSessionOptions(cookieHeader),
-    );
-    final data = response.data;
-    if (data is! Map) {
-      throw const FormatException('Unexpected rfy response shape.');
-    }
-    final rawDeviations = data['deviations'];
-    if (rawDeviations is! List) {
-      throw const FormatException('Missing deviations list.');
-    }
-    final items = <Artwork>[];
-    for (final raw in rawDeviations) {
-      if (raw is Map) {
-        items.add(mapDeviation(raw));
-      }
-    }
-    return RfyPage(
-      items: List<Artwork>.unmodifiable(items),
-      nextCursor: data['nextCursor'] as String?,
-    );
-  }
+/// Maps artwork shapes shared by DeviantArt's public website payloads to the
+/// standard DAKit [Artwork] model. Network fetching stays in each isolated
+/// adapter; Home no longer uses the legacy private personalized-feed endpoint.
+final class WebDeviationMapper {
+  const WebDeviationMapper._();
 
   static Artwork mapDeviation(Map<Object?, Object?> json) {
     var id = '${json['deviationId']}';

@@ -3,6 +3,44 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.138（单一登录与官方推荐闭环）
+
+### Fixed
+
+- 登录页收敛为一个「登录或注册」入口：只创建一次 OAuth/PKCE 事务，
+  由系统浏览器中的 DeviantArt 官方页提供账号、注册、Google、Apple 与 Facebook。
+- 首页「推荐」改用官方 OAuth `browse/home`，不再依赖另一份网页 Cookie 身份；
+  修复 Google 登录回调成功后首页还要求再登录一次。
+- 移除内嵌密码 WebView、模拟点击社交按钮和 DOM 人机验证猜测；403/429/503
+  安全页由真实浏览器呈现，App 不再把它错报为断网。
+- 重新打开授权会复用同一个 authorize URI 和 PKCE state；取消会完整清理待处理
+  事务，避免旧回调占用下一次登录。
+- 未登录首次启动只进入原生登录引导，不启动个性化网页会话；作品详情所需
+  的网站数据改为按需匿名刷新，失败时只重试或降级，不弹出第二次登录。
+- 修复 DeviantArt 将失效 refresh token 返回为非标准 `invalid_request` 时，客户端将它
+  误当临时断网并保留假登录态的问题。DAKit 现在统一映射为 `oauth.refresh.invalid`，
+  DAViewer 也兼容旧错误形状并清理无法恢复的令牌，不再让首页无限重试。
+- 修复 macOS Keychain 拒绝删除旧令牌时，DAKit 的内部 logout 状态无法复位、
+  导致之后每次官方授权虽已换到新 token 却仍被取消的问题；存储清理失败现在
+  也一定退出 logout 状态，客户端不再对同一失效通知重复注销。
+- OAuth 成功的提交点改为「新 token 已保存」；macOS Keychain 无法清理已过期的
+  pending PKCE 记录时只记录警告，不再把已成功的首次授权推翻成登录失败。
+- 普通冷启动没有 OAuth 回调时不再读取 pending PKCE 安全存储，避免 macOS
+  Keychain 暂时不可用时让启动长时间停在「正在建立官方授权流程」。
+
+### Changed
+
+- 连通性测试只承诺 App 内 API、媒体和下载路径；官方登录页明确遵循系统
+  浏览器的系统代理或 VPN，不再声称 App 手动代理可以接管外部浏览器。
+- 日志页面将目录显示为 `DAViewer/logs`，日志初始化不再输出物理沙箱路径。
+  Android/macOS 应用标识保持不变，避免升级被系统当成新 App 而丢失下载与设置。
+- macOS Release 改用 CI 私有的稳定自签预览身份及新的 `DAViewer OAuth` 钥匙串项目。
+  它仍不是 Apple Developer ID、仍未公证，但后续更新不再因 ad-hoc cdhash 改变而要求
+  Mac 登录密码。为避免旧项目触发可疑密码框，从旧版升级需重新完成一次官方登录；
+  其他本地数据不受影响。
+- 删除已无调用者的网页个性化推荐请求器，保留公开作品载荷的容错映射；
+  重写登录、代理、架构、网页适配器及中英文用户文档。
+
 ## 0.2.137（真实登录分流与系统浏览器回调）
 
 ### Fixed

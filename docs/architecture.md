@@ -146,37 +146,27 @@ state-dependent:
 
 ## Authentication boundary
 
-The app has two sessions:
+The app has one user identity: OAuth for Home, favourites, watch, galleries,
+downloads, and every other official API. Signed-out state is onboarding, not a
+feed error. Each visible attempt owns one OAuth/PKCE transaction and opens its
+authorize URI in the system browser. DeviantArt's page owns account selection,
+passwords, registration, social providers, and security checks. The
+custom-scheme callback completes that same transaction; no second WebView login
+or Cookie/CSRF identity is requested.
 
-- the web Cookie/CSRF session for personalized website-only feeds;
-- OAuth for official API actions such as favourites, watch, and downloads.
+A hidden browser may still acquire anonymous cookies and CSRF on demand for
+public website-only detail adapters. This is infrastructure state, not
+authentication. It must never block Home or display a login prompt, and its
+failure degrades to an official-API fallback or retry.
 
-Signed-out state is onboarding, not a feed error. Each visible attempt owns one
-OAuth/PKCE transaction, but login routes are split by browser security:
-
-- DeviantArt username/email and password stays in the embedded WebView and can
-  establish both the web and OAuth sessions through the app proxy route.
-- Social providers use the system browser because Google prohibits embedded
-  user-agents. The custom-scheme callback completes App OAuth; protected system
-  browser cookies are not treated as if they belonged to the WebView.
-
-The social provider list displayed in native UI is a read-only capability hint
-parsed from the current official login page. It never selects an endpoint or
-handles credentials. A transient post-login 403 is only recoverable after the
-web identity cookie has been observed, and recovery must reuse the original
-authorize URI.
-
-An OAuth-only social login is complete, not partially authenticated. Official
-API features work immediately and Home selects its OAuth-backed Daily feed.
-The website-only personalized feed may offer a separate optional web-session
-sync without blocking or invalidating OAuth.
-
-Session restoration is non-destructive. Renaming a macOS Keychain item requires
-a dual-read migration from the legacy account name. Temporary network,
-upstream, parsing, or secure-storage failures preserve the authenticated route;
-only missing/revoked credentials or explicit logout enter signed-out state.
-Background WebView refreshes may rotate CSRF only after positively identifying
-the cookie username. An anonymous or partial page is never proof of logout.
+Session restoration reads only the current secure item. macOS previews before
+0.2.138 used a changing ad-hoc cdhash; querying those items after an update can
+request the Mac login password, so they are intentionally not auto-migrated.
+Temporary network, upstream, parsing, or secure-storage failures preserve an
+established route; only missing/revoked credentials or explicit logout enter
+signed-out state.
+Hidden browser refreshes may rotate anonymous CSRF. A partial page is never
+proof of logout, and a legacy cookie username that mismatches OAuth is cleared.
 
 Settings, proxy, diagnostics, updates, and About are public recovery routes and
 must stay reachable from the login screen.
@@ -188,9 +178,10 @@ must stay reachable from the login screen.
 - Every tag must have a matching top-level section in `RELEASE_NOTES.md`; CI uses
   that section as the GitHub Release body.
 - CI analyzes, checks formatting, tests, and builds Android, macOS, and Windows.
-- Android releases require the configured upload keystore. macOS artifacts are
-  ad-hoc signed and must use the `macos-unsigned-preview` filename until stable
-  Developer ID signing, Hardened Runtime, and notarization are configured.
+- Android releases require the configured upload keystore. macOS artifacts use
+  a private stable self-signed preview identity for Keychain continuity, but
+  remain non-Apple-signed and unnotarized; they keep the
+  `macos-unsigned-preview` marker until Developer ID signing and notarization.
 - Publishing keeps only the newest GitHub Release visible. Git tags remain as
   the source-history record and are not deleted by the release job.
 

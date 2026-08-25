@@ -6,23 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_controller.dart';
-import '../../core/auth/web_session_controller.dart';
 import '../../core/data/da_uri.dart';
-import '../../core/data/web_session.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
 import 'home_feeds.dart';
 import 'home_providers.dart';
 
-int initialHomeTabIndex({
-  required bool oauthSignedIn,
-  required bool? webLoggedIn,
-}) => oauthSignedIn && webLoggedIn != true ? 1 : 0;
-
 /// Native home: two tabs, all rendered with the native feed UI.
 ///
-/// - 推荐: the personalized `rfy/deviations` web feed (fetched natively with
-///   the WebView's web session).
+/// - 推荐: the official OAuth `browse/home` discovery feed.
 /// - 每日推荐: the official daily deviations (OAuth).
 ///
 /// Deviations from watched artists live in the first-class "关注动态" tab
@@ -34,44 +26,10 @@ final class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = strings(ref.watch(appLanguageProvider));
     final auth = ref.watch(authControllerProvider);
-    final web = ref.watch(webSessionControllerProvider);
     final oauthSignedIn = auth.oauthSignedIn;
-    final webLoggedIn = web.isLoggedIn;
-
-    Widget? syncBanner;
-    // Skip the sync banner while an OAuth authorization is in flight, so the
-    // normal login flow doesn't flash a transient "web signed in, complete app
-    // login" prompt before the account finishes loading.
-    if (!auth.isLoggingIn && webLoggedIn == true && !oauthSignedIn) {
-      syncBanner = LoginSyncBanner(
-        message: s.webLoggedInOAuthMissing,
-        actionLabel: s.login,
-        closeLabel: s.close,
-        onAction: () => context.push('/web-login'),
-      );
-    } else if (!auth.isLoggingIn && webLoggedIn != true && oauthSignedIn) {
-      syncBanner = LoginSyncBanner(
-        message: s.webLoggedOutOAuthActive,
-        actionLabel: s.webLogin,
-        closeLabel: s.close,
-        onAction: () => context.push('/web-login'),
-      );
-    }
 
     return DefaultTabController(
-      // Recreate the controller when session capabilities change while the
-      // login route is covering Home; otherwise Flutter keeps the old signed-
-      // out index and ignores the new initialIndex after a successful callback.
-      key: ValueKey<String>('home-tabs-$oauthSignedIn-${webLoggedIn == true}'),
       length: 2,
-      // A system-browser social login establishes the official App OAuth
-      // session but cannot export protected browser cookies into the embedded
-      // WebView. Land on the fully functional OAuth-backed feed instead of
-      // making a successful login look like a recommendation failure.
-      initialIndex: initialHomeTabIndex(
-        oauthSignedIn: oauthSignedIn,
-        webLoggedIn: webLoggedIn,
-      ),
       child: Scaffold(
         appBar: AppBar(
           title: Text(s.appTitle),
@@ -129,13 +87,8 @@ final class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
-        body: Column(
-          children: <Widget>[
-            ?syncBanner,
-            const Expanded(
-              child: TabBarView(children: <Widget>[_RfyFeed(), DailyFeed()]),
-            ),
-          ],
+        body: const TabBarView(
+          children: <Widget>[_RecommendedFeed(), DailyFeed()],
         ),
       ),
     );
@@ -176,14 +129,14 @@ Future<void> _showOpenLinkDialog(BuildContext context, AppStrings s) async {
   }
 }
 
-final class _RfyFeed extends ConsumerStatefulWidget {
-  const _RfyFeed();
+final class _RecommendedFeed extends ConsumerStatefulWidget {
+  const _RecommendedFeed();
 
   @override
-  ConsumerState<_RfyFeed> createState() => _RfyFeedState();
+  ConsumerState<_RecommendedFeed> createState() => _RecommendedFeedState();
 }
 
-final class _RfyFeedState extends ConsumerState<_RfyFeed>
+final class _RecommendedFeedState extends ConsumerState<_RecommendedFeed>
     with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
@@ -202,11 +155,11 @@ final class _RfyFeedState extends ConsumerState<_RfyFeed>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Refresh the personalized feed when the app comes back to the foreground
-    // so it does not sit on a stale list indefinitely — silently, so the
+    // Refresh discovery when the app comes back to the foreground so it does
+    // not sit on a stale list indefinitely — silently, so the
     // current list stays visible while the new one loads.
     if (state == AppLifecycleState.resumed && mounted) {
-      ref.read(rfyFeedProvider.notifier).refreshSilently();
+      ref.read(homeFeedProvider.notifier).refreshSilently();
     }
   }
 
@@ -214,40 +167,17 @@ final class _RfyFeedState extends ConsumerState<_RfyFeed>
   Widget build(BuildContext context) {
     super.build(context); // required by AutomaticKeepAliveClientMixin
     final s = strings(ref.watch(appLanguageProvider));
-    final oauthSignedIn = ref.watch(authControllerProvider).oauthSignedIn;
-    final web = ref.watch(webSessionControllerProvider);
-
-    // Being signed out is a navigation state, not a failed recommendation
-    // request. Do not even construct the auto-loading feed until both the web
-    // identity and CSRF token are ready.
-    if (!web.canLoadPersonalizedFeed) {
-      return LoginPrompt(
-        s: s,
-        message: oauthSignedIn ? s.webSessionExpired : null,
-        onLogin: () => context.push('/web-login'),
-      );
+    if (!ref.watch(authControllerProvider).oauthSignedIn) {
+      return LoginPrompt(s: s, onLogin: () => context.push('/web-login'));
     }
-
-    final feed = ref.watch(rfyFeedProvider);
-    final needLogin = feed.error is WebLoginRequired;
-
-    if (needLogin) {
-      // When OAuth is already signed in, the home feed only needs its web
-      // session refreshed (the embedded WebView re-reads the CSRF/cookies);
-      // when fully signed out, run the whole login flow.
-      return LoginPrompt(
-        s: s,
-        message: oauthSignedIn ? s.webSessionExpired : null,
-        onLogin: () => context.push('/web-login'),
-      );
-    }
+    final feed = ref.watch(homeFeedProvider);
 
     return ArtworkFeedGrid(
       feed: feed,
       emptyMessage: s.noArtworks,
       errorMessage: s.homeFeedLoadFailure,
-      onRefresh: () => ref.read(rfyFeedProvider.notifier).refresh(),
-      onLoadMore: () => ref.read(rfyFeedProvider.notifier).loadMore(),
+      onRefresh: () => ref.read(homeFeedProvider.notifier).refresh(),
+      onLoadMore: () => ref.read(homeFeedProvider.notifier).loadMore(),
     );
   }
 }

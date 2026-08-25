@@ -4,29 +4,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/session_state.dart';
 import '../../core/auth/web_session_controller.dart';
+import '../../core/auth/web_session_refresher.dart';
 import '../../core/data/data_access.dart';
 import '../../core/data/deviation_init.dart';
 import '../../core/data/html_text.dart';
-import '../../core/data/web_session.dart';
 import '../../core/data/web_more_like_this.dart';
 import '../../core/runtime/runtime_provider.dart';
 import 'artwork_store.dart';
 import 'more_like_this_failure.dart';
 
-/// True for the numeric ids used by the web `rfy` feed (the OAuth API only
-/// accepts UUIDs, e.g. `97B067C2-…`).
+/// True for numeric ids used by public website URLs (the OAuth API accepts
+/// UUIDs, e.g. `97B067C2-…`).
 bool isNumericDeviationId(String id) => RegExp(r'^\d+$').hasMatch(id);
 
-/// Resolves a numeric web-feed id to the OAuth UUID plus the full description,
-/// via the private web `dadeviation/init` endpoint (web session required).
+/// Resolves a numeric website id to the OAuth UUID plus the full description,
+/// via the private web `dadeviation/init` endpoint and a public browser token.
 /// Returns `null` for ids that are already OAuth UUIDs.
 final deviationInitProvider = FutureProvider.autoDispose
     .family<DeviationInit?, String>((ref, artworkId) async {
       if (!isNumericDeviationId(artworkId)) return null;
-      final csrf = ref.watch(
+      var csrf = ref.watch(
         webSessionControllerProvider.select((web) => web.csrf),
       );
-      if (csrf.isEmpty) throw const WebLoginRequired();
+      if (csrf.isEmpty) {
+        await ref.read(webSessionRefresherProvider).refresh();
+        csrf = ref.read(webSessionControllerProvider).csrf;
+      }
+      if (csrf.isEmpty) {
+        throw StateError('Public browser session is unavailable');
+      }
       final webSession = ref.watch(webSessionProvider);
       final cookieHeader = await webSession.cookieHeader();
       final cached = ref.read(artworkStoreProvider)[artworkId];
@@ -147,9 +153,11 @@ final journalHtmlProvider = FutureProvider.autoDispose.family<String?, String>((
   final match = RegExp(r'-(\d+)/?$').firstMatch(cached.pageUri.path);
   final numericId = match?.group(1);
   if (numericId == null) return null;
-  final csrf = ref.watch(
-    webSessionControllerProvider.select((web) => web.csrf),
-  );
+  var csrf = ref.watch(webSessionControllerProvider.select((web) => web.csrf));
+  if (csrf.isEmpty) {
+    await ref.read(webSessionRefresherProvider).refresh();
+    csrf = ref.read(webSessionControllerProvider).csrf;
+  }
   if (csrf.isEmpty) return null;
   final webSession = ref.watch(webSessionProvider);
   final cookieHeader = await webSession.cookieHeader();

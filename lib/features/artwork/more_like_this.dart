@@ -1,9 +1,7 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../core/auth/web_session_controller.dart';
 import '../../core/auth/web_session_refresher.dart';
 import '../../core/diagnostics/app_logger.dart';
 import '../../core/l10n/app_strings.dart';
@@ -108,22 +106,9 @@ final class _MoreLikeThisSectionState
           icon: icon,
           message: message,
           action: TextButton.icon(
-            onPressed: kind == MoreLikeThisFailureKind.session
-                ? () async {
-                    await context.push<void>('/web-login');
-                    if (mounted) await _manualRetry();
-                  }
-                : _manualRetry,
-            icon: Icon(
-              kind == MoreLikeThisFailureKind.session
-                  ? Icons.login
-                  : Icons.refresh,
-            ),
-            label: Text(
-              kind == MoreLikeThisFailureKind.session
-                  ? s.login
-                  : s.reloadSuggestions,
-            ),
+            onPressed: _manualRetry,
+            icon: const Icon(Icons.refresh),
+            label: Text(s.reloadSuggestions),
           ),
         );
       },
@@ -268,8 +253,7 @@ final class _MoreLikeThisSectionState
     // resolved to the UUID accepted by the official endpoint. Await the real
     // headless refresh completion, then invalidate the whole resolution chain.
     try {
-      if (isNumericDeviationId(widget.artworkId) &&
-          ref.read(webSessionControllerProvider).signedIn) {
+      if (isNumericDeviationId(widget.artworkId)) {
         await ref.read(webSessionRefresherProvider).refresh();
       }
     } on Object catch (error, stackTrace) {

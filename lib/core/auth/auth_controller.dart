@@ -22,12 +22,32 @@ final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
 bool shouldPreserveSessionAfterRestoreFailure(Object error) {
   if (error is TimeoutException) return true;
   if (error is! DAKitException) return true;
+  return !isDefinitiveCredentialFailure(error);
+}
+
+/// DeviantArt has returned both RFC `invalid_grant` and the non-standard
+/// `invalid_request: The refresh_token is invalid` for a revoked refresh token.
+/// Treat both as definitive so cold start cannot preserve a fake signed-in
+/// state and retry every Home request indefinitely. The legacy shape remains
+/// here even after DAKit normalization so upgrades from an older SDK are safe.
+bool isDefinitiveCredentialFailure(DAKitException error) {
   if (error.code == 'oauth.session.missing' ||
       error.code == 'oauth.refresh.missing' ||
+      error.code == 'oauth.refresh.invalid' ||
       error.code.contains('invalid_grant')) {
+    return true;
+  }
+  if (error.kind != DAKitFailureKind.authentication ||
+      error.code != 'oauth.provider.invalid_request') {
     return false;
   }
-  return true;
+  final description =
+      '${error.details['provider_description'] ?? error.message}'
+          .replaceAll('_', ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .toLowerCase();
+  return description.contains('refresh token') &&
+      (description.contains('invalid') || description.contains('revoked'));
 }
 
 bool shouldRestoreSignedInAfterFailure({
@@ -35,13 +55,21 @@ bool shouldRestoreSignedInAfterFailure({
   required bool hasSessionEvidence,
 }) => hasSessionEvidence && shouldPreserveSessionAfterRestoreFailure(error);
 
-/// Owns the OAuth sign-in lifecycle only. The embedded DeviantArt web session
-/// is managed by the separate [WebSessionController].
+/// Owns the app's single user sign-in lifecycle. Hidden public browser state is
+/// managed separately by [WebSessionController] and is never authentication.
 final class AuthController extends StateNotifier<AuthState> {
   AuthController(this._ref)
-    : super(const AuthState(status: AuthStatus.unknown));
+    : super(const AuthState(status: AuthStatus.unknown)) {
+    _sessionInvalidationSubscription = _ref
+        .read(runtimeProvider)
+        .oauth
+        ?.session
+        .invalidations
+        .listen((error) => unawaited(_handleSessionInvalidation(error)));
+  }
 
   final Ref _ref;
+  StreamSubscription<DAKitException>? _sessionInvalidationSubscription;
   bool _initializing = false;
   bool _loggingIn = false;
   Future<void>? _loginOperation;
@@ -83,6 +111,7 @@ final class AuthController extends StateNotifier<AuthState> {
           'initialize: restored persisted session '
               '(expires ${tokens.expiresAt.toUtc().toIso8601String()})',
         );
+        await AppPreferences.saveOAuthSessionKnown(true);
         state = const AuthState(status: AuthStatus.signedIn);
         unawaited(_loadAccount(runtime));
         _initializing = false;
@@ -102,6 +131,12 @@ final class AuthController extends StateNotifier<AuthState> {
           state = const AuthState(status: AuthStatus.signedIn);
           _initializing = false;
           return;
+        }
+        if (isDefinitiveCredentialFailure(error)) {
+          // DAKit clears the rejected token before emitting its invalidation.
+          // Do not call logout again: a Keychain deletion denial must not
+          // create a second generation change during the next authorization.
+          await AppPreferences.saveOAuthSessionKnown(false);
         }
         _log.info(
           'auth',
@@ -140,6 +175,16 @@ final class AuthController extends StateNotifier<AuthState> {
     _initializing = false;
   }
 
+  Future<void> _handleSessionInvalidation(DAKitException error) async {
+    _log.info(
+      'auth',
+      'provider invalidated the saved OAuth session; sign-in is required',
+      error,
+    );
+    await AppPreferences.saveOAuthSessionKnown(false);
+    state = const AuthState(status: AuthStatus.signedOut);
+  }
+
   /// Starts the standard OAuth browser flow.
   Future<void> login() {
     if (state.status == AuthStatus.signedIn) return Future<void>.value();
@@ -175,6 +220,7 @@ final class AuthController extends StateNotifier<AuthState> {
     try {
       _log.info('auth', 'login: starting OAuth authorize');
       await runtime.oauth!.authorize();
+      await AppPreferences.saveOAuthSessionKnown(true);
       _log.info('auth', 'login: authorize returned, loading account');
       await _loadAccount(runtime);
     } on DAKitException catch (error) {
@@ -269,11 +315,25 @@ final class AuthController extends StateNotifier<AuthState> {
           .timeout(const Duration(seconds: 15));
       _log.info('auth', 'account loaded: ${account.username}');
       state = AuthState(status: AuthStatus.signedIn, account: account);
-    } on Object catch (error, stack) {
+    } on DAKitException catch (error, stack) {
+      if (isDefinitiveCredentialFailure(error)) {
+        await AppPreferences.saveOAuthSessionKnown(false);
+        state = const AuthState(status: AuthStatus.signedOut);
+        return;
+      }
       _log.error('auth', 'account load failed', error, stack);
       // Tokens are still valid even if the profile fetch failed; stay signed
       // in with an unknown profile instead of forcing a logout.
       state = const AuthState(status: AuthStatus.signedIn);
+    } on Object catch (error, stack) {
+      _log.error('auth', 'account load failed', error, stack);
+      state = const AuthState(status: AuthStatus.signedIn);
     }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_sessionInvalidationSubscription?.cancel());
+    super.dispose();
   }
 }

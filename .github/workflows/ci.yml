@@ -133,6 +133,51 @@ jobs:
             sleep 15
           done
           exit 1
+      - name: Set up stable macOS preview identity
+        env:
+          PREVIEW_CERTIFICATE_B64: ${{ secrets.MACOS_PREVIEW_CERTIFICATE_B64 }}
+          PREVIEW_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_PREVIEW_CERTIFICATE_PASSWORD }}
+          PREVIEW_ROOT_CERTIFICATE_B64: ${{ secrets.MACOS_PREVIEW_ROOT_CERTIFICATE_B64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PREVIEW_CERTIFICATE_B64" ] || \
+             [ -z "$PREVIEW_CERTIFICATE_PASSWORD" ] || \
+             [ -z "$PREVIEW_ROOT_CERTIFICATE_B64" ]; then
+            if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+              echo "::error::Stable macOS preview-signing secrets are required for release tags."
+              exit 1
+            fi
+            echo "MACOS_SIGN_IDENTITY=-" >> "$GITHUB_ENV"
+            echo "::warning::Using an ad-hoc identity for this non-release build."
+            exit 0
+          fi
+
+          SIGN_DIR="$RUNNER_TEMP/daviewer-preview-signing"
+          SIGN_KEYCHAIN="$SIGN_DIR/preview.keychain-db"
+          mkdir -p "$SIGN_DIR"
+          printf '%s' "$PREVIEW_CERTIFICATE_B64" | openssl base64 -d -A \
+            > "$SIGN_DIR/preview.p12"
+          printf '%s' "$PREVIEW_ROOT_CERTIFICATE_B64" | openssl base64 -d -A \
+            > "$SIGN_DIR/root.pem"
+          security create-keychain -p "$PREVIEW_CERTIFICATE_PASSWORD" "$SIGN_KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$SIGN_KEYCHAIN"
+          security unlock-keychain -p "$PREVIEW_CERTIFICATE_PASSWORD" "$SIGN_KEYCHAIN"
+          security import "$SIGN_DIR/preview.p12" \
+            -k "$SIGN_KEYCHAIN" \
+            -P "$PREVIEW_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -s \
+            -k "$PREVIEW_CERTIFICATE_PASSWORD" \
+            "$SIGN_KEYCHAIN" >/dev/null
+          sudo security add-trusted-cert \
+            -d -r trustRoot -p codeSign \
+            -k /Library/Keychains/System.keychain \
+            "$SIGN_DIR/root.pem"
+          security find-identity -v -p codesigning "$SIGN_KEYCHAIN"
+          echo "MACOS_SIGN_IDENTITY=DAViewer Preview Code Signing" >> "$GITHUB_ENV"
+          echo "MACOS_SIGN_KEYCHAIN=$SIGN_KEYCHAIN" >> "$GITHUB_ENV"
       - name: Build release app
         run: flutter build macos --release
       - name: Validate and launch macOS app
@@ -140,13 +185,16 @@ jobs:
           APP_PATH="build/macos/Build/Products/Release/DAViewer.app"
           APP_EXEC="$APP_PATH/Contents/MacOS/DAViewer"
 
-          # Flutter/Xcode may inject development entitlements into an ad-hoc
-          # signature. Re-sign the outer bundle from the checked-in release
-          # entitlement file so a restricted empty keychain group cannot make
-          # launchd kill the downloaded app before main() runs.
-          codesign --force --sign - \
-            --entitlements macos/Runner/Release.entitlements \
-            "$APP_PATH"
+          # The release preview uses one stable private self-signed identity.
+          # It is not an Apple Developer ID and does not bypass Gatekeeper, but
+          # unlike a fresh ad-hoc cdhash on every build it lets Keychain verify
+          # the same app across updates without requesting the Mac password.
+          SIGN_ARGS=(--force --sign "$MACOS_SIGN_IDENTITY")
+          if [ -n "${MACOS_SIGN_KEYCHAIN:-}" ]; then
+            SIGN_ARGS+=(--keychain "$MACOS_SIGN_KEYCHAIN")
+          fi
+          codesign "${SIGN_ARGS[@]}" \
+            --entitlements macos/Runner/Release.entitlements "$APP_PATH"
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
           lipo "$APP_EXEC" -verify_arch x86_64 arm64
 
@@ -170,6 +218,12 @@ jobs:
           fi
           kill "$APP_PID"
           wait "$APP_PID" 2>/dev/null || true
+      - name: Remove preview-signing keychain
+        if: always()
+        run: |
+          if [ -n "${MACOS_SIGN_KEYCHAIN:-}" ]; then
+            security delete-keychain "$MACOS_SIGN_KEYCHAIN" || true
+          fi
       - name: Package app with version
         run: |
           VERSION="$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d+ -f1)"

@@ -2,22 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-/// Thrown when the personalized home feed is requested without a usable web
-/// session so the UI can show a "sign in on web" prompt instead of a raw error.
-final class WebLoginRequired implements Exception {
-  const WebLoginRequired();
-
-  @override
-  String toString() => 'WebLoginRequired';
-}
-
-/// Reads the deviantart.com cookies owned by the embedded WebView so the
-/// native `rfy/deviations` feed can send the web session Cookie header.
+/// Reads deviantart.com cookies owned by the hidden public browser so
+/// website-only metadata adapters can reuse its anonymous session.
 ///
-/// The CSRF token and login state are read from the WebView page itself (via
-/// JavaScript) and stored in the sign-in state; they cannot be fetched with a
-/// plain HTTP client because deviantart.com's HTML pages reject non-browser
-/// clients.
+/// The CSRF token is read from the browser page because some undocumented
+/// endpoints reject a plain HTTP client even when the page is public.
 final class WebSession {
   const WebSession(this._cookieManager);
 

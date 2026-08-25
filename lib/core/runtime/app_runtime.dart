@@ -4,8 +4,7 @@ import 'dart:io';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:dio/dio.dart';
 
-import '../auth/webview_oauth_bridge.dart';
-import '../auth/migrating_auth_stores.dart';
+import '../auth/external_oauth_launcher.dart';
 import '../diagnostics/app_logger.dart';
 import '../network/dynamic_proxy_dio.dart';
 import '../network/proxy_controller.dart';
@@ -29,7 +28,7 @@ final class AppRuntime {
     required this.transfers,
     this.proxyController,
     this.dio,
-    this.webViewOAuthBridge,
+    this.oauthLauncher,
     this.webViewProxyManager,
   });
 
@@ -39,7 +38,7 @@ final class AppRuntime {
   final BackgroundTransferManager transfers;
   final ProxyController? proxyController;
   final Dio? dio;
-  final WebViewOAuthBridge? webViewOAuthBridge;
+  final ExternalOAuthLauncher? oauthLauncher;
   final WebViewProxyManager? webViewProxyManager;
 
   void Function()? _proxyListener;
@@ -93,7 +92,7 @@ final class AppRuntime {
       );
     }
 
-    final webViewOAuthBridge = WebViewOAuthBridge();
+    final oauthLauncher = ExternalOAuthLauncher();
     final webViewProxyManager = proxyController == null
         ? null
         : WebViewProxyManager(proxyController);
@@ -114,28 +113,19 @@ final class AppRuntime {
       ),
       endpoint: dio == null ? null : DioOAuthEndpoint(dio: dio),
       networkProfile: dio == null ? networkProfile : null,
-      // Use a DAViewer-named Keychain item on macOS so the system's
-      // "…wants to use confidential information stored in …" prompt shows the
-      // product name instead of the plugin default
-      // "flutter_secure_storage_service" (which reads like an arbitrary secret
-      // being exfiltrated). Only DAViewer's own OAuth tokens are stored there.
-      tokenStore: MigratingTokenStore(
-        primary: SecureTokenStore(
-          storage: clientSecureStorage(serviceName: 'DAViewer'),
-        ),
-        legacy: SecureTokenStore(),
+      // The macOS preview is signed with one stable, private self-signed
+      // identity in CI. Keep credentials in a new service owned by that
+      // identity and never query the pre-0.2.138 ad-hoc items: their changing
+      // cdhash ACL makes macOS ask for the user's login password after every
+      // update, which is both surprising and indistinguishable from phishing.
+      tokenStore: SecureTokenStore(
+        storage: clientSecureStorage(serviceName: 'DAViewer OAuth'),
       ),
-      pendingStore: MigratingPendingAuthorizationStore(
-        primary: SecurePendingAuthorizationStore(
-          storage: clientSecureStorage(serviceName: 'DAViewer'),
-        ),
-        legacy: SecurePendingAuthorizationStore(),
+      pendingStore: SecurePendingAuthorizationStore(
+        storage: clientSecureStorage(serviceName: 'DAViewer OAuth'),
       ),
-      launcher: webViewOAuthBridge,
-      callbacks: MergedCallbackUriSource(
-        initial: AppLinksCallbackUriSource(),
-        others: <CallbackUriSource>[webViewOAuthBridge.callbacks],
-      ),
+      launcher: oauthLauncher,
+      callbacks: AppLinksCallbackUriSource(),
       diagnostics: logger,
     );
     final transport = OfficialApiClient(
@@ -152,7 +142,7 @@ final class AppRuntime {
       transfers: transfers,
       proxyController: proxyController,
       dio: dio,
-      webViewOAuthBridge: webViewOAuthBridge,
+      oauthLauncher: oauthLauncher,
       webViewProxyManager: webViewProxyManager,
     );
   }
@@ -188,7 +178,6 @@ final class AppRuntime {
     }
     proxyController?.dispose();
     unawaited(webViewProxyManager?.dispose() ?? Future<void>.value());
-    unawaited(webViewOAuthBridge?.dispose() ?? Future<void>.value());
   }
 
   static NetworkProfile _environmentNetworkProfile() {

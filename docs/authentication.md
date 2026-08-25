@@ -1,126 +1,86 @@
 # Authentication and session recovery
 
-DAViewer uses two independent DeviantArt sessions because no single official
-API covers all app features:
+DAViewer has one user identity: the official DeviantArt OAuth session. The app
+never receives or stores a DeviantArt, Google, Apple, Facebook, or Mac password.
+Credentials and provider security checks stay in the user's system browser.
+DAViewer never asks for the Mac login password; a package that does so must be
+denied and reported.
 
-| Session | Stored data | Used for |
-| --- | --- | --- |
-| Web | WebView Cookie, CSRF, username snapshot | personalized Home and website-only adapters |
-| OAuth | access/refresh tokens in secure storage | favourites, watch, galleries, downloads, and official APIs |
+## One-entry sign-in contract
 
-The app never receives or stores the user's DeviantArt, Google, Apple, Facebook,
-or Mac password. Login forms belong to DeviantArt and its selected identity
-provider; a macOS password dialog belongs to Keychain.
+The native screen exposes one **Sign in or create an account** action:
+
+1. DAKit creates one OAuth/PKCE transaction.
+2. DAViewer opens its exact authorize URI in the system browser.
+3. DeviantArt's current page owns account sign-in, registration, password
+   recovery, and any providers it offers, such as Google, Apple, or Facebook.
+4. `dakit://oauth/callback` completes the same transaction and returns to the
+   app. No second web-session sign-in is requested.
+
+The app does not forge a desktop User-Agent, simulate a provider-button click,
+embed a password form, copy browser cookies, or inspect human-verification DOM.
+HTTP 403, 429, and 503 can be valid interactive security pages in the browser;
+the in-app connectivity test therefore reports only whether the App network
+route is reachable and never diagnoses the browser's provider flow.
+
+While waiting, the user can reopen the same authorize URI or cancel. Reopening
+does not create another PKCE state. Cancelling, leaving the route, or starting a
+new attempt clears the pending transaction so a stale callback cannot absorb a
+later login. Settings, proxy, diagnostics, updates, About, language, and
+appearance remain reachable before sign-in.
+
+Android intent filters and the macOS URL type own the callback scheme. The
+unpackaged Windows build registers it under the current user and forwards a
+callback activation to the existing process.
 
 ## Cold-start contract
 
-1. Restore the persisted web-session snapshot before routing away from Splash.
-2. Read the current OAuth Keychain item. If it is absent, read the pre-migration
-   item and copy the tokens forward without deleting the rollback copy.
-3. Treat only missing/revoked credentials as signed out. Network, upstream,
-   timeout, parsing, and Keychain availability failures preserve the session.
-4. Refresh the web page headlessly only when a prior web identity exists. A new
-   CSRF is committed only when the same page also exposes a username; bot-check
-   and partial pages cannot erase the session.
-5. Coalesce overlapping first-page feed refreshes so lifecycle, CSRF, and user
-   refresh events cannot race or create retry loops.
+1. With no cold-start OAuth callback, skip pending-transaction storage and read
+   only the current OAuth token.
+2. Treat only missing or revoked credentials as signed out. Temporary network,
+   upstream, timeout, parsing, and Keychain-availability failures preserve an
+   established session.
+3. Record non-sensitive session evidence only after secure storage has
+   successfully read or written tokens. This prevents a first-run network error
+   from routing an anonymous user into Home while preserving offline recovery
+   for existing users.
+4. Explicit logout clears the current OAuth store, session evidence, and legacy
+   browser cookies.
 
-Explicit logout clears both current and legacy OAuth stores, WebView cookies,
-and the web-session snapshot.
+macOS previews from 0.2.138 use one private, stable CI signing identity and a
+new Keychain service. The identity is self-signed, not Apple trusted or
+notarized, but it prevents a changing ad-hoc cdhash from requesting the Mac
+password after each update. The app intentionally does not query older items;
+an upgrade from an older preview requires one new browser sign-in while keeping
+downloads, settings, and other local data.
 
-## Login routes
+The Home recommendation tab uses the official OAuth `browse/home` endpoint, so
+successful browser authorization immediately enables recommendations,
+favourites, watch, galleries, downloads, and other official APIs.
 
-The native entry screen presents two routes with genuinely different execution
-and proxy boundaries:
+## Public website adapters
 
-- **Social account — system browser.** DAKit creates one PKCE transaction and
-  DAViewer arms the OAuth launcher for one external navigation. DeviantArt's
-  current page presents Google, Apple, Facebook, or any future provider. Google
-  rejects embedded user-agents, so this is the supported Google route rather
-  than a WebView with a forged desktop User-Agent. The `dakit://oauth/callback`
-  URI resumes the same transaction. Android intent filters and the macOS URL
-  type own the scheme; the unpackaged Windows build registers it under the
-  current user and forwards activation to the existing process.
-- **DeviantArt username/email and password — embedded WebView.** The OAuth
-  authorize URL remains inside the app, follows the app WebView proxy where the
-  platform permits it, and establishes both OAuth and the Cookie/CSRF web
-  session. The app may activate the official DeviantArt account form from the
-  join page, but it never simulates a click on a social-provider control.
+A few detail-page features require undocumented public website data, such as
+numeric-id resolution and collection contents. A hidden browser may obtain an
+anonymous CSRF/cookie snapshot on demand. This is infrastructure state, not a
+second user identity: it never blocks Home, never asks the user to log in, and
+must degrade to a retry or official-API fallback when unavailable.
 
-The login page is fetched read-only through the app network route to discover
-provider labels for display. Discovery is never used to build authorization
-URLs or receive credentials; failure falls back to a generic social-account
-label while the official browser page remains authoritative.
-
-- A system-browser transaction has an explicit waiting screen, a control to
-  reopen the exact same authorize URI, and a cancel action. Reopening does not
-  create another PKCE state; cancellation clears the pending transaction before
-  another attempt can start.
-- An OAuth transaction belongs to one visible login attempt. Leaving, retrying,
-  disposing the route, or failing to start WebView navigation within 20 seconds
-  cancels and awaits that transaction, clears its queued authorize URL, and
-  lets the next attempt create a fresh PKCE state. A cancelled transaction must
-  never keep `isLoggingIn` true or absorb the next login request.
-- Do not add a separate client-id preflight ahead of authorization: a request
-  without the generated PKCE challenge is not equivalent to the real flow and
-  only delays proxy users on a blank WebView.
-- A successful system-browser social login establishes App OAuth but cannot
-  export protected browser cookies into the embedded WebView. This is not a
-  failed login: favourites, watching, downloads, galleries, and official feeds
-  work immediately. Home initially selects the OAuth-backed Daily tab and
-  offers embedded web-session synchronization only as an optional step for the
-  website-only personalized feed.
-- `window.open()` remains attached to a second WebView for official embedded
-  navigation, with third-party cookies enabled. It is a compatibility fallback,
-  not the supported Google entry path.
-- After a password submission, a transient main-frame 403 waits for the
-  persistent `userinfo` cookie. If committed, the WebView resumes the same
-  authorize URI; otherwise the app shows a recoverable connection state.
-- The login screen always exposes Settings. Proxy, diagnostics, update checking,
-  About, language, and appearance do not require authentication.
-- An interactive human-verification response is part of the official sign-in
-  page even when its HTTP status is 403, 429, or 503. The app keeps that page
-  visible and resumes the same OAuth transaction after verification; only a
-  response without challenge UI is classified as a connection failure.
-- Verification is a first-class login state, not a one-shot `loadStop` check.
-  A 403/429/503 response enters a visible pending-verification state immediately;
-  the main WebView and social popup are then polled for dynamically inserted
-  Cloudflare, PerimeterX, reCAPTCHA, hCaptcha, and Arkose controls. Two clean
-  observations after a confirmed challenge clear the notice. A response is
-  labelled as a network failure only after the interactive document inspection
-  completes without a challenge.
-- The verification notice is persistent and accessible: it also emits a timed
-  snackbar, uses a live region for screen readers, and exposes a reload action.
-  Closing a provider popup hands monitoring back to the parent WebView rather
-  than polling a disposed page.
-- Interactive and headless WebViews use the effective app proxy where the OS
-  allows it, and Windows cookie reads share the same WebView2 environment. See
-  [Networking and proxy](networking.md) for platform limits.
+Legacy browser cookies are accepted only for public adapter compatibility. If
+they expose a username different from the OAuth account, they are cleared to
+prevent mixed-account data.
 
 ## Mature content
 
 `mature_content: true` is only a request flag. DeviantArt account browsing
-preferences remain authoritative and may hide or blur adult content. The app
-provides a direct Settings entry to DeviantArt's browsing preferences; the app
-does not bypass account restrictions.
+preferences remain authoritative and may hide or blur adult content. Settings
+links directly to DeviantArt's browsing preferences; the app does not bypass
+account restrictions.
 
 ## User-facing error policy
 
-Raw endpoint names, parser errors, HTTP payloads, and provider details belong in
-Diagnostics. UI copy states the outcome and next action. A personalized-feed
-failure stops automatic retries, keeps session data intact, and offers pull to
-refresh plus the proxy/settings path.
-
-## Cold-start session evidence
-
-Cold-start recovery must distinguish an existing account from first run. The
-secure token store records a separate non-sensitive boolean only after it has
-successfully read or written OAuth tokens. A transient network, rate-limit,
-upstream, or Keychain failure preserves `signedIn` only when this evidence
-exists. Without it, the app stays signed out and keeps Login, Proxy, Settings,
-Updates, and Diagnostics available; it must never route a first-run user into a
-personalized endpoint that cannot authorize.
-
-The flag contains no token or account identity. A successful empty token-store
-read and explicit logout clear it. Reading an expired token sets it before the
-refresh request, so an offline refresh still preserves an established user.
+Raw endpoint names, parser errors, HTTP payloads, package identifiers, and
+provider internals belong in Diagnostics. User UI states what failed and the
+next useful action. Authentication errors offer retry, reopen, cancel, proxy,
+and settings paths without claiming that a provider challenge is an App network
+failure.

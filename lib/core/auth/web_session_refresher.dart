@@ -11,11 +11,9 @@ import '../runtime/runtime_provider.dart';
 import 'session_state.dart';
 import 'web_session_controller.dart';
 
-/// Refreshes the embedded DeviantArt *web* session on a cold start without
-/// showing any UI. The `userinfo` cookie is long-lived, but the CSRF token
-/// rotates, so a persisted CSRF can go stale while the user stays signed in.
-/// This loads the home page in a hidden (headless) WebView — which shares the
-/// app's cookie jar — and re-reads a fresh CSRF + username.
+/// Loads a public page in a hidden browser so website-only metadata adapters
+/// can obtain the anonymous CSRF/cookies expected by DeviantArt. It never asks
+/// the user to log in and is not part of App authentication.
 final webSessionRefresherProvider = Provider<WebSessionRefresher>(
   (ref) => WebSessionRefresher(ref),
 );
@@ -87,7 +85,9 @@ final class WebSessionRefresher {
       if (raw is! String || raw.isEmpty) return;
       final data = jsonDecode(raw) as Map<String, dynamic>;
       final csrf = (data['csrf'] as String?) ?? '';
-      // Anonymous/partial pages may lack a CSRF token; keep the prior snapshot.
+      // A public browser session is sufficient for numeric-id and website
+      // metadata fallbacks. It is intentionally not treated as another user
+      // login; the official OAuth session remains the only app identity.
       if (csrf.isEmpty) return;
       final username = await _ref.read(webSessionProvider).webUsername();
       debugPrint(

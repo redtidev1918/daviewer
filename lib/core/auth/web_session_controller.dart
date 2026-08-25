@@ -4,13 +4,12 @@ import '../runtime/runtime_provider.dart';
 import 'auth_controller.dart';
 import 'web_session_store.dart';
 
-/// The embedded DeviantArt *web* session (Cookie + CSRF + username), kept fully
-/// separate from the OAuth account so the two sign-in mechanisms no longer
-/// bleed into one another.
+/// Browser state used only by hidden website adapters. It is not a second App
+/// identity and must never trigger another login prompt.
 final class WebSessionState {
   const WebSessionState({this.csrf = '', this.isLoggedIn, this.username = ''});
 
-  /// CSRF token read from the WebView page, used by the native rfy feed.
+  /// CSRF token read from a public page for website-only adapters.
   final String csrf;
 
   /// Whether the web session is signed in (`null` while unknown).
@@ -18,28 +17,17 @@ final class WebSessionState {
 
   /// The username signed in on the web (`''` when anonymous).
   final String username;
-
-  bool get signedIn => isLoggedIn == true;
-
-  /// A personalized feed request is valid only after both identity and CSRF
-  /// restoration have completed. Signed-out/unknown state is normal UI state,
-  /// not a request failure.
-  bool get canLoadPersonalizedFeed => signedIn && csrf.isNotEmpty;
 }
 
-bool shouldCommitBackgroundWebSession({
-  required String csrf,
-  required String username,
-}) => csrf.isNotEmpty && username.isNotEmpty;
+bool shouldStoreBackgroundBrowserSession(String csrf) => csrf.isNotEmpty;
 
 final webSessionControllerProvider =
     StateNotifierProvider<WebSessionController, WebSessionState>(
       (ref) => WebSessionController(ref),
     );
 
-/// Owns the web-session lifecycle: restoring the persisted snapshot, accepting
-/// reports from the WebView, reconciling against the OAuth account (so two
-/// accounts never coexist), and persisting the snapshot for cold starts.
+/// Owns the hidden browser snapshot and prevents a legacy signed-in browser
+/// cookie from silently representing a different OAuth account.
 final class WebSessionController extends StateNotifier<WebSessionState> {
   WebSessionController(this._ref) : super(const WebSessionState());
 
@@ -55,9 +43,8 @@ final class WebSessionController extends StateNotifier<WebSessionState> {
     );
   }
 
-  /// Records the web session read from the WebView and reconciles it with the
-  /// OAuth account: a mismatched username clears the web cookies so the app
-  /// never shows two accounts at once.
+  /// Records browser state. A legacy mismatched identity is cleared instead of
+  /// being treated as an additional login.
   Future<void> report({required String csrf, required String username}) async {
     final loggedIn = username.isNotEmpty;
     final oauthUsername = _ref.read(authControllerProvider).account?.username;
@@ -86,17 +73,15 @@ final class WebSessionController extends StateNotifier<WebSessionState> {
     await _store.write(csrf: csrf, isLoggedIn: loggedIn, username: username);
   }
 
-  /// Accepts a background refresh only when it positively identifies an
-  /// account. A bot-check, partial page or network error can expose a CSRF but
-  /// omit the `userinfo` cookie; that is not proof the user signed out and must
-  /// never overwrite a valid persisted session.
+  /// Stores a fresh public browser CSRF even without a `userinfo` cookie.
+  /// This supports public website metadata fallbacks without asking the user
+  /// for a second login after OAuth. An empty CSRF still never overwrites a
+  /// valid snapshot.
   Future<void> reportRefresh({
     required String csrf,
     required String username,
   }) async {
-    if (!shouldCommitBackgroundWebSession(csrf: csrf, username: username)) {
-      return;
-    }
+    if (!shouldStoreBackgroundBrowserSession(csrf)) return;
     await report(csrf: csrf, username: username);
   }
 

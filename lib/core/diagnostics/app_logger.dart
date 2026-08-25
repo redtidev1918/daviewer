@@ -48,12 +48,16 @@ final class AppLogger implements DiagnosticSink {
     final sink = file.openWrite(mode: FileMode.append);
     final logger = AppLogger._(sink, logsDir);
     _instance = logger;
-    logger.info('app', 'logger initialized at ${file.path}');
+    logger.info('app', 'logger initialized: $name');
     return logger;
   }
 
   /// Directory containing rotated log files (exposed for UI/debugging).
   String get logsDirectory => _directory.path;
+
+  /// Stable user-facing name. The physical sandbox path contains the package
+  /// identifier on Android/macOS and must not be presented as the product name.
+  String get logsDisplayName => 'DAViewer/logs';
 
   /// Number of error-level events recorded in this session.
   int get errorCount => _errorCount;

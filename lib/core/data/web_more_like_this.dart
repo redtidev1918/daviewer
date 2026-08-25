@@ -124,7 +124,7 @@ final class WebMoreLikeThisFetcher {
             rawUsers[authorReference] ?? rawUsers[authorReference?.toString()];
         if (author is Map) deviation['author'] = author;
       }
-      final artwork = RfyFeedFetcher.mapDeviation(deviation);
+      final artwork = WebDeviationMapper.mapDeviation(deviation);
       if (artwork.id.isNotEmpty && artwork.media.isNotEmpty) {
         artworks.add(artwork);
       }
@@ -173,7 +173,7 @@ final class WebMoreLikeThisFetcher {
         if (id.isEmpty || id == 'null' || id == deviationId) continue;
         referencedArtwork = true;
         if (!seen.add(id)) continue;
-        final artwork = RfyFeedFetcher.mapDeviation(
+        final artwork = WebDeviationMapper.mapDeviation(
           Map<Object?, Object?>.from(raw),
         );
         if (artwork.id.isNotEmpty && artwork.media.isNotEmpty) {

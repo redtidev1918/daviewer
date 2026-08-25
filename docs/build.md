@@ -32,11 +32,12 @@ sub-packages are compatible with the new AGP/Swift toolchain.
   `KEYSTORE_B64` / `KEYSTORE_PROPERTIES` secrets); a release build without a
   local `android/key.properties` fails intentionally, so a debug-signed APK can
   never be installed over a previous upload-signed release.
-- The macOS CI job reapplies the checked-in release entitlements, verifies the
-  ad-hoc signature and both CPU architectures, and keeps the built app running
-  for an eight-second launch smoke test. Artifacts are named
-  `macos-unsigned-preview`; that marker can only be removed after Developer ID
-  Application signing, Hardened Runtime, and Apple notarization are configured.
+- macOS release tags require the private preview certificate secrets. CI signs
+  with that stable self-signed identity, reapplies the checked-in entitlements,
+  verifies both CPU architectures, and keeps the app running for an eight-second
+  launch smoke test. Non-release builds may fall back to ad-hoc signing.
+  Artifacts remain `macos-unsigned-preview` because the preview identity is not
+  an Apple Developer ID and the package is not notarized.
 
 ### One-click release
 
