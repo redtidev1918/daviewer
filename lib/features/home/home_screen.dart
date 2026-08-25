@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/auth/web_session_controller.dart';
 import '../../core/data/da_uri.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
@@ -14,7 +15,7 @@ import 'home_providers.dart';
 
 /// Native home: two tabs, all rendered with the native feed UI.
 ///
-/// - 发现: the official OAuth `browse/home` generic discovery feed.
+/// - 推荐: the website-personalized `rfy/deviations` feed (web Cookie + CSRF).
 /// - 每日精选: the official daily deviations (OAuth).
 ///
 /// Deviations from watched artists live in the first-class "关注动态" tab
@@ -88,7 +89,7 @@ final class HomeScreen extends ConsumerWidget {
           ),
         ),
         body: const TabBarView(
-          children: <Widget>[_RecommendedFeed(), DailyFeed()],
+          children: <Widget>[_PersonalizedFeed(), DailyFeed()],
         ),
       ),
     );
@@ -129,14 +130,14 @@ Future<void> _showOpenLinkDialog(BuildContext context, AppStrings s) async {
   }
 }
 
-final class _RecommendedFeed extends ConsumerStatefulWidget {
-  const _RecommendedFeed();
+final class _PersonalizedFeed extends ConsumerStatefulWidget {
+  const _PersonalizedFeed();
 
   @override
-  ConsumerState<_RecommendedFeed> createState() => _RecommendedFeedState();
+  ConsumerState<_PersonalizedFeed> createState() => _PersonalizedFeedState();
 }
 
-final class _RecommendedFeedState extends ConsumerState<_RecommendedFeed>
+final class _PersonalizedFeedState extends ConsumerState<_PersonalizedFeed>
     with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
@@ -155,11 +156,11 @@ final class _RecommendedFeedState extends ConsumerState<_RecommendedFeed>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Refresh discovery when the app comes back to the foreground so it does
-    // not sit on a stale list indefinitely — silently, so the
-    // current list stays visible while the new one loads.
+    // Refresh recommendations when the app comes back to the foreground so it
+    // does not sit on a stale list indefinitely — silently, so the current
+    // list stays visible while the new one loads.
     if (state == AppLifecycleState.resumed && mounted) {
-      ref.read(homeFeedProvider.notifier).refreshSilently();
+      ref.read(personalizedFeedProvider.notifier).refreshSilently();
     }
   }
 
@@ -167,17 +168,24 @@ final class _RecommendedFeedState extends ConsumerState<_RecommendedFeed>
   Widget build(BuildContext context) {
     super.build(context); // required by AutomaticKeepAliveClientMixin
     final s = strings(ref.watch(appLanguageProvider));
-    if (!ref.watch(authControllerProvider).oauthSignedIn) {
-      return LoginPrompt(s: s, onLogin: () => context.push('/web-login'));
+    final webSignedIn = ref.watch(
+      webSessionControllerProvider.select((web) => web.isLoggedIn == true),
+    );
+    if (!webSignedIn) {
+      return LoginPrompt(
+        s: s,
+        onLogin: () => context.push('/web-login'),
+        message: s.recommendedSignInHint,
+      );
     }
-    final feed = ref.watch(homeFeedProvider);
+    final feed = ref.watch(personalizedFeedProvider);
 
     return ArtworkFeedGrid(
       feed: feed,
-      emptyMessage: s.noArtworks,
-      errorMessage: s.homeFeedLoadFailure,
-      onRefresh: () => ref.read(homeFeedProvider.notifier).refresh(),
-      onLoadMore: () => ref.read(homeFeedProvider.notifier).loadMore(),
+      emptyMessage: s.noRecommendations,
+      errorMessage: s.recommendedFeedLoadFailure,
+      onRefresh: () => ref.read(personalizedFeedProvider.notifier).refresh(),
+      onLoadMore: () => ref.read(personalizedFeedProvider.notifier).loadMore(),
     );
   }
 }

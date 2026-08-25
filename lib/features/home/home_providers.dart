@@ -2,24 +2,36 @@ import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/auth/session_state.dart';
+import '../../core/auth/web_session_controller.dart';
+import '../../core/auth/web_session_refresher.dart';
+import '../../core/data/rfy_feed.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../artwork/artwork_store.dart';
 
-/// The official OAuth generic discovery feed. DeviantArt does not expose its
-/// website-personalized `rfy/deviations` stream through OAuth, so this must not
-/// be labelled as equivalent to the website's recommendations.
-final homeFeedProvider =
+/// The website-personalized `rfy/deviations` recommendation feed, fetched with
+/// the embedded WebView's web session (Cookie + CSRF). Requires a signed-in web
+/// session and rebuilds when the web session identity changes.
+final personalizedFeedProvider =
     StateNotifierProvider<ArtworkFeedController, ArtworkFeedState>((ref) {
       final runtime = ref.watch(runtimeProvider);
+      final webSession = ref.watch(webSessionProvider);
       ref.watch(
-        authControllerProvider.select(
-          (auth) => (auth.status, auth.account?.id),
-        ),
+        webSessionControllerProvider.select((web) => (web.csrf, web.username)),
       );
       final controller = ArtworkFeedController((request) async {
-        final page = await OfficialArtworkRepository(runtime.transport!)
-            .browse(request);
+        var csrf = ref.read(webSessionControllerProvider).csrf;
+        if (csrf.isEmpty) {
+          await ref.read(webSessionRefresherProvider).refresh();
+          csrf = ref.read(webSessionControllerProvider).csrf;
+        }
+        final cookieHeader = await webSession.cookieHeader();
+        final page = await RfyFeedFetcher(runtime.dio!).fetch(
+          cookieHeader: cookieHeader,
+          csrfToken: csrf,
+          cursor: request.cursor,
+        );
         ref.read(artworkStoreProvider.notifier).putAll(page.items);
         return page;
       });
