@@ -3,6 +3,18 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.145
+
+- 首页新增轻量更新提醒：有新版本时显示可关闭的提示条，被忽略的版本不再打扰。
+- 「日志与诊断」页新增「报告问题」：在你的浏览器里打开预填好的 GitHub Issue，可选附带脱敏日志；App 不会自动上传任何数据。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- Home now shows a slim, dismissible banner when a newer version is available; ignored versions won't nag again.
+- Diagnostics gains “Report a problem”: opens a pre-filled GitHub issue in your browser with an optional redacted log; the app never uploads anything automatically.
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.144
 
 - 首页「推荐」恢复为网页版个性化推荐流，与官网推荐一致。
