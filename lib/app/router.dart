@@ -162,6 +162,7 @@ Page<void> artworkDetailPage(BuildContext context, GoRouterState state) {
     child: ArtworkDetailScreen(
       key: artworkPageKey(artworkId),
       artworkId: artworkId,
+      username: state.uri.queryParameters['username'],
       browseSession: routeContext?.session,
     ),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {

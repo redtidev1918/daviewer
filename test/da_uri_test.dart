@@ -2,11 +2,11 @@ import 'package:daviewer/core/data/da_uri.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('parses an artwork URL to an artwork route', () {
+  test('parses an artwork URL to an artwork route with the author', () {
     final link = parseDeviantArtUrl(
       'https://www.deviantart.com/user/art/title-123456789',
     );
-    expect(link?.route, '/artwork/123456789');
+    expect(link?.route, '/artwork/123456789?username=user');
   });
 
   test('parses a fav.me shortcode', () {

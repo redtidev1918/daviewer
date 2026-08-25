@@ -17,6 +17,11 @@ import 'more_like_this_failure.dart';
 /// UUIDs, e.g. `97B067C2-…`).
 bool isNumericDeviationId(String id) => RegExp(r'^\d+$').hasMatch(id);
 
+/// The artwork's author when the detail was opened from a pasted link. Feed
+/// items already carry the author, so this is only set by [ArtworkDetailScreen]
+/// from the link's URL segment.
+final linkUsernameProvider = StateProvider<String?>((ref) => null);
+
 /// Resolves a numeric website id to the OAuth UUID plus the full description,
 /// via the private web `dadeviation/init` endpoint and a public browser token.
 /// Returns `null` for ids that are already OAuth UUIDs.
@@ -36,7 +41,8 @@ final deviationInitProvider = FutureProvider.autoDispose
       final webSession = ref.watch(webSessionProvider);
       final cookieHeader = await webSession.cookieHeader();
       final cached = ref.read(artworkStoreProvider)[artworkId];
-      final username = cached?.author.username ?? '';
+      final username =
+          cached?.author.username ?? ref.read(linkUsernameProvider) ?? '';
       final runtime = ref.watch(runtimeProvider);
       return DeviationInitFetcher(runtime.dio!).fetch(
         deviationId: artworkId,
@@ -178,7 +184,11 @@ final artworkDetailProvider = FutureProvider.autoDispose
       final cached = ref.read(artworkStoreProvider)[artworkId];
       if (cached != null) return cached;
       final runtime = ref.watch(runtimeProvider);
-      final artwork = await dataAccessFor(runtime).artworkById(artworkId);
+      // Numeric website ids (pasted links) must be resolved to the OAuth UUID
+      // first — the official deviation/{id} endpoint rejects numeric ids with
+      // "api endpoint not found". Feed items skip this because they are cached.
+      final uuid = await ref.watch(artworkUuidProvider(artworkId).future);
+      final artwork = await dataAccessFor(runtime).artworkById(uuid);
       ref.read(artworkStoreProvider.notifier).putAll(<Artwork>[artwork]);
       return artwork;
     });
