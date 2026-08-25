@@ -10,7 +10,11 @@ final currentFavouritesProvider =
       ref,
     ) {
       // Rebuild the favourites feed whenever the signed-in account changes.
-      ref.watch(authControllerProvider.select((auth) => auth.account?.id));
+      ref.watch(
+        authControllerProvider.select(
+          (auth) => (auth.status, auth.account?.id),
+        ),
+      );
       final controller = ArtworkFeedController((request) {
         final account = ref.read(authControllerProvider).account;
         if (account == null) {

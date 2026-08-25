@@ -9,7 +9,9 @@ import '../artwork/artwork_store.dart';
 /// commented on their work). Requires an OAuth session.
 final notificationsProvider = FutureProvider.autoDispose<List<ProviderMessage>>(
   (ref) async {
-    ref.watch(authControllerProvider.select((auth) => auth.account?.id));
+    ref.watch(
+      authControllerProvider.select((auth) => (auth.status, auth.account?.id)),
+    );
     final runtime = ref.watch(runtimeProvider);
     final page = await OfficialMessageRepository(runtime.transport!).feed();
 

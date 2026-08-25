@@ -11,6 +11,10 @@ void main() {
     expect(authRedirect(AuthStatus.signedIn, '/splash'), '/');
   });
 
+  test('successful login replaces the root login route with Home', () {
+    expect(authRedirect(AuthStatus.signedIn, '/web-login'), '/');
+  });
+
   test(
     'settings, updates and diagnostics remain available while signed out',
     () {

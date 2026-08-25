@@ -14,8 +14,8 @@ import 'home_providers.dart';
 
 /// Native home: two tabs, all rendered with the native feed UI.
 ///
-/// - 推荐: the official OAuth `browse/home` discovery feed.
-/// - 每日推荐: the official daily deviations (OAuth).
+/// - 发现: the official OAuth `browse/home` generic discovery feed.
+/// - 每日精选: the official daily deviations (OAuth).
 ///
 /// Deviations from watched artists live in the first-class "关注动态" tab
 /// (see [WatchedFeedScreen]).
