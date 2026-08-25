@@ -55,6 +55,12 @@ bool shouldRestoreSignedInAfterFailure({
   required bool hasSessionEvidence,
 }) => hasSessionEvidence && shouldPreserveSessionAfterRestoreFailure(error);
 
+/// A local sign-out tombstone is authoritative even when the operating system
+/// refused to delete an old secure-storage item. Without this gate, a stale
+/// Keychain token can silently sign the user back in on the next launch.
+bool shouldAttemptPersistedSessionRestore(bool hasSessionEvidence) =>
+    hasSessionEvidence;
+
 /// Owns the app's single user sign-in lifecycle. Hidden public browser state is
 /// managed separately by [WebSessionController] and is never authentication.
 final class AuthController extends StateNotifier<AuthState> {
@@ -100,9 +106,19 @@ final class AuthController extends StateNotifier<AuthState> {
           return;
         }
 
-        // 2. Restore a session persisted by a previous run. Bound the network
-        //    round-trips so a slow/hung proxy on cold start can never pin the
-        //    splash screen in a "loading forever" state.
+        // 2. Restore a previous session only when this installation has
+        //    positive session evidence. A false value is also the durable
+        //    local-logout tombstone if secure-storage cleanup was denied.
+        final hasSessionEvidence = await AppPreferences.loadOAuthSessionKnown();
+        if (!shouldAttemptPersistedSessionRestore(hasSessionEvidence)) {
+          _log.info('auth', 'initialize: local state is signed out');
+          state = const AuthState(status: AuthStatus.signedOut);
+          _initializing = false;
+          return;
+        }
+
+        // Bound network round-trips so a slow/hung proxy on cold start can
+        // never pin the splash screen in a "loading forever" state.
         final tokens = await runtime.oauth!
             .validTokens(forceRefresh: false)
             .timeout(const Duration(seconds: 15));
@@ -275,6 +291,12 @@ final class AuthController extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     final runtime = _runtime;
+    // Persist the user's intent and leave authenticated UI before best-effort
+    // network revocation or secure-storage cleanup. Neither failure may sign
+    // the user back in on the next launch.
+    state = const AuthState(status: AuthStatus.signedOut);
+    await AppPreferences.saveOAuthSessionKnown(false);
+    runtime.webViewOAuthBridge?.finishExternalAuthorization();
     if (runtime.isConfigured && runtime.oauth != null) {
       try {
         _log.info('auth', 'logout: revoking oauth session');
@@ -296,15 +318,6 @@ final class AuthController extends StateNotifier<AuthState> {
       _log.warning('auth', 'logout: web cookie clear failed', error, stack);
     }
     await _ref.read(webSessionControllerProvider.notifier).clear();
-    await AppPreferences.saveOAuthSessionKnown(false);
-    state = const AuthState(status: AuthStatus.signedOut);
-  }
-
-  Future<void> switchAccount() async {
-    if (_loggingIn) return;
-    _log.info('auth', 'switch account: logout then re-authorize');
-    await logout();
-    await login();
   }
 
   Future<void> _loadAccount(AppRuntime runtime) async {
