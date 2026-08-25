@@ -176,8 +176,17 @@ jobs:
             -k /Library/Keychains/System.keychain \
             "$SIGN_DIR/root.pem"
           security find-identity -v -p codesigning "$SIGN_KEYCHAIN"
-          echo "MACOS_SIGN_IDENTITY=DAViewer Preview Code Signing" >> "$GITHUB_ENV"
+          SIGN_FINGERPRINT="$(
+            security find-identity -v -p codesigning "$SIGN_KEYCHAIN" |
+              awk '/"DAViewer Preview Code Signing"/ { print $2; exit }'
+          )"
+          if [ -z "$SIGN_FINGERPRINT" ]; then
+            echo "::error::Imported preview signing identity has no usable fingerprint."
+            exit 1
+          fi
+          echo "MACOS_SIGN_IDENTITY=$SIGN_FINGERPRINT" >> "$GITHUB_ENV"
           echo "MACOS_SIGN_KEYCHAIN=$SIGN_KEYCHAIN" >> "$GITHUB_ENV"
+          echo "MACOS_SIGN_KEYCHAIN_PASSWORD=$PREVIEW_CERTIFICATE_PASSWORD" >> "$GITHUB_ENV"
       - name: Build release app
         run: flutter build macos --release
       - name: Validate and launch macOS app
@@ -191,6 +200,8 @@ jobs:
           # the same app across updates without requesting the Mac password.
           SIGN_ARGS=(--force --sign "$MACOS_SIGN_IDENTITY")
           if [ -n "${MACOS_SIGN_KEYCHAIN:-}" ]; then
+            security unlock-keychain \
+              -p "$MACOS_SIGN_KEYCHAIN_PASSWORD" "$MACOS_SIGN_KEYCHAIN"
             SIGN_ARGS+=(--keychain "$MACOS_SIGN_KEYCHAIN")
           fi
           codesign "${SIGN_ARGS[@]}" \
