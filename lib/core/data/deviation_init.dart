@@ -63,6 +63,9 @@ final class DeviationInitFetcher {
         'username': username,
         'type': 'art',
         'include_session': false,
+        // Without the mature flag the init endpoint 404s ("api endpoint not
+        // found") for R18 deviations, so numeric-id links to adult works fail.
+        'mature_content': true,
         'csrf_token': csrfToken,
       },
       options: webSessionOptions(cookieHeader),
@@ -197,6 +200,7 @@ final class JournalContentFetcher {
         'username': username,
         'type': 'journal',
         'include_session': false,
+        'mature_content': true,
         'csrf_token': csrfToken,
       },
       options: webSessionOptions(cookieHeader),

@@ -3,6 +3,16 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.156
+
+- 修复通过链接打开 R18 作品时报错「api endpoint not found」的问题。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- Fixed “api endpoint not found” when opening an R18 artwork from a pasted link.
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.155
 
 - 关注动态顶部会显示更多关注用户，不再只有零星几个。
