@@ -11,9 +11,15 @@ void main() {
     expect(authRedirect(AuthStatus.signedIn, '/splash'), '/');
   });
 
-  test('successful login replaces the root login route with Home', () {
-    expect(authRedirect(AuthStatus.signedIn, '/web-login'), '/');
-  });
+  test(
+    'a signed-in user may open the login WebView to restore the web session',
+    () {
+      // The WebLoginScreen establishes the web Cookie/CSRF session as well as
+      // OAuth, and closes itself after both are reported. The router must not
+      // bounce it away first, or the personalized feed never gets its session.
+      expect(authRedirect(AuthStatus.signedIn, '/web-login'), isNull);
+    },
+  );
 
   test(
     'settings, updates and diagnostics remain available while signed out',
