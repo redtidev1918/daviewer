@@ -39,8 +39,8 @@ final class AppStrings {
   static const AppStrings en = AppStrings._(AppLanguage.en);
 
   String get appTitle => _lang == AppLanguage.zh ? 'DA 查看器' : 'DA Viewer';
-  String get home => _lang == AppLanguage.zh ? '推荐' : 'For you';
-  String get daily => _lang == AppLanguage.zh ? '每日推荐' : 'Daily';
+  String get home => _lang == AppLanguage.zh ? '发现' : 'Discover';
+  String get daily => _lang == AppLanguage.zh ? '每日精选' : 'Daily';
   String get following => _lang == AppLanguage.zh ? '关注动态' : 'Watched';
   String get search => _lang == AppLanguage.zh ? '搜索' : 'Search';
   String get gallery => _lang == AppLanguage.zh ? '画廊' : 'Gallery';
@@ -52,6 +52,9 @@ final class AppStrings {
   String get settings => _lang == AppLanguage.zh ? '设置' : 'Settings';
   String get logout => _lang == AppLanguage.zh ? '退出登录' : 'Logout';
   String get signedOut => _lang == AppLanguage.zh ? '已登出' : 'Signed out';
+  String get localLogoutHint => _lang == AppLanguage.zh
+      ? '退出 DAViewer；不会退出系统浏览器中的 DeviantArt 网站账号。'
+      : 'Sign out of DAViewer. Your DeviantArt website session in the system browser is unchanged.';
   String get login => _lang == AppLanguage.zh ? '登录' : 'Login';
   String get signInWelcomeTitle =>
       _lang == AppLanguage.zh ? '登录 DeviantArt' : 'Sign in to DeviantArt';
@@ -61,8 +64,8 @@ final class AppStrings {
   String get signInOrRegister =>
       _lang == AppLanguage.zh ? '登录或注册' : 'Sign in or create an account';
   String get singleSignInDescription => _lang == AppLanguage.zh
-      ? '登录在系统浏览器中完成，DAViewer 不读取或保存你的密码。'
-      : 'Sign-in is completed in your system browser. DAViewer never reads or stores your password.';
+      ? '系统浏览器只负责账号验证并回传授权；如果网站已登录，可能会立即返回 DAViewer。退出 App 不会退出浏览器中的网站账号。'
+      : 'The system browser verifies the account and returns authorization. If the website is already signed in, it may return immediately. App sign-out does not sign out the website.';
   String get externalBrowserWaiting => _lang == AppLanguage.zh
       ? '官方授权页已交给系统浏览器。请在那里完成登录与授权，成功后会自动返回 DAViewer；不要再次发起登录。'
       : 'The official authorization page is open in your system browser. Finish sign-in there and DAViewer will resume automatically; do not start another login.';
@@ -91,9 +94,11 @@ final class AppStrings {
   String get loginHelpBody => _lang == AppLanguage.zh
       ? '点击“登录或注册”后会打开 DeviantArt 官方页面。你可以在那里使用 DeviantArt 账号，或选择 Google、Apple、Facebook。完成后会自动返回 App。\n\n'
             'DAViewer 不会看到或保存密码。若登录页要求安全验证，请直接按浏览器中的页面提示完成；App 不会再自行判断或弹出另一套人机验证提示。\n\n'
+            '系统浏览器与 DAViewer 是两个安全边界：浏览器只回传一次性授权结果，不会把网站 Cookie 交给 App；退出 DAViewer 也不会退出浏览器中的 DeviantArt 网站账号。\n\n'
             '成人内容是否显示由 DeviantArt 账号设置决定。'
       : '“Sign in or create an account” opens the official DeviantArt page. Choose a DeviantArt account, Google, Apple or Facebook there; the browser returns to the app when finished.\n\n'
             'DAViewer never sees or stores your password. If the provider requests a security check, complete the instructions shown in the browser; the app does not display a separate verification warning.\n\n'
+            'The system browser and DAViewer are separate security boundaries: the browser returns a one-time authorization result, not website cookies. Signing out of DAViewer does not sign out the DeviantArt website.\n\n'
             'Mature-content visibility is controlled by your DeviantArt account settings.';
   String get forgotPassword =>
       _lang == AppLanguage.zh ? '找回密码' : 'Forgot password';
@@ -105,11 +110,29 @@ final class AppStrings {
   String get loginSuccess => _lang == AppLanguage.zh ? '登录成功' : 'Signed in';
   String loginFailed(String detail) =>
       _lang == AppLanguage.zh ? '登录失败：$detail' : 'Sign-in failed: $detail';
+  String get loginRecoveryStorageUnavailable => _lang == AppLanguage.zh
+      ? '系统暂时无法保存授权恢复信息。请保持 DAViewer 开启并重新尝试登录。'
+      : 'Authorization recovery storage is temporarily unavailable. Keep DAViewer open and try signing in again.';
+  String get loginSessionStorageUnavailable => _lang == AppLanguage.zh
+      ? '官方授权已返回，但系统无法安全保存登录。请重新启动 DAViewer 后再试，这不是账号或网络错误。'
+      : 'Authorization returned, but the system could not securely save the session. Restart DAViewer and try again; this is not an account or network error.';
+  String get loginCallbackTimeout => _lang == AppLanguage.zh
+      ? '没有收到浏览器回传。请确认浏览器已完成授权，然后重新尝试。'
+      : 'No browser callback arrived. Confirm authorization finished in the browser, then try again.';
+  String get loginBrowserOpenFailed => _lang == AppLanguage.zh
+      ? '系统没有打开官方授权页。请检查默认浏览器设置后重试。'
+      : 'The system could not open the official authorization page. Check the default browser and try again.';
+  String get loginNetworkFailure => _lang == AppLanguage.zh
+      ? '授权服务暂时无法连接。请分别检查 App 代理和系统浏览器代理后重试。'
+      : 'The authorization service is temporarily unreachable. Check both the app proxy and the system-browser proxy, then try again.';
+  String get loginUnexpectedFailure => _lang == AppLanguage.zh
+      ? '登录流程没有完成，请取消后重新尝试。'
+      : 'Sign-in did not finish. Cancel it and try again.';
   String get noArtworks =>
       _lang == AppLanguage.zh ? '暂无作品' : 'No artworks found.';
   String get homeFeedLoadFailure => _lang == AppLanguage.zh
-      ? '首页推荐暂时无法加载，应用已停止自动重试。请下拉刷新，或在设置中检查网络代理。'
-      : 'Home recommendations could not load. Automatic retries have stopped; pull to refresh or check the proxy in Settings.';
+      ? '发现内容暂时无法加载。请下拉刷新，或在设置中检查网络代理。'
+      : 'Discovery could not load. Pull to refresh or check the proxy in Settings.';
   String get noImage => _lang == AppLanguage.zh ? '暂无图片' : 'No image';
   String get imageLoadFailed =>
       _lang == AppLanguage.zh ? '图片加载失败' : 'Failed to load';
@@ -197,6 +220,9 @@ final class AppStrings {
   String get openInBrowser =>
       _lang == AppLanguage.zh ? '在浏览器打开' : 'Open in browser';
   String get share => _lang == AppLanguage.zh ? '分享' : 'Share';
+  String get shareFailedCopied => _lang == AppLanguage.zh
+      ? '无法打开系统分享，链接已复制'
+      : 'The share sheet could not open. The link was copied.';
   String get favourite => _lang == AppLanguage.zh ? '收藏' : 'Favourite';
   String get unfavourite => _lang == AppLanguage.zh ? '取消收藏' : 'Unfavourite';
   String get favouritedToast => _lang == AppLanguage.zh ? '已收藏' : 'Favourited';

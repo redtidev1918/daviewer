@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme/app_theme.dart';
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/sharing/app_share.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/skeleton.dart';
 import 'artist_providers.dart';
@@ -104,27 +105,49 @@ final class FoldersView extends ConsumerWidget {
                             ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      padding: const EdgeInsets.fromLTRB(8, 4, 4, 4),
+                      child: Row(
                         children: <Widget>[
-                          Text(
-                            folder.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleSmall,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            folder.size == null || folder.size == 0
-                                ? s.emptyFolderBadge
-                                : s.folderArtworkCount(folder.size!),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  folder.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleSmall,
                                 ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  folder.size == null || folder.size == 0
+                                      ? s.emptyFolderBadge
+                                      : s.folderArtworkCount(folder.size!),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: s.share,
+                            visualDensity: VisualDensity.compact,
+                            iconSize: 18,
+                            onPressed: () => shareDeviantArtLink(
+                              context,
+                              uri: folderShareUri(
+                                username: username,
+                                folderId: folder.id,
+                                isCollection: kind == FolderKind.collection,
+                              ),
+                              title: folder.name,
+                              strings: s,
+                            ),
+                            icon: const Icon(Icons.share_outlined),
                           ),
                         ],
                       ),
