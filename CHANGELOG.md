@@ -3,6 +3,14 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.156（R18 链接打开修复）
+
+### Fixed
+
+- 通过链接打开 R18 作品时提示「api endpoint not found」：数字 ID 解析接口
+  `dadeviation/init` 未传 `mature_content`，R18 作品被返回 404。现在作品与日志
+  的 init 请求都带上 `mature_content: true`。
+
 ## 0.2.155（关注动态更多用户）
 
 ### Changed
