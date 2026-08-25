@@ -3,6 +3,18 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.151
+
+- 登录成功时显示「登录成功」提示。
+- 登录失败时在登录页显示具体原因，不再静默失败。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- Shows a “Signed in” toast after a fresh sign-in.
+- Sign-in failures now display the reason on the login page instead of failing silently.
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.150
 
 - 修复重启后又要重新登录的问题：登录状态现在会在下次打开时恢复。

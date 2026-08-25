@@ -13,6 +13,7 @@ import '../../core/auth/session_state.dart';
 import '../../core/auth/web_session_controller.dart';
 import '../../core/auth/webview_oauth_bridge.dart';
 import '../../core/data/web_user_agent.dart';
+import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
 
@@ -144,6 +145,7 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
   Widget build(BuildContext context) {
     final s = strings(ref.watch(appLanguageProvider));
     final theme = Theme.of(context);
+    final auth = ref.watch(authControllerProvider);
 
     // When OAuth finishes, close only after the deviantart home page reports
     // the real web session (onLoadStop + _reportWebSession). Closing on a fixed
@@ -196,8 +198,11 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       ),
       body: Column(
         children: <Widget>[
-          if (!ref.watch(authControllerProvider).oauthSignedIn)
-            _VerificationHint(s: s),
+          if (auth.error != null)
+            _LoginErrorBanner(
+              message: friendlyLoginErrorMessage(auth.error!, s),
+            ),
+          if (!auth.oauthSignedIn) _VerificationHint(s: s),
           Expanded(
             child: ColoredBox(
               color: theme.scaffoldBackgroundColor,
@@ -304,6 +309,40 @@ final class _VerificationHint extends StatelessWidget {
                 s.verificationHint,
                 style: Theme.of(context).textTheme.bodySmall
                     ?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A visible error banner shown when the OAuth part of sign-in fails, so a
+/// page that logged the user into the web session but failed the token
+/// exchange is not silently reported as success.
+final class _LoginErrorBanner extends StatelessWidget {
+  const _LoginErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: scheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Icon(Icons.error_outline, size: 18, color: scheme.onErrorContainer),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: scheme.onErrorContainer),
               ),
             ),
           ],

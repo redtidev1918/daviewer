@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/auth/auth_controller.dart';
+import '../core/auth/auth_state.dart';
 import '../core/l10n/app_strings.dart';
 
 final class AppShell extends ConsumerWidget {
@@ -12,6 +14,15 @@ final class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = strings(ref.watch(appLanguageProvider));
+    // A fresh sign-in (signedOut -> signedIn) shows one success toast; the
+    // cold-start session restore (unknown -> signedIn) stays silent.
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      if (previous?.status == AuthStatus.signedOut &&
+          next.status == AuthStatus.signedIn) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(s.loginSuccess)));
+      }
+    });
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: NavigationBar(
