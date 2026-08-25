@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/sharing/app_share.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/artwork_card.dart';
@@ -54,6 +55,22 @@ class _CollectionContentsScreenState
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        actions: <Widget>[
+          IconButton(
+            tooltip: s.share,
+            onPressed: () => shareDeviantArtLink(
+              context,
+              uri: folderShareUri(
+                username: widget.username,
+                folderId: widget.folderId.toString(),
+                isCollection: true,
+              ),
+              title: widget.title,
+              strings: s,
+            ),
+            icon: const Icon(Icons.share_outlined),
+          ),
+        ],
         bottom: async.isLoading
             ? const PreferredSize(
                 preferredSize: Size.fromHeight(2),

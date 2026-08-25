@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
+import '../../core/sharing/app_share.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
 import '../../shared/widgets/compact_tag_strip.dart';
 
@@ -67,7 +68,21 @@ final class _TagScreenState extends ConsumerState<TagScreen> {
     final related = ref.watch(relatedTagsProvider(widget.tag));
     final s = strings(ref.watch(appLanguageProvider));
     return Scaffold(
-      appBar: AppBar(title: Text('#${widget.tag}')),
+      appBar: AppBar(
+        title: Text('#${widget.tag}'),
+        actions: <Widget>[
+          IconButton(
+            tooltip: s.share,
+            onPressed: () => shareDeviantArtLink(
+              context,
+              uri: tagShareUri(widget.tag),
+              title: '#${widget.tag}',
+              strings: s,
+            ),
+            icon: const Icon(Icons.share_outlined),
+          ),
+        ],
+      ),
       body: Column(
         children: <Widget>[
           AnimatedSize(

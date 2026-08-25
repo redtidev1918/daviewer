@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/sharing/app_share.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
 import 'artist_providers.dart';
 
@@ -31,7 +32,25 @@ final class FolderScreen extends ConsumerWidget {
     );
     final feed = ref.watch(folderContentsProvider(request));
     return Scaffold(
-      appBar: AppBar(title: Text(folderName)),
+      appBar: AppBar(
+        title: Text(folderName),
+        actions: <Widget>[
+          IconButton(
+            tooltip: s.share,
+            onPressed: () => shareDeviantArtLink(
+              context,
+              uri: folderShareUri(
+                username: username,
+                folderId: folderId,
+                isCollection: kind == FolderKind.collection,
+              ),
+              title: folderName,
+              strings: s,
+            ),
+            icon: const Icon(Icons.share_outlined),
+          ),
+        ],
+      ),
       body: ArtworkFeedGrid(
         feed: feed,
         emptyMessage: s.emptyFolder,
