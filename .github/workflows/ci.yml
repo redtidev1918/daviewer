@@ -322,7 +322,11 @@ jobs:
           awk -v version="$VERSION" '
             $0 ~ "^## " version "([ （(]|$)" { found=1; next }
             found && /^## / { exit }
-            found { print }
+            found {
+              if (!started && $0 == "") next
+              started=1
+              print
+            }
           ' RELEASE_NOTES.md > release_notes.md
 
           if [ ! -s release_notes.md ]; then
