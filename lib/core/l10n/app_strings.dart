@@ -76,6 +76,8 @@ final class AppStrings {
       ? 'DeviantArt 账号设置'
       : 'DeviantArt account settings';
   String get loginSuccess => _lang == AppLanguage.zh ? '登录成功' : 'Signed in';
+  String get syncingAfterLogin =>
+      _lang == AppLanguage.zh ? '正在同步登录状态…' : 'Syncing your session…';
   String loginFailed(String detail) =>
       _lang == AppLanguage.zh ? '登录失败：$detail' : 'Sign-in failed: $detail';
   String get loginRecoveryStorageUnavailable => _lang == AppLanguage.zh
