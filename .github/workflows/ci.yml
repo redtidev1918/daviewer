@@ -133,6 +133,11 @@ jobs:
             sleep 15
           done
           exit 1
+      - name: Build release app
+        run: flutter build macos --release
+      # Xcode changes the runner's temporary keychain search state while it
+      # builds. Import immediately before signing so the identity cannot be
+      # invalidated between discovery and use.
       - name: Set up stable macOS preview identity
         env:
           PREVIEW_CERTIFICATE_B64: ${{ secrets.MACOS_PREVIEW_CERTIFICATE_B64 }}
@@ -187,8 +192,6 @@ jobs:
           echo "MACOS_SIGN_IDENTITY=$SIGN_FINGERPRINT" >> "$GITHUB_ENV"
           echo "MACOS_SIGN_KEYCHAIN=$SIGN_KEYCHAIN" >> "$GITHUB_ENV"
           echo "MACOS_SIGN_KEYCHAIN_PASSWORD=$PREVIEW_CERTIFICATE_PASSWORD" >> "$GITHUB_ENV"
-      - name: Build release app
-        run: flutter build macos --release
       - name: Validate and launch macOS app
         run: |
           APP_PATH="build/macos/Build/Products/Release/DAViewer.app"
