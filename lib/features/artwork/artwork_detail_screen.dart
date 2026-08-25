@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,6 +11,7 @@ import '../../core/diagnostics/error_text.dart';
 import '../../core/auth/web_session_refresher.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
+import '../../core/sharing/app_share.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/skeleton.dart';
 import 'artwork_detail_providers.dart';
@@ -162,14 +162,6 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     } finally {
       if (mounted) setState(() => _favBusy = false);
     }
-  }
-
-  Future<void> _copyLink(String url) async {
-    await Clipboard.setData(ClipboardData(text: url));
-    if (!mounted) return;
-    final s = strings(ref.read(appLanguageProvider));
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(s.linkCopied)));
   }
 
   void _openLink(String? url) {
@@ -349,10 +341,14 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
           ),
           IconButton(
             tooltip: s.share,
-            onPressed: () {
-              final url = artwork.valueOrNull?.pageUri.toString();
-              if (url != null) _copyLink(url);
-            },
+            onPressed: artwork.valueOrNull == null
+                ? null
+                : () => shareDeviantArtLink(
+                    context,
+                    uri: artwork.valueOrNull!.pageUri,
+                    title: artwork.valueOrNull!.title,
+                    strings: s,
+                  ),
             icon: const Icon(Icons.share_outlined),
           ),
           IconButton(

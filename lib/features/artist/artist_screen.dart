@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/runtime/runtime_provider.dart';
+import '../../core/sharing/app_share.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
 import '../../shared/widgets/skeleton.dart';
@@ -94,6 +95,16 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
         appBar: AppBar(
           title: Text(widget.username),
           actions: <Widget>[
+            IconButton(
+              tooltip: s.share,
+              onPressed: () => shareDeviantArtLink(
+                context,
+                uri: artistShareUri(widget.username),
+                title: widget.username,
+                strings: s,
+              ),
+              icon: const Icon(Icons.share_outlined),
+            ),
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: FilledButton.tonalIcon(
