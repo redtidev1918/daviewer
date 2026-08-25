@@ -3,6 +3,21 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.147（登录页键盘卡顿修复）
+
+### Fixed
+
+- 移除登录 WebView 的透明背景：Android 上 `transparentBackground` 会强制软件合成，
+  软键盘弹出引起表面尺寸变化时导致极端掉帧。改为不透明背景后恢复正常硬件加速。
+- 加载进度条只在可见且有意义的进度变化时才重建，避免进度事件频繁触发整树重建。
+
+## 0.2.146（Android 启动闪退修复）
+
+### Fixed
+
+- Android 包名改为 `app.daviewer` 后入口类 `MainActivity` 未同步迁移，导致启动
+  `ClassNotFoundException` 直接闪退；现已迁移到 `app.daviewer` 包。
+
 ## 0.2.145（不打扰的更新提醒与隐私友好的问题报告）
 
 ### Added

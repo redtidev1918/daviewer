@@ -194,7 +194,9 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
             // page, which includes the Google/Apple one-click sign-in buttons
             // that the mobile layout omits.
             userAgent: webUserAgent,
-            transparentBackground: true,
+            // Keep the WebView opaque: transparentBackground forces software
+            // compositing on Android, which causes severe jank when the soft
+            // keyboard resizes the surface.
           ),
           onWebViewCreated: (controller) {
             _controller = controller;
@@ -236,7 +238,13 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
             }
           },
           onProgressChanged: (controller, progress) {
-            if (mounted) setState(() => _progress = progress / 100);
+            // Only rebuild while the loading bar is visible, and only on a
+            // meaningful change, so progress ticks don't churn the tree while
+            // the soft keyboard is animating.
+            if (!mounted || !_loading) return;
+            final next = (progress / 100).clamp(0.0, 1.0).toDouble();
+            if ((next - _progress).abs() < 0.02) return;
+            setState(() => _progress = next);
           },
         ),
       ),
