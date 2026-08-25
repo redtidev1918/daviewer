@@ -40,12 +40,12 @@ Diagnostics.
 
 ## Platform coverage
 
-| Platform | App API / media / downloads | Hidden public browser adapter | Official sign-in |
+| Platform | App API / media / downloads | Hidden public browser adapter | Sign-in WebView |
 | --- | --- | --- | --- |
-| Android | system/VPN or dynamic App proxy | process-wide WebView override | system browser; system proxy/VPN |
-| Windows | dynamic App proxy | shared WebView2 `--proxy-server` | system browser; system proxy/VPN |
-| macOS 14+ | dynamic App proxy | `WKWebsiteDataStore.proxyConfigurations` | system browser; system proxy/VPN |
-| macOS 12/13 | dynamic App proxy | OS system proxy only | system browser; system proxy/VPN |
+| Android | system/VPN or dynamic App proxy | process-wide WebView override | same process-wide WebView override |
+| Windows | dynamic App proxy | shared WebView2 `--proxy-server` | same shared WebView2 `--proxy-server` |
+| macOS 14+ | dynamic App proxy | `WKWebsiteDataStore.proxyConfigurations` | same `WKWebsiteDataStore.proxyConfigurations` |
+| macOS 12/13 | dynamic App proxy | OS system proxy only | OS system proxy only |
 | Linux | dynamic App proxy | OS WebView/system behavior | unavailable until packaged callback registration exists |
 
 On GNOME, `none` ignores stale host/port values and `manual` prefers HTTPS
@@ -63,19 +63,18 @@ The login route starts with native UI. It exposes one official sign-in action,
 the current effective App route, proxy settings, a connectivity test, and public
 Settings/Diagnostics routes.
 
-OAuth opens once in the system browser. DeviantArt's page decides which account
-and provider controls are available. A waiting screen can reopen the same
-authorize URI or cancel the pending PKCE transaction. On Windows, the ZIP build
-registers `dakit://oauth/callback` below
-`HKCU\\Software\\Classes\\dakit` and forwards a second-process activation to the
-running app.
+OAuth opens once in the app's embedded WebView, on the same network path as the
+hidden adapter. DeviantArt's page decides which account and provider controls are
+available. The user can close and reopen the login screen or cancel the pending
+PKCE transaction. On Windows, the ZIP build registers `dakit://oauth/callback`
+below `HKCU\\Software\\Classes\\dakit` for the external-browser fallback and
+forwards a second-process activation to the running app.
 
 Provider and edge security checks can intentionally return HTTP 403, 429, or
-503 while presenting an interactive page. They are completed in the real
-browser. DAViewer neither labels those pages as an App connection failure nor
-attempts brittle DOM detection. If the browser cannot reach the page, users fix
-the system proxy/VPN; if the App connectivity test fails, they fix the App
-route.
+503 while presenting an interactive page. They are completed inside the embedded
+WebView. DAViewer neither labels those pages as an App connection failure nor
+attempts brittle DOM detection. If the WebView cannot reach the page, users fix
+the App route (proxy/VPN); the App connectivity test reports that same route.
 
 ## Maintainer checks
 
@@ -83,10 +82,11 @@ Before a network or authentication release:
 
 1. verify direct, automatic, manual, environment, and clearing behavior;
 2. test `all_proxy=http://127.0.0.1:<port>` with working and stopped proxies;
-3. verify App connectivity copy does not claim to test the external browser;
+3. verify App connectivity copy does not claim to test an external browser;
 4. complete DeviantArt and available social-provider authorization in the
-   system browser, including callback, reopen, cancel, and cold-start callback;
-5. verify a provider challenge remains entirely in the interactive browser and
+   embedded WebView, including callback, close/reopen, cancel, and cold-start
+   callback;
+5. verify a provider challenge remains entirely in the interactive WebView and
    the App keeps waiting without a false network verdict;
 6. verify successful authorization opens Home recommendations without another
    login or web-session prompt;

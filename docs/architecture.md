@@ -148,14 +148,15 @@ state-dependent:
 
 The app has one user identity: OAuth for Home, favourites, watch, galleries,
 downloads, and every other official API. Signed-out state is onboarding, not a
-feed error. Each visible attempt owns one OAuth/PKCE transaction and opens its
-authorize URI in the system browser. DeviantArt's page owns account selection,
-passwords, registration, social providers, and security checks. The
-custom-scheme callback completes that same transaction; no second WebView login
-or Cookie/CSRF identity is requested.
+feed error. Each visible attempt owns one OAuth/PKCE transaction and opens the
+official login page in the app's embedded WebView (with a desktop User-Agent).
+DeviantArt's page owns account selection, passwords, registration, social
+providers, and security checks. The `dakit://oauth/callback` is intercepted in
+the WebView and completes that same transaction. The same WebView session also
+supplies the web cookies and CSRF token for website-only adapters, so there is
+no second login.
 
-A hidden browser may still acquire anonymous cookies and CSRF on demand for
-public website-only detail adapters. This is infrastructure state, not
+The WebView's web session (cookies and CSRF) is infrastructure state, not
 authentication. It must never block Home or display a login prompt, and its
 failure degrades to an official-API fallback or retry.
 
