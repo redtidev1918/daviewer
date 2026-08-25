@@ -169,6 +169,10 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
     });
 
     return Scaffold(
+      // With the manifest's adjustResize the Android window already shrinks
+      // when the soft keyboard opens; letting Flutter shrink the body again
+      // triggers a second WebView layout pass and visibly drops frames.
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(s.signInWelcomeTitle),
         actions: <Widget>[

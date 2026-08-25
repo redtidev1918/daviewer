@@ -3,6 +3,13 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.152（登录页键盘流畅度）
+
+### Changed
+
+- 登录页 Scaffold 关闭 `resizeToAvoidBottomInset`：Android `adjustResize` 已让窗口随
+  键盘收缩，Flutter 再收缩一次会让 WebView 发生第二次布局重排并掉帧。只保留一次收缩。
+
 ## 0.2.151（登录反馈）
 
 ### Added
