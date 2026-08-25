@@ -138,7 +138,7 @@ jobs:
       # Xcode changes the runner's temporary keychain search state while it
       # builds. Import immediately before signing so the identity cannot be
       # invalidated between discovery and use.
-      - name: Set up stable macOS preview identity
+      - name: Sign with stable macOS preview identity
         env:
           PREVIEW_CERTIFICATE_B64: ${{ secrets.MACOS_PREVIEW_CERTIFICATE_B64 }}
           PREVIEW_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_PREVIEW_CERTIFICATE_PASSWORD }}
@@ -152,8 +152,10 @@ jobs:
               echo "::error::Stable macOS preview-signing secrets are required for release tags."
               exit 1
             fi
-            echo "MACOS_SIGN_IDENTITY=-" >> "$GITHUB_ENV"
             echo "::warning::Using an ad-hoc identity for this non-release build."
+            codesign --force --sign - \
+              --entitlements macos/Runner/Release.entitlements \
+              build/macos/Build/Products/Release/DAViewer.app
             exit 0
           fi
 
@@ -189,9 +191,12 @@ jobs:
             echo "::error::Imported preview signing identity has no usable fingerprint."
             exit 1
           fi
-          echo "MACOS_SIGN_IDENTITY=$SIGN_FINGERPRINT" >> "$GITHUB_ENV"
+          codesign --force \
+            --sign "$SIGN_FINGERPRINT" \
+            --keychain "$SIGN_KEYCHAIN" \
+            --entitlements macos/Runner/Release.entitlements \
+            build/macos/Build/Products/Release/DAViewer.app
           echo "MACOS_SIGN_KEYCHAIN=$SIGN_KEYCHAIN" >> "$GITHUB_ENV"
-          echo "MACOS_SIGN_KEYCHAIN_PASSWORD=$PREVIEW_CERTIFICATE_PASSWORD" >> "$GITHUB_ENV"
       - name: Validate and launch macOS app
         run: |
           APP_PATH="build/macos/Build/Products/Release/DAViewer.app"
@@ -201,14 +206,6 @@ jobs:
           # It is not an Apple Developer ID and does not bypass Gatekeeper, but
           # unlike a fresh ad-hoc cdhash on every build it lets Keychain verify
           # the same app across updates without requesting the Mac password.
-          SIGN_ARGS=(--force --sign "$MACOS_SIGN_IDENTITY")
-          if [ -n "${MACOS_SIGN_KEYCHAIN:-}" ]; then
-            security unlock-keychain \
-              -p "$MACOS_SIGN_KEYCHAIN_PASSWORD" "$MACOS_SIGN_KEYCHAIN"
-            SIGN_ARGS+=(--keychain "$MACOS_SIGN_KEYCHAIN")
-          fi
-          codesign "${SIGN_ARGS[@]}" \
-            --entitlements macos/Runner/Release.entitlements "$APP_PATH"
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
           lipo "$APP_EXEC" -verify_arch x86_64 arm64
 
