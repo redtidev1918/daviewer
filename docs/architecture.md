@@ -185,7 +185,7 @@ must stay reachable from the login screen.
 
 - `pubspec.yaml` is the only source version edited by the release workflow.
   Flutter exposes it to the app as `FLUTTER_BUILD_NAME`.
-- Every tag must have a matching top-level section in `CHANGELOG.md`; CI uses
+- Every tag must have a matching top-level section in `RELEASE_NOTES.md`; CI uses
   that section as the GitHub Release body.
 - CI analyzes, checks formatting, tests, and builds Android, macOS, and Windows.
 - Android releases require the configured upload keystore. macOS artifacts are

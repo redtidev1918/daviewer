@@ -26,7 +26,8 @@ sub-packages are compatible with the new AGP/Swift toolchain.
 
 - Pushes to `main` trigger CI quality checks and Android/macOS/Windows builds;
   pushing a `v*` tag creates a GitHub Release whose notes come from the matching
-  `CHANGELOG.md` section. Historical releases and tags are retained.
+  user-facing `RELEASE_NOTES.md` section. A missing section blocks the release
+  instead of exposing commit messages or internal implementation notes.
 - The release APK is always signed with the upload keystore (CI
   `KEYSTORE_B64` / `KEYSTORE_PROPERTIES` secrets); a release build without a
   local `android/key.properties` fails intentionally, so a debug-signed APK can

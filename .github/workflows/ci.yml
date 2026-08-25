@@ -251,28 +251,12 @@ jobs:
             $0 ~ "^## " version "([ （(]|$)" { found=1; next }
             found && /^## / { exit }
             found { print }
-          ' CHANGELOG.md > release_notes_section.md
+          ' RELEASE_NOTES.md > release_notes.md
 
-          if [ -s release_notes_section.md ]; then
-            {
-              echo "> 💡 **macOS 提示 / A note for macOS:** 预览版暂未加入 Apple 开发者计划，首次打开请在 App 上「右键 → 打开」确认一次；个别情况会询问一次 Mac 登录密码，这是 macOS 自身的钥匙串确认，DAViewer 不会读取。除此之外与普通应用无异，可放心使用。"
-              echo
-              cat release_notes_section.md
-            } > release_notes.md
-          else
-            echo "::warning::CHANGELOG.md has no section for $VERSION; using commit summaries."
-            PREV_TAG="$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)"
-            {
-              echo "> 💡 **macOS 提示 / A note for macOS:** 预览版暂未加入 Apple 开发者计划，首次打开请在 App 上「右键 → 打开」确认一次；个别情况会询问一次 Mac 登录密码，这是 macOS 自身的钥匙串确认，DAViewer 不会读取。除此之外与普通应用无异，可放心使用。"
-              echo
-              echo "## 变更 / Changes"
-              echo
-              if [ -n "$PREV_TAG" ]; then
-                git log --oneline "$PREV_TAG"..HEAD
-              else
-                git log --oneline -1 HEAD
-              fi | sed 's/^/- /'
-            } > release_notes.md
+          if [ ! -s release_notes.md ]; then
+            echo "::error::RELEASE_NOTES.md has no user-facing section for $VERSION."
+            echo "Write concise user-visible changes before creating the tag."
+            exit 1
           fi
       - name: Create release
         uses: softprops/action-gh-release@v3

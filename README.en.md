@@ -185,7 +185,7 @@ Environment variables for proxying `flutter pub get` and Gradle builds are in
 
 Pushes to `main` trigger CI quality checks and Android/macOS/Windows builds;
 pushing a `v*` tag creates a GitHub Release whose notes come from the matching
-`CHANGELOG.md` section.
+user-facing `RELEASE_NOTES.md` section.
 
 **One-click release (recommended)**: Actions → **Release** → Run workflow → pick
 `patch` / `minor` / `major` (or an exact version) → run. It bumps the version,
