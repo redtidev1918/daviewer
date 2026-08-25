@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app/theme/app_theme.dart';
 import '../../core/diagnostics/error_text.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/sharing/app_share.dart';
 import '../../features/artwork/artwork_store.dart';
 import '../../features/artwork/favourite_actions.dart';
 
@@ -246,6 +247,19 @@ final class ArtworkCard extends ConsumerWidget {
                     );
                   }
                 }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: Text(s.share),
+              onTap: () async {
+                Navigator.pop(context);
+                await shareDeviantArtLink(
+                  context,
+                  uri: artwork.pageUri,
+                  title: artwork.title,
+                  strings: s,
+                );
               },
             ),
             ListTile(

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme/app_theme.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/sharing/app_share.dart';
 
 /// The artist's avatar, name, real name, stats, tagline, and bio.
 final class ArtistHeader extends ConsumerWidget {
@@ -49,6 +50,16 @@ final class ArtistHeader extends ConsumerWidget {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                tooltip: s.share,
+                onPressed: () => shareDeviantArtLink(
+                  context,
+                  uri: artistShareUri(profile.user.username),
+                  title: profile.user.username,
+                  strings: s,
+                ),
+                icon: const Icon(Icons.share_outlined),
               ),
             ],
           ),

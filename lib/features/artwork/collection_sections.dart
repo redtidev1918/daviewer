@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme/app_theme.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/sharing/app_share.dart';
 import 'artwork_detail_providers.dart';
 import 'collection_contents_provider.dart';
 import 'collection_contents_screen.dart';
@@ -142,6 +143,16 @@ final class _CollectionCardState extends ConsumerState<_CollectionCard> {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => _openCollection(context, group),
+          onLongPress: () => shareDeviantArtLink(
+            context,
+            uri: folderShareUri(
+              username: group.collection.owner.username,
+              folderId: '${group.collection.folderId}',
+              isCollection: true,
+            ),
+            title: group.collection.name,
+            strings: s,
+          ),
           child: Stack(
             fit: StackFit.expand,
             children: <Widget>[
