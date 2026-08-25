@@ -30,8 +30,8 @@ those are the providers' pages and are not bypassed by the app.
 
 ## Session roles
 
-- **OAuth session** (secure storage) powers the official API: `browse/home`,
-  daily deviations, favourites, watch, and downloads.
+- **OAuth session** (secure storage) powers the official API: daily
+  deviations, search, artwork lookup, favourites, watch, and downloads.
 - **Web session** (the WebView's cookies and CSRF token, kept in memory) powers
   the website-only adapters: the personalized `rfy/deviations` feed and
   collection contents.
@@ -81,10 +81,11 @@ legacy record blocking authorization. The upgrade requires one new sign-in while
 keeping downloads, settings, and other local data; later previews keep the same
 service and signing identity.
 
-The Home **Discover** tab uses the official OAuth `browse/home` endpoint, so it
-is available immediately after authorization. It is a generic discovery stream,
-not the website's cookie-backed personalized `rfy/deviations` feed. The product
-must not label or document these sources as equivalent.
+The Home **推荐 / For you** tab is the website's personalized `rfy/deviations`
+feed, fetched with the WebView's Cookie and CSRF token. It requires a signed-in
+web session; when the web session is absent the tab shows the sign-in prompt.
+The **每日精选 / Daily** tab uses the official OAuth API and does not depend on
+the web session. The product must not label these two sources as equivalent.
 
 ## Public website adapters
 
