@@ -63,6 +63,9 @@ final class AppStrings {
       : 'Open the official DeviantArt sign-in once and choose DeviantArt, Google, Apple or Facebook. The app is ready when you return—no second sign-in.';
   String get signInOrRegister =>
       _lang == AppLanguage.zh ? '登录或注册' : 'Sign in or create an account';
+  String get verificationHint => _lang == AppLanguage.zh
+      ? '如页面出现人机验证，请按页面提示完成，随后会自动继续登录。'
+      : 'If a human-verification challenge appears, complete it and sign-in continues automatically.';
   String get notLoggedIn => _lang == AppLanguage.zh ? '未登录' : 'Not signed in';
   String get loginFirst =>
       _lang == AppLanguage.zh ? '请先登录。' : 'Please sign in.';
