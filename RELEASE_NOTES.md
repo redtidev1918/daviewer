@@ -3,6 +3,16 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.157
+
+- 修复通过链接打开作品报错的问题（数字链接现在能正常打开详情，含 R18）。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- Fixed opening artworks from pasted links (numeric links now load the detail page, including R18).
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.156
 
 - 修复通过链接打开 R18 作品时报错「api endpoint not found」的问题。

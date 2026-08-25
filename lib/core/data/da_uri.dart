@@ -38,7 +38,10 @@ DaLink? parseDeviantArtUrl(String text) {
     final last = segments.last;
     final numeric = RegExp(r'-(\d+)$').firstMatch(last)?.group(1);
     if (numeric != null && numeric.isNotEmpty) {
-      return DaLink._('/artwork/$numeric');
+      // Carry the author along: the numeric-id resolver needs it to find the
+      // deviation (and R18 ones in particular).
+      final username = segments[artIndex - 1];
+      return DaLink._('/artwork/$numeric?username=$username');
     }
   }
 

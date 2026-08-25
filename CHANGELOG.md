@@ -3,6 +3,16 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.157（链接打开作品修复）
+
+### Fixed
+
+- 通过链接打开作品一直报「api endpoint not found」的根因：详情页直接用数字 ID 请求
+  官方 `deviation/{id}` 接口，而官方接口只接受 UUID。现在先通过 `dadeviation/init`
+  把数字 ID 解析成 UUID 再请求。
+- 链接解析会保留作者名（`/artwork/<id>?username=<author>`），供数字 ID 解析使用
+  （此前从链接进入时作者为空，R18 作品解析失败）。
+
 ## 0.2.156（R18 链接打开修复）
 
 ### Fixed

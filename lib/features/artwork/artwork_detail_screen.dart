@@ -30,11 +30,16 @@ import 'similar_artists.dart';
 final class ArtworkDetailScreen extends ConsumerStatefulWidget {
   const ArtworkDetailScreen({
     required this.artworkId,
+    this.username,
     this.browseSession,
     super.key,
   });
 
   final String artworkId;
+
+  /// The artwork's author when opened from a pasted link, so the numeric-id
+  /// resolver can find the deviation without a cached feed item.
+  final String? username;
   final ArtworkBrowseSession? browseSession;
 
   @override
@@ -76,6 +81,9 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
   @override
   void initState() {
     super.initState();
+    // When opened from a pasted link the author comes from the URL (there is
+    // no cached feed item); surface it for the numeric-id resolver.
+    ref.read(linkUsernameProvider.notifier).state = widget.username;
     // Warm the image cache for the adjacent artworks so swiping to them is
     // instant instead of flashing a placeholder while their media loads.
     WidgetsBinding.instance.addPostFrameCallback((_) => _prefetchNeighbors());
