@@ -28,18 +28,14 @@ Download the package for your platform from
   Silicon build; unzip and drag to Applications)
 - **Windows**: `DAViewer-<version>-windows.zip` (unzip and run `DAViewer.exe`)
 
-On a normal first launch, the Windows ZIP build registers only the current-user
-`HKCU\\Software\\Classes\\dakit` OAuth callback scheme (used for external-browser
-fallback sign-in). It needs no administrator rights, installs no service, and
-reads no system password. Launching again after moving the folder refreshes the
-path.
+The Windows build is portable: sign-in happens inside the app, it needs no
+administrator rights, installs no service, and reads no system password. You
+can move the folder and just launch it again.
 
-> **A note on the macOS build:** this is explicitly a **non-Apple-signed,
-> unnotarized test preview**. CI uses a stable project-owned preview identity
-> only to keep Keychain continuity; it is not trusted by Apple and does not
-> bypass Gatekeeper. Right-click the app and choose Open on first launch.
-> DAViewer does not request or read your Mac login password. Deny and report
-> any package that displays such a request.
+> **A note on the macOS build:** this is a **non-Apple-signed, unnotarized test
+> preview**. Right-click the app and choose Open on first launch. DAViewer does
+> not request or read your Mac login password. Deny and report any package that
+> displays such a request.
 
 ## Screenshots
 
