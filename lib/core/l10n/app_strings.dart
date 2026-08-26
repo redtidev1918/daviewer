@@ -171,6 +171,11 @@ final class AppStrings {
   String newVersionAvailable(String version) => _lang == AppLanguage.zh
       ? '发现新版本 $version'
       : 'New version $version available';
+  String updateDetails(String version) =>
+      _lang == AppLanguage.zh ? '$version 更新内容' : "What's new in $version";
+  String get noUpdateNotes => _lang == AppLanguage.zh
+      ? '（暂无更新说明，可在下载页查看）'
+      : '(No release notes here — see the download page.)';
   String get downloadUpdate => _lang == AppLanguage.zh ? '去下载' : 'Download';
   String get markAllRead => _lang == AppLanguage.zh ? '全部已读' : 'Mark all read';
   String get proxy => _lang == AppLanguage.zh ? '网络代理' : 'Proxy';

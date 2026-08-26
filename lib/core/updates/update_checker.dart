@@ -35,12 +35,47 @@ int compareVersions(String a, String b) {
 bool isSemver(String value) => RegExp(r'^\d+(\.\d+)*$').hasMatch(value);
 
 final class UpdateCheckState {
-  const UpdateCheckState({this.checking = false, this.latestVersion});
+  const UpdateCheckState({
+    this.checking = false,
+    this.latestVersion,
+    this.notes,
+  });
 
   final bool checking;
+
+  /// The newest published release version (without the leading `v`).
   final String? latestVersion;
 
+  /// The release notes (the matching `RELEASE_NOTES.md` section) for
+  /// [latestVersion], shown to the user so they know what changed.
+  final String? notes;
+
   bool get hasUpdate => latestVersion != null;
+}
+
+/// Extracts version + release notes from the GitHub `releases/latest` payload.
+/// Returns `null` when the shape is unexpected.
+UpdateInfo? parseLatestRelease(Object? data) {
+  if (data is! Map) return null;
+  final rawTag = data['tag_name'];
+  final rawBody = data['body'];
+  if (rawTag is! String) return null;
+  final version = rawTag.replaceFirst(RegExp('^v'), '');
+  if (!isSemver(version)) return null;
+  return UpdateInfo(
+    version: version,
+    notes: rawBody is String && rawBody.trim().isNotEmpty
+        ? rawBody.trim()
+        : null,
+  );
+}
+
+/// A single parsed update check result.
+final class UpdateInfo {
+  const UpdateInfo({required this.version, this.notes});
+
+  final String version;
+  final String? notes;
 }
 
 final updateCheckControllerProvider =
@@ -63,13 +98,12 @@ final class UpdateCheckController extends StateNotifier<UpdateCheckState> {
     final lastCheck = await AppPreferences.loadLastUpdateCheck();
     final now = DateTime.now().millisecondsSinceEpoch;
     // Throttle to once per hour (generous against GitHub's 60 req/hr rate
-    // limit) so a release shows up on the next launch or resume instead of
-    // being suppressed for a whole day.
+    // limit). A *failed* check does not record the time, so the next launch
+    // or resume retries immediately instead of being suppressed for an hour.
     if (lastCheck != null &&
         now - lastCheck < const Duration(hours: 1).inMilliseconds) {
       return;
     }
-    await AppPreferences.saveLastUpdateCheck(now);
     state = const UpdateCheckState(checking: true);
     try {
       final dio = _ref.read(runtimeProvider).dio;
@@ -78,24 +112,23 @@ final class UpdateCheckController extends StateNotifier<UpdateCheckState> {
         return;
       }
       final response = await dio.get<Object?>(_latestReleaseUrl);
-      final data = response.data;
-      final latest = data is Map && data['tag_name'] is String
-          ? (data['tag_name'] as String).replaceFirst(RegExp('^v'), '')
-          : null;
-      if (latest == null || !isSemver(latest) || !isSemver(appVersion)) {
+      final info = parseLatestRelease(response.data);
+      if (info == null || !isSemver(appVersion)) {
         state = const UpdateCheckState();
         return;
       }
-      if (compareVersions(latest, appVersion) <= 0) {
+      // Only a successful check counts against the throttle window.
+      await AppPreferences.saveLastUpdateCheck(now);
+      if (compareVersions(info.version, appVersion) <= 0) {
         state = const UpdateCheckState();
         return;
       }
       final dismissed = await AppPreferences.loadDismissedUpdateVersion();
-      if (dismissed == latest) {
+      if (dismissed == info.version) {
         state = const UpdateCheckState();
         return;
       }
-      state = UpdateCheckState(latestVersion: latest);
+      state = UpdateCheckState(latestVersion: info.version, notes: info.notes);
     } on Object {
       // The update check must never surface an error to the user.
       state = const UpdateCheckState();

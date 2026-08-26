@@ -52,37 +52,84 @@ final class _UpdateBannerState extends ConsumerState<UpdateBanner>
       color: color,
       child: SafeArea(
         bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.only(left: 12, right: 4),
-          child: Row(
-            children: <Widget>[
-              Icon(Icons.system_update_alt, size: 18, color: onColor),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  s.newVersionAvailable('v$version'),
-                  style: theme.textTheme.bodyMedium?.copyWith(color: onColor),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+        child: InkWell(
+          onTap: () => _showUpdateDialog(context, s, version, update.notes),
+          child: Padding(
+            padding: const EdgeInsets.only(left: 12, right: 4),
+            child: Row(
+              children: <Widget>[
+                Icon(Icons.system_update_alt, size: 18, color: onColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    s.newVersionAvailable('v$version'),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: onColor),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              TextButton(
-                onPressed: () => launchUrl(
-                  Uri.parse(_releasesUrl),
-                  mode: LaunchMode.externalApplication,
+                TextButton(
+                  onPressed: () => launchUrl(
+                    Uri.parse(_releasesUrl),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  child: Text(s.downloadUpdate),
                 ),
-                child: Text(s.downloadUpdate),
-              ),
-              IconButton(
-                tooltip: s.close,
-                onPressed: () => ref
-                    .read(updateCheckControllerProvider.notifier)
-                    .dismiss(version),
-                icon: const Icon(Icons.close, size: 18, color: Colors.white70),
-              ),
-            ],
+                IconButton(
+                  tooltip: s.close,
+                  onPressed: () => ref
+                      .read(updateCheckControllerProvider.notifier)
+                      .dismiss(version),
+                  icon: const Icon(
+                    Icons.close,
+                    size: 18,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Shows what's new in this release before downloading: the release notes
+  /// (the `RELEASE_NOTES.md` section for this version) plus a download action.
+  Future<void> _showUpdateDialog(
+    BuildContext context,
+    AppStrings s,
+    String version,
+    String? notes,
+  ) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(s.updateDetails('v$version')),
+        content: SingleChildScrollView(
+          child: Text(
+            notes == null || notes.trim().isEmpty
+                ? s.noUpdateNotes
+                : notes.trim(),
+            style: Theme.of(dialogContext).textTheme.bodyMedium,
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(s.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              launchUrl(
+                Uri.parse(_releasesUrl),
+                mode: LaunchMode.externalApplication,
+              );
+            },
+            child: Text(s.downloadUpdate),
+          ),
+        ],
       ),
     );
   }
