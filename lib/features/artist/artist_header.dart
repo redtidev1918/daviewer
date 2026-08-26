@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/app_theme.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/sharing/app_share.dart';
+import 'artist_providers.dart';
 
 /// The artist's avatar, name, real name, stats, tagline, and bio.
 final class ArtistHeader extends ConsumerWidget {
@@ -17,6 +18,11 @@ final class ArtistHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = strings(ref.watch(appLanguageProvider));
     final avatar = profile.user.avatarUri;
+    // Watchers count and join date come from the website's about endpoint
+    // (the official API does not expose them); omit while loading/unavailable.
+    final webInfo = ref
+        .watch(webUserProfileProvider(profile.user.username))
+        .value;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -45,9 +51,15 @@ final class ArtistHeader extends ConsumerWidget {
                       s.artistStats(
                         profile.stats.deviations,
                         profile.stats.favourites,
+                        webInfo?.watchers,
                       ),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                    if (webInfo?.joinDate case final joined?)
+                      Text(
+                        s.artistJoinDate(joined),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                   ],
                 ),
               ),

@@ -5,8 +5,8 @@ DAViewer talks to two DeviantArt surfaces:
 - **Official OAuth API** (stable, versioned, owned by DAKit).
 - **Website-private JSON/HTML endpoints** (unstable, undocumented) for the few
   detail features the official API does not expose: numeric-id resolution,
-  related-artwork blocks, collection full contents, real deviation search, and
-  artist scraps.
+  related-artwork blocks, collection full contents, real deviation search,
+  artist scraps, gallery keyword search, and profile facts (watchers/join date).
 
 This document is the compatibility contract for that second, private surface.
 Its job is not to prevent DeviantArt from changing — that is out of our
@@ -48,6 +48,8 @@ feature code.
 | Collection full contents | `web_collection_contents.dart` | `_puppy/dashared/gallection/contents` (JSON), fallback `deviantart.com/{user}/favourites/{id}?page=N` | anonymous browser CSRF (JSON) / none (SSR) | preview deviations + open-on-web | `web_collection_contents_test.dart` (`DA_COLLECTION_JSON`, `DA_COLLECTION_HTML`) |
 | Artist scraps | `web_collection_contents.dart` | `_puppy/dashared/gallection/contents` (`type=gallery&scraps_folder=true`) | anonymous browser CSRF | none (tab shows empty/error) | `web_collection_contents_test.dart` |
 | Deviation search | `web_search.dart` | `_puppy/dabrowse/search/deviations` | web Cookie + CSRF (signed-in) | official `browse/home?q=` (coarse, no web session) | `web_search_test.dart` |
+| Gallery keyword search | `web_gallery_search.dart` | `_puppy/dashared/gallection/search` | anonymous browser CSRF | none (search needs the web session) | `web_gallery_search_test.dart` |
+| Profile facts (watchers/join date) | `web_user_profile.dart` | `_puppy/dauserprofile/init/about` | anonymous browser CSRF | none (header omits the enrichment) | `web_user_profile_test.dart` |
 
 Shared, non-endpoint helpers (no separate fallback, tested directly):
 
