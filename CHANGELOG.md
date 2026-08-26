@@ -3,6 +3,14 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.166（移除 Scraps）
+
+### Removed
+
+- 画师页的 Scraps 标签及对应的网页抓取器（`gallection/contents?scraps_folder=true`）、
+  provider、文案与测试。官网画师导航本身不提供 Scraps 入口，且大部分画师不使用
+  Scraps 文件夹，标签整体移除。
+
 ## 0.2.165（画师页标签顺序）
 
 ### Changed
