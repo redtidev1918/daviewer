@@ -3,6 +3,16 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.159
+
+- 标签页新增「最新 / 热门」排序；搜索结果新增「最新优先」排序。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- Tag pages now sort by Newest or Popular; search results can be ordered newest-first.
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.158
 
 - 作品卡片的标题和作者名移到图片下方，不再遮挡图片。

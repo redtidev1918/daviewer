@@ -510,6 +510,10 @@ final class AppStrings {
   String get clearHistory => _lang == AppLanguage.zh ? '清除' : 'Clear';
   String get artworks => _lang == AppLanguage.zh ? '作品' : 'Artworks';
   String get users => _lang == AppLanguage.zh ? '用户' : 'Users';
+  String get sort => _lang == AppLanguage.zh ? '排序' : 'Sort';
+  String get sortDefault => _lang == AppLanguage.zh ? '默认' : 'Default';
+  String get sortNewest => _lang == AppLanguage.zh ? '最新' : 'Newest';
+  String get sortPopular => _lang == AppLanguage.zh ? '热门' : 'Popular';
   String get popularTags => _lang == AppLanguage.zh ? '热门标签' : 'Popular tags';
   String get discover => _lang == AppLanguage.zh ? '去发现' : 'Discover';
   String get discoverArtists =>

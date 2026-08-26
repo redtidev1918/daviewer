@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:dakit_core/dakit_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
 import '../../shared/widgets/compact_tag_strip.dart';
@@ -36,6 +38,7 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
   Timer? _debounce;
   String _query = '';
   int _mode = 0; // 0 = artworks, 1 = users
+  bool _newestFirst = false;
 
   @override
   void dispose() {
@@ -58,6 +61,27 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
     _debounce?.cancel();
     setState(() => _query = query);
     ref.read(searchHistoryProvider.notifier).add(query);
+  }
+
+  /// The official search has no server-side sort, so "newest" reorders the
+  /// already-loaded results by publish date (newest first) client-side.
+  ArtworkFeedState _sortedNewest(ArtworkFeedState feed) {
+    if (!_newestFirst || feed.items.length < 2) return feed;
+    final sorted = <Artwork>[...feed.items]
+      ..sort((a, b) {
+        final at = a.publishedAt;
+        final bt = b.publishedAt;
+        if (at == null && bt == null) return 0;
+        if (at == null) return 1;
+        if (bt == null) return -1;
+        return bt.compareTo(at);
+      });
+    return ArtworkFeedState(
+      items: sorted,
+      nextCursor: feed.nextCursor,
+      isLoading: feed.isLoading,
+      error: feed.error,
+    );
   }
 
   /// Live search: results appear as the user types, debounced so a rapid burst
@@ -95,7 +119,23 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(s.search),
-        actions: const <Widget>[SettingsAction()],
+        actions: <Widget>[
+          PopupMenuButton<String>(
+            tooltip: s.sort,
+            initialValue: _newestFirst ? 'newest' : 'default',
+            onSelected: (value) =>
+                setState(() => _newestFirst = value == 'newest'),
+            itemBuilder: (context) => <PopupMenuEntry<String>>[
+              PopupMenuItem<String>(
+                value: 'default',
+                child: Text(s.sortDefault),
+              ),
+              PopupMenuItem<String>(value: 'newest', child: Text(s.sortNewest)),
+            ],
+            icon: const Icon(Icons.sort),
+          ),
+          const SettingsAction(),
+        ],
       ),
       body: Column(
         children: <Widget>[
@@ -138,7 +178,7 @@ final class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ? _SearchIdleView(onSelect: _selectFromHistory)
                 : _mode == 0
                 ? ArtworkFeedGrid(
-                    feed: ref.watch(searchFeedProvider(query)),
+                    feed: _sortedNewest(ref.watch(searchFeedProvider(query))),
                     emptyMessage: s.noResults,
                     onRefresh: () =>
                         ref.read(searchFeedProvider(query).notifier).refresh(),

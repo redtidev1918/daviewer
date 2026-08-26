@@ -3,6 +3,15 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.159（标签与搜索排序）
+
+### Added
+
+- 标签页新增「最新 / 热门」排序：上游 `dakit_api` 0.1.26 的 `tag` 支持
+  `BrowseSort`，通过官方 `browse/tags` 的 `mode` 参数按最新或最热排序。
+- 搜索结果新增「最新优先」排序：官方搜索无服务端排序，改为客户端按发布时间
+  对已加载结果排序。
+
 ## 0.2.158（作品卡片文字移到图下）
 
 ### Changed

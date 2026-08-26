@@ -29,7 +29,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: <Override>[
-          tagFeedProvider('cat').overrideWith((ref) => controller),
+          tagFeedProvider(('cat', dakit.BrowseSort.recent))
+              .overrideWith((ref) => controller),
           relatedTagsProvider('cat')
               .overrideWith((ref) async => <String>['catart', 'cats']),
         ],

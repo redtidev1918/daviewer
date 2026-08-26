@@ -10,13 +10,18 @@ import '../../core/sharing/app_share.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
 import '../../shared/widgets/compact_tag_strip.dart';
 
-/// The "browse by tag" feed (official `browse/tags` endpoint).
+/// The "browse by tag" feed (official `browse/tags` endpoint), ordered by
+/// [BrowseSort] (newest or most popular).
 final tagFeedProvider = StateNotifierProvider.autoDispose
-    .family<ArtworkFeedController, ArtworkFeedState, String>((ref, tag) {
+    .family<ArtworkFeedController, ArtworkFeedState, (String, BrowseSort)>((
+      ref,
+      key,
+    ) {
+      final (tag, sort) = key;
       final runtime = ref.watch(runtimeProvider);
       final controller = ArtworkFeedController((request) {
         return OfficialDiscoveryRepository(runtime.transport!)
-            .tag(tag, request);
+            .tag(tag, request, sort: sort);
       });
       return controller;
     });
@@ -46,6 +51,7 @@ final class TagScreen extends ConsumerStatefulWidget {
 final class _TagScreenState extends ConsumerState<TagScreen> {
   bool _showRelated = true;
   double _lastPixels = 0;
+  BrowseSort _sort = BrowseSort.recent;
 
   bool _handleScroll(ScrollNotification notification) {
     if (notification.metrics.axis != Axis.vertical ||
@@ -64,13 +70,29 @@ final class _TagScreenState extends ConsumerState<TagScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final feed = ref.watch(tagFeedProvider(widget.tag));
+    final feed = ref.watch(tagFeedProvider((widget.tag, _sort)));
     final related = ref.watch(relatedTagsProvider(widget.tag));
     final s = strings(ref.watch(appLanguageProvider));
     return Scaffold(
       appBar: AppBar(
         title: Text('#${widget.tag}'),
         actions: <Widget>[
+          PopupMenuButton<BrowseSort>(
+            tooltip: s.sort,
+            initialValue: _sort,
+            onSelected: (value) => setState(() => _sort = value),
+            itemBuilder: (context) => <PopupMenuEntry<BrowseSort>>[
+              PopupMenuItem<BrowseSort>(
+                value: BrowseSort.recent,
+                child: Text(s.sortNewest),
+              ),
+              PopupMenuItem<BrowseSort>(
+                value: BrowseSort.popular,
+                child: Text(s.sortPopular),
+              ),
+            ],
+            icon: const Icon(Icons.sort),
+          ),
           IconButton(
             tooltip: s.share,
             onPressed: () => shareDeviantArtLink(
@@ -110,10 +132,12 @@ final class _TagScreenState extends ConsumerState<TagScreen> {
               child: ArtworkFeedGrid(
                 feed: feed,
                 emptyMessage: s.noArtworks,
-                onRefresh: () =>
-                    ref.read(tagFeedProvider(widget.tag).notifier).refresh(),
-                onLoadMore: () =>
-                    ref.read(tagFeedProvider(widget.tag).notifier).loadMore(),
+                onRefresh: () => ref
+                    .read(tagFeedProvider((widget.tag, _sort)).notifier)
+                    .refresh(),
+                onLoadMore: () => ref
+                    .read(tagFeedProvider((widget.tag, _sort)).notifier)
+                    .loadMore(),
               ),
             ),
           ),
