@@ -32,10 +32,7 @@ void main() {
                 initialLocation: index == shell.currentIndex,
               ),
               destinations: const <NavigationDestination>[
-                NavigationDestination(
-                  icon: Icon(Icons.home),
-                  label: 'Home',
-                ),
+                NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
                 NavigationDestination(
                   icon: Icon(Icons.settings),
                   label: 'Other',
@@ -63,9 +60,8 @@ void main() {
               routes: <RouteBase>[
                 GoRoute(
                   path: '/other',
-                  builder: (context, state) => const Scaffold(
-                    body: Center(child: Text('other-page')),
-                  ),
+                  builder: (context, state) =>
+                      const Scaffold(body: Center(child: Text('other-page'))),
                 ),
               ],
             ),
