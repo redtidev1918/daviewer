@@ -10,6 +10,7 @@ import '../../core/auth/web_session_controller.dart';
 import '../../core/data/da_uri.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
+import '../notifications/notifications_providers.dart';
 import 'home_feeds.dart';
 import 'home_providers.dart';
 import 'update_banner.dart';
@@ -76,6 +77,7 @@ final class HomeScreen extends ConsumerWidget {
               onPressed: () => _showOpenLinkDialog(context, s),
               icon: const Icon(Icons.link),
             ),
+            _NotificationsBell(),
             IconButton(
               tooltip: s.settings,
               onPressed: () => context.push('/settings'),
@@ -194,6 +196,29 @@ final class _PersonalizedFeedState extends ConsumerState<_PersonalizedFeed>
       errorMessage: s.recommendedFeedLoadFailure,
       onRefresh: () => ref.read(personalizedFeedProvider.notifier).refresh(),
       onLoadMore: () => ref.read(personalizedFeedProvider.notifier).loadMore(),
+    );
+  }
+}
+
+/// The notification entry point: a bell that opens the message center and
+/// shows an unread-count badge (server `isNew` minus locally read ids).
+/// Signed-out users or feed failures simply show no dot.
+final class _NotificationsBell extends ConsumerWidget {
+  const _NotificationsBell();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = strings(ref.watch(appLanguageProvider));
+    final unread = ref.watch(notificationsUnreadCountProvider);
+    final count = unread.valueOrNull ?? 0;
+    return IconButton(
+      tooltip: s.notifications,
+      onPressed: () => context.push('/notifications'),
+      icon: Badge(
+        isLabelVisible: count > 0,
+        label: Text('$count'),
+        child: const Icon(Icons.notifications_outlined),
+      ),
     );
   }
 }
