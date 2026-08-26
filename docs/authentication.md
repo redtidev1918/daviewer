@@ -32,9 +32,9 @@ those are the providers' pages and are not bypassed by the app.
 
 - **OAuth session** (secure storage) powers the official API: daily
   deviations, search, artwork lookup, favourites, watch, and downloads.
-- **Web session** (the WebView's cookies and CSRF token, kept in memory) powers
-  the website-only adapters: the personalized `rfy/deviations` feed and
-  collection contents.
+- **Web session** (the WebView's cookies plus the CSRF token and login state,
+  persisted locally and restored at startup) powers the website-only adapters:
+  the personalized `rfy/deviations` feed and collection contents.
 
 One embedded login establishes both sessions. The WebView reports the web
 session (CSRF token and the `userinfo` cookie) only after the OAuth callback has

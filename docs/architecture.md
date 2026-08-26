@@ -51,17 +51,14 @@ Rules:
 
 ### Preview-card presentation
 
-All artwork feeds use the shared `ArtworkCard` and preview-aspect helper. On a
-phone-width viewport, extreme landscape media is capped at 1.6:1 in the grid;
-`BoxFit.cover` may crop the outside edges so the subject remains useful at
-thumbnail size. Desktop keeps the wider 2:1 cap.
-
-Metadata responds to the rendered card rather than the source orientation. A
-short or landscape card gets one compact row (one-line title plus subdued
-author); a tall card can use two title lines and the full author row. New feed
-surfaces must reuse these helpers instead of restoring a fixed-height overlay.
-Tests must cover both layouts because a readable portrait overlay can obscure
-nearly all of a two-column banner card.
+All artwork feeds use the shared `ArtworkCard` and the preview-aspect helper.
+The card is a column: the image keeps its natural aspect ratio (extreme
+landscape media is capped at 1.6:1 on phone-width viewports, 2:1 on desktop,
+with `BoxFit.cover` cropping the outer edges so the subject stays useful at
+thumbnail size), and the title/author render **below** the image as a normal
+card section — never as an overlay on top of the artwork. New feed surfaces
+must reuse the card instead of restoring a fixed-height overlay. The GIF /
+multi-image badges remain positioned on the image itself.
 
 ## Related-content state
 
@@ -100,7 +97,7 @@ is no official full-contents path. DAViewer reads the website's own
 CSRF) is available, falling back to the server-rendered page
 (`deviantart.com/{username}/favourites/{folderId}?page=N`, which is public and
 needs no session) otherwise. Both carry the same deviation shape, so the mapping
-reuses `RfyFeedFetcher.mapDeviation`. The UI shows the preview deviations
+reuses `WebDeviationMapper.mapDeviation`. The UI shows the preview deviations
 instantly and swaps in the full list when ready, with an "open on the web"
 fallback.
 
@@ -194,9 +191,13 @@ Some state is deliberately kept client-side and never synced to DeviantArt:
   public "mark read" endpoint, so the unread dot is a local overlay on top of
   the server's `isNew` flag. It persists locally and does not pretend to sync.
 - **User preferences** (`core/settings/AppPreferences`): language, theme mode,
-  and the optional manual proxy are stored in a small JSON file under the
-  application-support directory.
-  They are restored before the first frame so the app never flashes defaults.
+  the optional manual proxy, OAuth session evidence, and the update-reminder
+  state (last check time, dismissed version) are stored in a small JSON file
+  under the application-support directory. They are restored before the first
+  frame so the app never flashes defaults.
+- **Search interests** (`core/search/InterestStore`): lightweight persisted
+  tag-view counts that drive the personalized "recommended tags" on the search
+  page across restarts.
 - **Theme mode** (`core/theme/ThemeModeController`): system / light / dark, fed
   into the MaterialApp and persisted with the preferences above.
 
