@@ -116,7 +116,16 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       await ref
           .read(webSessionControllerProvider.notifier)
           .report(csrf: csrf, username: username);
-      _maybeClose();
+      // A signed-in web session (the `userinfo` cookie) means login succeeded
+      // and the cookie is captured — leave the login screen automatically.
+      // This also covers the "OAuth already signed in, web session lost"
+      // re-login case, where the OAuth state never transitions and the old
+      // listener-based close never fired.
+      if (isLoggedIn && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _closeScreen());
+      } else {
+        _maybeClose();
+      }
     } on Object {
       // Best effort; the page may not expose the state during navigation.
     }
