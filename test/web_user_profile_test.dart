@@ -26,11 +26,11 @@ void main() {
   });
 
   test('degrades gracefully when the payload is reshaped', () {
-    expect(WebUserProfileFetcher.parseJson(<String, Object?>{}).watchers, isNull);
     expect(
-      WebUserProfileFetcher.parseJson('not a map').joinDate,
+      WebUserProfileFetcher.parseJson(<String, Object?>{}).watchers,
       isNull,
     );
+    expect(WebUserProfileFetcher.parseJson('not a map').joinDate, isNull);
     expect(
       WebUserProfileFetcher.parseJson(<String, Object?>{
         'pageExtraData': <String, Object?>{
