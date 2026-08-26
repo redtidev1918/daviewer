@@ -157,12 +157,12 @@ The WebView's web session (cookies and CSRF) is infrastructure state, not
 authentication. It must never block Home or display a login prompt, and its
 failure degrades to an official-API fallback or retry.
 
-Session restoration reads only the current secure item. macOS previews before
-0.2.138 used a changing ad-hoc cdhash; querying those items after an update can
-request the Mac login password, so they are intentionally not auto-migrated.
-Temporary network, upstream, parsing, or secure-storage failures preserve an
-established route; only missing/revoked credentials or explicit logout enter
-signed-out state.
+Session restoration reads only the current secure item (`DAViewer Account`).
+Ad-hoc Keychain items from previews before 0.2.139 are never queried or
+auto-migrated, so an inaccessible legacy record cannot request the Mac password
+or block authorization. Temporary network, upstream, parsing, or secure-storage
+failures preserve an established route; only missing/revoked credentials or
+explicit logout enter signed-out state.
 Hidden browser refreshes may rotate anonymous CSRF. A partial page is never
 proof of logout, and a legacy cookie username that mismatches OAuth is cleared.
 

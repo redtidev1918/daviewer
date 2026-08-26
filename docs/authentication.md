@@ -74,12 +74,9 @@ DeviantArt's browsing preferences.
 
 macOS previews use one private, stable CI signing identity. The identity is
 self-signed, not Apple trusted or notarized, but it prevents a changing ad-hoc
-cdhash from requesting the Mac password after each update. Version 0.2.139 moves
-token and recovery storage to the fresh `DAViewer Account` Keychain service and
-does not query `DAViewer OAuth` or older ad-hoc items. This avoids an inaccessible
-legacy record blocking authorization. The upgrade requires one new sign-in while
-keeping downloads, settings, and other local data; later previews keep the same
-service and signing identity.
+cdhash from requesting the Mac password after each update. Token and recovery
+storage use the `DAViewer Account` Keychain service; older ad-hoc items are
+never queried, so an inaccessible legacy record cannot block authorization.
 
 The Home **推荐 / For you** tab is the website's personalized `rfy/deviations`
 feed, fetched with the WebView's Cookie and CSRF token. It requires a signed-in
