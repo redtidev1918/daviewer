@@ -40,9 +40,8 @@ void main() {
           ),
           GoRoute(
             path: '/settings',
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('settings-page')),
-            ),
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('settings-page'))),
           ),
           StatefulShellRoute.indexedStack(
             builder: (context, state, shell) => Scaffold(
@@ -82,9 +81,8 @@ void main() {
                 routes: <RouteBase>[
                   GoRoute(
                     path: '/other',
-                    builder: (context, state) => const Scaffold(
-                      body: Center(child: Text('other-page')),
-                    ),
+                    builder: (context, state) =>
+                        const Scaffold(body: Center(child: Text('other-page'))),
                   ),
                 ],
               ),
