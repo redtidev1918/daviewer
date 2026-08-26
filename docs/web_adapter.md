@@ -41,6 +41,7 @@ feature code.
 
 | Feature | Module | Endpoint / source | Session | Fallback | Contract test (snapshot define) |
 | --- | --- | --- | --- | --- | --- |
+| Personalized home feed | `rfy_feed.dart` | `_puppy/dabrowse/networkbar/rfy/deviations` | web Cookie + CSRF (signed-in) | none (needs the web session; shows sign-in prompt) | `rfy_feed_test.dart` |
 | Numeric→UUID + description | `deviation_init.dart` | `_puppy/dadeviation/init` | anonymous browser CSRF | tags via `deviation/metadata` | `deviation_init_test.dart` (`DA_DEVIATION_INIT_JSON`) |
 | Related artwork | `web_more_like_this.dart` | artwork page `__INITIAL_STATE__` / `__RCACHE__` | none (public) | official `browse/morelikethis` | `web_more_like_this_test.dart` (`DA_MORE_LIKE_THIS_HTML`) |
 | Collection full contents | `web_collection_contents.dart` | `_puppy/dashared/gallection/contents` (JSON), fallback `deviantart.com/{user}/favourites/{id}?page=N` | anonymous browser CSRF (JSON) / none (SSR) | preview deviations + open-on-web | `web_collection_contents_test.dart` (`DA_COLLECTION_JSON`, `DA_COLLECTION_HTML`) |
@@ -53,7 +54,7 @@ Shared, non-endpoint helpers (no separate fallback, tested directly):
 | JS literal JSON decoder | `html_state.dart` | `window.__X = JSON.parse("…")` decoding | via the snapshot tests above |
 | HTML / tiptap → text/html | `html_text.dart` | description rendering | `html_text_test.dart` |
 | Public browser state | `web_session.dart` | read anonymous browser cookies | `web_session_refresh_policy_test.dart` |
-| Link → route | `da_uri.dart` | paste-link parsing (no network) | `web_login_flow_test.dart` (indirect) |
+| Link → route | `da_uri.dart` | paste-link parsing (no network) | `da_uri_test.dart` |
 
 Sections that are derived or use the official API (`more_from_artist`,
 `similar_artists`) are **not** web adapters and are excluded here.

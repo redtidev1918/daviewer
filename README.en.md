@@ -81,8 +81,9 @@ path.
   session and the web session (personalized feed, collections)
 - **Recommendations**: Home “For you” is the website's personalized
   `rfy/deviations` feed (web Cookie + CSRF), matching the site's recommendations
-- **Search**: live search (results as you type) + history + paste a DeviantArt
-  link to jump straight to an artwork or artist
+- **Search**: live search (results as you type) + compact tag-style history +
+  paste a DeviantArt link to jump straight to an artwork or artist; “Recommended
+  for you” and popular tags show an artwork preview (Pixiv style)
 - **Artwork detail**: swipe or top-bar buttons to browse previous/next works
   (adjacent images prefetched); pinch zoom; paged multi-image works
 - **Media**: shared image zoom; highest-quality video with seeking and retry;
@@ -91,7 +92,8 @@ path.
   featured/suggested collections (openable in full), and "More from this
   artist" on the detail page, with clear empty and failure states
 - **Tags**: one compact tag row across detail, search, and tag screens, with
-  automatic tag hydration from official metadata
+  automatic tag hydration from official metadata; tag pages sort by Newest or
+  Popular
 - **Artist**: profile (including bio), gallery, **custom sub-galleries
   (folders)**, favourites, watch
 - **Sharing**: native system sharing for artwork, artists, gallery folders,
@@ -120,9 +122,9 @@ native interaction live in DAViewer. Dependencies:
 
 ```yaml
 dependencies:
-  dakit_core: ^0.1.12
-  dakit_api: ^0.1.25
-  dakit_flutter: ^0.1.9
+  dakit_core: ^0.1.13
+  dakit_api: ^0.1.27
+  dakit_flutter: ^0.1.10
 ```
 
 Each attempt creates one official OAuth/PKCE transaction. Account selection,
@@ -239,7 +241,10 @@ live sign-in when it cannot be stored or cleared.
 - **Check proxy before sign-in**: the native screen shows the effective route and provides both proxy settings and a connectivity test before any web page is opened.
 - **Human verification**: this belongs to the official page or identity provider and is completed inside the embedded WebView. DAViewer does not guess that 403/429/503 means an outage or interfere with it.
 - **The page did not open or is stuck**: tap the top-right "Done" to close and reopen the login screen. Cancel before starting a completely new transaction.
-- **First run and offline recovery**: the app preserves sign-in through a temporary network or provider failure only after this installation has successfully stored an OAuth session. A never-signed-in user is not routed into a failing Home, while an established user's token is not erased by an outage.
+- **First run and offline recovery**: sign-in is preserved through temporary
+  network or provider failures as long as a valid OAuth token exists in secure
+  storage. A never-signed-in user is not routed into a failing Home, and an
+  established user is never shown as signed-out just because the network is down.
 - **Mature content**: DeviantArt account browsing preferences override the app request. Open Settings → DeviantArt account settings → Mature content settings.
 - **Settings while sign-in is broken**: the gear on the login screen keeps language, proxy, diagnostics, updates, and About reachable without authentication.
 - **macOS asks for your Mac password**: deny the request, do not enter the password, and report the version and a screenshot. Version 0.2.139 uses a fresh Keychain item, so the upgrade needs one new sign-in without deleting downloads or settings.
