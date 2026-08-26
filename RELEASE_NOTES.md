@@ -3,6 +3,12 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.170
+
+- 兑现文档承诺：登录页右上角新增设置入口，登录异常时也可进入语言、网络代理、日志与诊断、检查更新和关于。
+
+- Documented promise fulfilled: the login screen now has a settings entry, so language, proxy, diagnostics, updates, and About stay reachable even when sign-in is broken.
+
 ## 0.2.169
 
 - 登录成功后自动返回应用，无需再点「完成」。
