@@ -44,6 +44,13 @@ session (CSRF token and the `userinfo` cookie) only after the OAuth callback has
 navigated back to the DeviantArt home page, so the app never records a
 signed-out web session from the anonymous login page.
 
+The login screen **dismisses itself as soon as a signed-in web session is
+reported** — it does not wait for an OAuth state transition. This covers both a
+first-time login and the "OAuth already signed in, web session lost" case
+(which the cookie vault exists for): the user never has to hunt for a Done
+button, and re-establishing only the web session never asks for a second
+OAuth approval.
+
 While waiting, the user can cancel and reopen. Cancelling or starting a new
 attempt clears the pending transaction so a stale callback cannot absorb a later
 login. Settings, proxy, diagnostics, updates, About, language, and appearance
