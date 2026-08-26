@@ -6,7 +6,6 @@ import '../../core/auth/session_state.dart';
 import '../../core/auth/web_session_controller.dart';
 import '../../core/auth/web_session_refresher.dart';
 import '../../core/data/data_access.dart';
-import '../../core/data/web_collection_contents.dart';
 import '../../core/data/web_gallery_search.dart';
 import '../../core/data/web_user_profile.dart';
 import '../../core/feed/artwork_feed_controller.dart';
@@ -62,92 +61,6 @@ final artistFavouriteFoldersProvider = FutureProvider.autoDispose
           );
       return page.items;
     });
-
-/// The artist's Scraps folder. DeviantArt's official API omits scraps entirely
-/// (`gallery/folders` has no scraps entry), so this reads the website's
-/// `gallection/contents` endpoint with `scraps_folder=true` — the same source
-/// the gallery-dl extractor uses. Requires a web session (Cookie + CSRF; an
-/// anonymous deviantart.com visit suffices); a missing or stale session is
-/// refreshed once and retried before giving up.
-final artistScrapsProvider = StateNotifierProvider.autoDispose
-    .family<ArtworkFeedController, ArtworkFeedState, String>((ref, username) {
-      final controller = ArtworkFeedController((request) async {
-        final runtime = ref.read(runtimeProvider);
-        final dio = runtime.dio;
-        if (dio == null) {
-          throw const DAKitException(
-            kind: DAKitFailureKind.configuration,
-            code: 'app.runtime.dio',
-            message: 'The network layer is not available.',
-          );
-        }
-        final webSession = ref.read(webSessionProvider);
-        final offset = int.tryParse(request.cursor ?? '') ?? 0;
-        var csrf = ref.read(webSessionControllerProvider).csrf;
-        var cookieHeader = await webSession.cookieHeader();
-        var page = await _tryFetchScraps(
-          dio,
-          username,
-          csrf,
-          cookieHeader,
-          offset,
-        );
-        if (page == null) {
-          // Missing or stale web session (the endpoint is strict about the
-          // Cookie + CSRF pair): load the anonymous browser session once and
-          // retry, mirroring the rfy feed's recovery contract.
-          await ref.read(webSessionRefresherProvider).refresh();
-          csrf = ref.read(webSessionControllerProvider).csrf;
-          cookieHeader = await webSession.cookieHeader();
-          page = await _tryFetchScraps(
-            dio,
-            username,
-            csrf,
-            cookieHeader,
-            offset,
-          );
-        }
-        if (page == null) {
-          throw const DAKitException(
-            kind: DAKitFailureKind.authentication,
-            code: 'web.session.unavailable',
-            message: 'The Scraps folder requires a valid web session.',
-          );
-        }
-        final continuation = page.hasMore
-            ? '${offset + page.items.length}'
-            : null;
-        ref.read(artworkStoreProvider.notifier).putAll(page.items);
-        return Page<Artwork>(
-          items: page.items,
-          hasMore: page.hasMore,
-          nextCursor: continuation,
-        );
-      });
-      return controller;
-    });
-
-/// Fetches one scraps page, or `null` when the web session is missing or the
-/// request failed (the caller then refreshes the session and retries once).
-Future<CollectionContentsPage?> _tryFetchScraps(
-  Dio dio,
-  String username,
-  String csrf,
-  String cookieHeader,
-  int offset,
-) async {
-  if (csrf.isEmpty || cookieHeader.isEmpty) return null;
-  try {
-    return await WebCollectionContentsFetcher(dio).fetchScrapsPage(
-      username: username,
-      cookieHeader: cookieHeader,
-      csrfToken: csrf,
-      offset: offset,
-    );
-  } on Object {
-    return null;
-  }
-}
 
 /// Extra profile facts (watchers count, join date) from the website's about
 /// endpoint. `null` when unavailable (no web session or a reshaped response) —

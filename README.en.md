@@ -90,8 +90,8 @@ can move the folder and just launch it again.
   automatic tag hydration from official metadata; tag pages sort by Newest or
   Popular
 - **Artist**: profile (including bio, watcher count, join date), gallery with
-  keyword search over their own works, **scraps**, custom sub-galleries
-  (folders), favourites, watch
+  keyword search over their own works, custom sub-galleries (folders),
+  favourites, watch
 - **Sharing**: native system sharing for artwork, artists, gallery folders,
   favourite collections, and tags; artwork links can still be copied separately
 - **Social**: favourite (with state), watch/unwatch, watched-user list,

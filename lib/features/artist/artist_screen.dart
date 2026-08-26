@@ -98,7 +98,7 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
     final s = strings(ref.watch(appLanguageProvider));
 
     return DefaultTabController(
-      length: 5,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.username),
@@ -132,7 +132,6 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
               Tab(text: s.artistSavedWorks),
               Tab(text: s.journal),
               Tab(text: s.folders),
-              Tab(text: s.artistScraps),
             ],
           ),
         ),
@@ -169,7 +168,6 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                     ),
                     JournalsView(username: widget.username),
                     FoldersOverviewView(username: widget.username),
-                    ArtistScrapsTab(username: widget.username),
                   ],
                 ),
               ),
@@ -272,30 +270,6 @@ final class ArtistWorksTab extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// The artist's Scraps tab. Watches [artistScrapsProvider] only when the tab
-/// is actually opened, so browsing an artist does not fire a web-session
-/// request (or a session refresh) for a tab the user never visits.
-final class ArtistScrapsTab extends ConsumerWidget {
-  const ArtistScrapsTab({required this.username, super.key});
-
-  final String username;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = strings(ref.watch(appLanguageProvider));
-    final feed = ref.watch(artistScrapsProvider(username));
-    return ArtworkFeedGrid(
-      feed: feed,
-      emptyMessage: s.noScraps,
-      errorMessage: s.scrapsUnavailable,
-      onRefresh: () =>
-          ref.read(artistScrapsProvider(username).notifier).refresh(),
-      onLoadMore: () =>
-          ref.read(artistScrapsProvider(username).notifier).loadMore(),
     );
   }
 }
