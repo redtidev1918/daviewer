@@ -3,6 +3,12 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.171
+
+- 首页右上角新增通知铃铛：未读消息显示数字角标，点击进入消息中心（未读红点 + 本地已读）。
+
+- A notification bell on the Home screen shows an unread badge and opens the message center (unread dot + local mark-as-read).
+
 ## 0.2.170
 
 - 兑现文档承诺：登录页右上角新增设置入口，登录异常时也可进入语言、网络代理、日志与诊断、检查更新和关于。
