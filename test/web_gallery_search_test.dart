@@ -30,7 +30,9 @@ void main() {
 
   test('throws FormatException when results are missing', () {
     expect(
-      () => WebGallerySearchFetcher.parseJson(<String, Object?>{'hasMore': false}),
+      () => WebGallerySearchFetcher.parseJson(<String, Object?>{
+        'hasMore': false,
+      }),
       throwsFormatException,
     );
   });

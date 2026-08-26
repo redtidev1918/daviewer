@@ -91,12 +91,14 @@ void main() {
 
   test('scraps request uses type=gallery and scraps_folder=true', () async {
     final captured = <Map<String, dynamic>>[];
-    final dio = Dio(
-      BaseOptions(baseUrl: 'https://www.deviantart.com'),
-    )..httpClientAdapter = _CaptureAdapter(captured, body: <String, Object?>{
-        'hasMore': false,
-        'results': <Object?>[_deviation(30, 'Scrap 30')],
-      });
+    final dio = Dio(BaseOptions(baseUrl: 'https://www.deviantart.com'))
+      ..httpClientAdapter = _CaptureAdapter(
+        captured,
+        body: <String, Object?>{
+          'hasMore': false,
+          'results': <Object?>[_deviation(30, 'Scrap 30')],
+        },
+      );
 
     final page = await WebCollectionContentsFetcher(dio).fetchScrapsPage(
       username: 'ArtistOne',

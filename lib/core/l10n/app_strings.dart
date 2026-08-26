@@ -510,9 +510,8 @@ final class AppStrings {
         : '$base · $watchers watchers';
   }
 
-  String artistJoinDate(DateTime date) => _lang == AppLanguage.zh
-      ? '加入于 ${date.year}'
-      : 'Joined ${date.year}';
+  String artistJoinDate(DateTime date) =>
+      _lang == AppLanguage.zh ? '加入于 ${date.year}' : 'Joined ${date.year}';
 
   String get searchInGallery =>
       _lang == AppLanguage.zh ? '搜索该作者的作品' : 'Search this gallery';
