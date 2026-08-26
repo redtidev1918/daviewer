@@ -3,6 +3,18 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.163
+
+- 搜索现在返回真实的 DeviantArt 搜索结果（官方 API 已移除搜索接口）。
+- 画师页新增 Scraps 标签。
+- 画师页可以搜索该作者自己的作品。
+- 画师资料显示关注者数与加入时间。
+
+- Search now returns real DeviantArt results (the official API removed its search endpoint).
+- Artist page: new Scraps tab.
+- Artist page: keyword search over the artist's own gallery.
+- Artist profile shows watcher count and join date.
+
 ## 0.2.162
 
 - 网络异常时不再把已登录状态误显示为未登录。

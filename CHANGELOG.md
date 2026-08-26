@@ -3,6 +3,20 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.163（真实搜索与画师页增强）
+
+### Added
+
+- 搜索改为真实结果：官方 API 已移除搜索端点，App 改用网页端
+  `_puppy/dabrowse/search/deviations`（复用 WebView 会话，含一次 CSRF 刷新重试），
+  无网页会话时回退官方接口。
+- 画师页新增 Scraps 标签：官方 `gallery/folders` 不含 Scraps，改读
+  `gallection/contents?scraps_folder=true`（匿名 CSRF 即可）。
+- 画师「作品」标签新增关键词搜索：`gallection/search` 在作者自己的画廊里
+  搜索作品（官方接口无此能力）。
+- 画师资料显示关注者数与加入时间：官方 `user/profile` 不提供，改读
+  `dauserprofile/init/about`，字段缺失时自动省略。
+
 ## 0.2.162（会话恢复与搜索体验）
 
 ### Fixed
