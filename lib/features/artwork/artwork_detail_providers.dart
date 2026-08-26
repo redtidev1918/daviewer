@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +12,7 @@ import '../../core/data/deviation_init.dart';
 import '../../core/data/html_text.dart';
 import '../../core/data/web_more_like_this.dart';
 import '../../core/runtime/runtime_provider.dart';
+import '../../core/search/interest_store.dart';
 import 'artwork_store.dart';
 import 'more_like_this_failure.dart';
 
@@ -182,7 +185,11 @@ final journalHtmlProvider = FutureProvider.autoDispose.family<String?, String>((
 final artworkDetailProvider = FutureProvider.autoDispose
     .family<Artwork, String>((ref, artworkId) async {
       final cached = ref.read(artworkStoreProvider)[artworkId];
-      if (cached != null) return cached;
+      if (cached != null) {
+        // Viewing a work is an interest signal for the recommended tags.
+        unawaited(InterestStore.recordTags(cached.tags));
+        return cached;
+      }
       final runtime = ref.watch(runtimeProvider);
       // Numeric website ids (pasted links) must be resolved to the OAuth UUID
       // first — the official deviation/{id} endpoint rejects numeric ids with
@@ -190,6 +197,7 @@ final artworkDetailProvider = FutureProvider.autoDispose
       final uuid = await ref.watch(artworkUuidProvider(artworkId).future);
       final artwork = await dataAccessFor(runtime).artworkById(uuid);
       ref.read(artworkStoreProvider.notifier).putAll(<Artwork>[artwork]);
+      unawaited(InterestStore.recordTags(artwork.tags));
       return artwork;
     });
 

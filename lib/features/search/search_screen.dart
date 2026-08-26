@@ -204,18 +204,22 @@ final class _SearchIdleView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = strings(ref.watch(appLanguageProvider));
     final theme = Theme.of(context);
-    final recommended = ref.watch(recommendedTagsProvider);
+    final recommended =
+        ref.watch(recommendedTagsProvider).valueOrNull ?? const <String>[];
 
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: <Widget>[
+        // Recent searches first, compact like tags.
+        _SearchHistorySection(onSelect: onSelect),
         if (recommended.isNotEmpty) ...[
+          const Divider(),
           _SectionTitle(text: s.recommendedTags),
           // Personalized tags are the most relevant to the user, so give them
           // the same artwork-preview cards as popular tags.
           _TagPreviewRow(tags: recommended.take(6).toList()),
-          const Divider(),
         ],
+        const Divider(),
         _SectionTitle(text: s.popularTags),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
@@ -227,8 +231,6 @@ final class _SearchIdleView extends ConsumerWidget {
           ),
         ),
         _TagPreviewRow(tags: _popularTags.take(6).toList()),
-        const Divider(),
-        _SearchHistorySection(onSelect: onSelect),
       ],
     );
   }
@@ -360,11 +362,11 @@ final class _SearchHistorySection extends ConsumerWidget {
 
     if (history.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
         child: Column(
           children: <Widget>[
-            Icon(Icons.search, size: 40, color: theme.colorScheme.outline),
-            const SizedBox(height: 12),
+            Icon(Icons.search, size: 36, color: theme.colorScheme.outline),
+            const SizedBox(height: 10),
             Text(
               s.searchIdleHint,
               textAlign: TextAlign.center,
@@ -378,9 +380,10 @@ final class _SearchHistorySection extends ConsumerWidget {
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Row(
             children: <Widget>[
               Text(s.recent, style: theme.textTheme.titleSmall),
@@ -393,18 +396,27 @@ final class _SearchHistorySection extends ConsumerWidget {
             ],
           ),
         ),
-        for (final item in history)
-          ListTile(
-            leading: const Icon(Icons.history),
-            title: Text(item),
-            trailing: IconButton(
-              tooltip: s.clear,
-              icon: const Icon(Icons.close, size: 18),
-              onPressed: () =>
-                  ref.read(searchHistoryProvider.notifier).remove(item),
-            ),
-            onTap: () => onSelect(item),
+        // Compact chips, like tags, instead of tall list tiles.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: <Widget>[
+              for (final item in history)
+                ActionChip(
+                  avatar: Icon(
+                    Icons.history,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  label: Text(item),
+                  onPressed: () => onSelect(item),
+                ),
+            ],
           ),
+        ),
+        const SizedBox(height: 8),
       ],
     );
   }

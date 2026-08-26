@@ -50,17 +50,6 @@ bool isDefinitiveCredentialFailure(DAKitException error) {
       (description.contains('invalid') || description.contains('revoked'));
 }
 
-bool shouldRestoreSignedInAfterFailure({
-  required Object error,
-  required bool hasSessionEvidence,
-}) => hasSessionEvidence && shouldPreserveSessionAfterRestoreFailure(error);
-
-/// A local sign-out tombstone is authoritative even when the operating system
-/// refused to delete an old secure-storage item. Without this gate, a stale
-/// Keychain token can silently sign the user back in on the next launch.
-bool shouldAttemptPersistedSessionRestore(bool hasSessionEvidence) =>
-    hasSessionEvidence;
-
 /// Owns the app's single user sign-in lifecycle. Hidden public browser state is
 /// managed separately by [WebSessionController] and is never authentication.
 final class AuthController extends StateNotifier<AuthState> {
@@ -106,19 +95,11 @@ final class AuthController extends StateNotifier<AuthState> {
           return;
         }
 
-        // 2. Restore a previous session only when this installation has
-        //    positive session evidence. A false value is also the durable
-        //    local-logout tombstone if secure-storage cleanup was denied.
-        final hasSessionEvidence = await AppPreferences.loadOAuthSessionKnown();
-        if (!shouldAttemptPersistedSessionRestore(hasSessionEvidence)) {
-          _log.info('auth', 'initialize: local state is signed out');
-          state = const AuthState(status: AuthStatus.signedOut);
-          _initializing = false;
-          return;
-        }
-
-        // Bound network round-trips so a slow/hung proxy on cold start can
-        // never pin the splash screen in a "loading forever" state.
+        // 2. Restore the persisted token. The token's presence is the
+        //    authoritative signal — the evidence flag can be stale after a
+        //    transient issue, so always attempt the restore and let the error
+        //    type decide. `validTokens` throws oauth.session.missing (no stored
+        //    token) on first run or after a real logout, which is definitive.
         final tokens = await runtime.oauth!
             .validTokens(forceRefresh: false)
             .timeout(const Duration(seconds: 15));
@@ -133,11 +114,9 @@ final class AuthController extends StateNotifier<AuthState> {
         _initializing = false;
         return;
       } on DAKitException catch (error) {
-        final hasSessionEvidence = await AppPreferences.loadOAuthSessionKnown();
-        if (shouldRestoreSignedInAfterFailure(
-          error: error,
-          hasSessionEvidence: hasSessionEvidence,
-        )) {
+        if (shouldPreserveSessionAfterRestoreFailure(error)) {
+          // Network / storage / timeout failure while restoring a stored
+          // token: stay signed in instead of claiming a logged-out state.
           _log.warning(
             'auth',
             'initialize: persisted session temporarily unavailable; '
@@ -154,36 +133,20 @@ final class AuthController extends StateNotifier<AuthState> {
           // create a second generation change during the next authorization.
           await AppPreferences.saveOAuthSessionKnown(false);
         }
-        _log.info(
-          'auth',
-          hasSessionEvidence
-              ? 'initialize: authorization is required'
-              : 'initialize: no prior OAuth session; staying signed out',
-          error,
-        );
+        _log.info('auth', 'initialize: authorization is required', error);
       } on Object catch (error, stack) {
-        final hasSessionEvidence = await AppPreferences.loadOAuthSessionKnown();
-        if (shouldRestoreSignedInAfterFailure(
-          error: error,
-          hasSessionEvidence: hasSessionEvidence,
-        )) {
-          _log.warning(
-            'auth',
-            'initialize: existing session restore failed transiently; '
-                'preserving state',
-            error,
-            stack,
-          );
-          state = const AuthState(status: AuthStatus.signedIn);
-          _initializing = false;
-          return;
-        }
+        // A timeout or unexpected error during restore means a stored token
+        // exists and a network operation hung — preserve the session rather
+        // than logging the user out.
         _log.warning(
           'auth',
-          'initialize: first-run session check failed; staying signed out',
+          'initialize: session restore failed transiently; preserving state',
           error,
           stack,
         );
+        state = const AuthState(status: AuthStatus.signedIn);
+        _initializing = false;
+        return;
       }
     }
 
