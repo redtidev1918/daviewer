@@ -3,6 +3,18 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.160
+
+- 更新提醒更灵敏：新版本发布后能更快看到提示（每小时检查 + 回到前台时检查）。
+- 搜索页热门标签现在带作品预览图（Pixiv 风格）。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- Update reminders appear sooner (hourly + on return to foreground).
+- Popular tags on the search page now show an artwork preview (Pixiv style).
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.159
 
 - 标签页新增「最新 / 热门」排序；搜索结果新增「最新优先」排序。
