@@ -3,6 +3,14 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.169
+
+- 登录成功后自动返回应用，无需再点「完成」。
+- 修复部分网络下官方接口请求无限转圈的问题：请求超时会明确提示，不再一直加载。
+
+- After signing in, the app returns automatically — no need to tap Done.
+- Fixed official-API requests hanging forever on some networks: they now time out with a clear error.
+
 ## 0.2.168
 
 - 修复更新 App 后「推荐」消失、需要重新登录的问题：登录 Cookie 现在会保存并在更新后自动恢复。
