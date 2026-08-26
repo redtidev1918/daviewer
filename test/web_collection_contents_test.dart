@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dakit_core/dakit_core.dart';
 import 'package:daviewer/core/data/web_collection_contents.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -79,6 +80,36 @@ void main() {
     expect(page.coverUri, isNotNull);
     expect(page.coverUri.toString(), contains('work-99'));
   });
+
+  test(
+    'scraps reports a session failure instead of a fake empty folder',
+    () async {
+      final captured = <Map<String, dynamic>>[];
+      final dio = Dio(BaseOptions(baseUrl: 'https://www.deviantart.com'))
+        ..httpClientAdapter = _CaptureAdapter(
+          captured,
+          body: <String, Object?>{
+            'results': <Object?>[],
+            // No hasMore / gallection envelope: the endpoint rejected the session.
+          },
+        );
+
+      await expectLater(
+        WebCollectionContentsFetcher(dio).fetchScrapsPage(
+          username: 'ArtistOne',
+          cookieHeader: 'userinfo=x',
+          csrfToken: 'csrf123',
+        ),
+        throwsA(
+          isA<DAKitException>().having(
+            (error) => error.kind,
+            'kind',
+            DAKitFailureKind.authentication,
+          ),
+        ),
+      );
+    },
+  );
 
   test('throws FormatException when JSON results are missing', () {
     expect(

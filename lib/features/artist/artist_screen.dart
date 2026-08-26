@@ -95,7 +95,6 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
   Widget build(BuildContext context) {
     final profile = ref.watch(artistProfileProvider(widget.username));
     final favouritesFeed = ref.watch(artistFavouritesProvider(widget.username));
-    final scrapsFeed = ref.watch(artistScrapsProvider(widget.username));
     final s = strings(ref.watch(appLanguageProvider));
 
     return DefaultTabController(
@@ -154,16 +153,7 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                       onQueryChanged: (query) =>
                           setState(() => _galleryQuery = query),
                     ),
-                    ArtworkFeedGrid(
-                      feed: scrapsFeed,
-                      emptyMessage: s.noScraps,
-                      onRefresh: () => ref
-                          .read(artistScrapsProvider(widget.username).notifier)
-                          .refresh(),
-                      onLoadMore: () => ref
-                          .read(artistScrapsProvider(widget.username).notifier)
-                          .loadMore(),
-                    ),
+                    ArtistScrapsTab(username: widget.username),
                     ArtworkFeedGrid(
                       feed: favouritesFeed,
                       emptyMessage: s.noFavourites,
@@ -282,6 +272,30 @@ final class ArtistWorksTab extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The artist's Scraps tab. Watches [artistScrapsProvider] only when the tab
+/// is actually opened, so browsing an artist does not fire a web-session
+/// request (or a session refresh) for a tab the user never visits.
+final class ArtistScrapsTab extends ConsumerWidget {
+  const ArtistScrapsTab({required this.username, super.key});
+
+  final String username;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = strings(ref.watch(appLanguageProvider));
+    final feed = ref.watch(artistScrapsProvider(username));
+    return ArtworkFeedGrid(
+      feed: feed,
+      emptyMessage: s.noScraps,
+      errorMessage: s.scrapsUnavailable,
+      onRefresh: () =>
+          ref.read(artistScrapsProvider(username).notifier).refresh(),
+      onLoadMore: () =>
+          ref.read(artistScrapsProvider(username).notifier).loadMore(),
     );
   }
 }
