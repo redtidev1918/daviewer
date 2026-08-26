@@ -14,4 +14,37 @@ void main() {
     expect(isSemver('development'), isFalse);
     expect(isSemver('0.2.144-beta'), isFalse);
   });
+
+  test('parseLatestRelease extracts version and notes', () {
+    final info = parseLatestRelease(<String, Object?>{
+      'tag_name': 'v0.2.166',
+      'body': '## 0.2.166\n\n- 修复了问题。\n',
+    });
+
+    expect(info?.version, '0.2.166');
+    expect(info?.notes, '## 0.2.166\n\n- 修复了问题。');
+  });
+
+  test('parseLatestRelease trims and tolerates missing notes', () {
+    final withNotes = parseLatestRelease(<String, Object?>{
+      'tag_name': 'v0.2.165',
+      'body': '  line one\n  ',
+    });
+    expect(withNotes?.notes, 'line one');
+
+    final noNotes = parseLatestRelease(<String, Object?>{
+      'tag_name': 'v0.2.165',
+      'body': '   ',
+    });
+    expect(noNotes?.notes, isNull);
+  });
+
+  test('parseLatestRelease rejects unexpected payloads', () {
+    expect(parseLatestRelease('not a map'), isNull);
+    expect(
+      parseLatestRelease(<String, Object?>{'tag_name': 'latest'}), // not semver
+      isNull,
+    );
+    expect(parseLatestRelease(<String, Object?>{'body': 'notes only'}), isNull);
+  });
 }

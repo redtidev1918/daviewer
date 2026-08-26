@@ -392,12 +392,9 @@ Future<void> _checkUpdates(
     final response = await dio.get<Object?>(
       'https://api.github.com/repos/redtidev1918/daviewer/releases/latest',
     );
-    final data = response.data;
-    final latest = data is Map && data['tag_name'] is String
-        ? (data['tag_name'] as String).replaceFirst(RegExp('^v'), '')
-        : null;
+    final info = parseLatestRelease(response.data);
     if (!context.mounted) return;
-    if (latest == null) {
+    if (info == null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(s.upToDate)));
       return;
@@ -405,17 +402,22 @@ Future<void> _checkUpdates(
     // Only compare when both sides are plain semver; a `development` build has
     // no release number to compare against, so just show the latest + download.
     final currentIsVersion = isSemver(appVersion);
-    final newer = currentIsVersion && compareVersions(latest, appVersion) > 0;
+    final newer =
+        currentIsVersion && compareVersions(info.version, appVersion) > 0;
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(s.checkUpdates),
-        content: Text(
-          newer
-              ? s.newVersionAvailable('v$latest')
-              : currentIsVersion
-              ? '${s.upToDate}（$appVersion）'
-              : s.newVersionAvailable('v$latest'),
+        title: Text(
+          newer ? s.updateDetails('v${info.version}') : s.checkUpdates,
+        ),
+        content: SingleChildScrollView(
+          child: Text(
+            newer
+                ? (info.notes ?? s.noUpdateNotes)
+                : currentIsVersion
+                ? '${s.upToDate}（$appVersion）'
+                : s.newVersionAvailable('v${info.version}'),
+          ),
         ),
         actions: <Widget>[
           TextButton(
