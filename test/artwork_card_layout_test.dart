@@ -41,7 +41,7 @@ void main() {
     expect(ratio, 1.6);
   });
 
-  testWidgets('short banner cards use one compact metadata row', (
+  testWidgets('title and author render below the image, not over it', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -50,7 +50,6 @@ void main() {
           home: Scaffold(
             body: SizedBox(
               width: 180,
-              height: 105,
               child: ArtworkCard(artwork: _bannerArtwork()),
             ),
           ),
@@ -58,30 +57,10 @@ void main() {
       ),
     );
 
-    final title = tester.widget<Text>(find.text('A very wide artwork title'));
-    expect(title.maxLines, 1);
-    expect(find.text('@artist'), findsOneWidget);
-    expect(find.byIcon(Icons.person_outline), findsNothing);
-  });
-
-  testWidgets('tall cards retain the richer metadata layout', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              width: 180,
-              height: 240,
-              child: ArtworkCard(artwork: _bannerArtwork()),
-            ),
-          ),
-        ),
-      ),
-    );
-
+    // The metadata is a normal card section beneath the image: title (up to
+    // two lines) and the author with an @ prefix, without a gradient overlay.
     final title = tester.widget<Text>(find.text('A very wide artwork title'));
     expect(title.maxLines, 2);
-    expect(find.text('artist'), findsOneWidget);
-    expect(find.byIcon(Icons.person_outline), findsOneWidget);
+    expect(find.text('@artist'), findsOneWidget);
   });
 }

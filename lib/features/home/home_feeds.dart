@@ -150,16 +150,13 @@ final class ArtworkGrid extends ConsumerWidget {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final artwork = items[index];
-        return AspectRatio(
-          aspectRatio: artworkPreviewAspectRatio(context, artwork),
-          child: ArtworkCard(
+        return ArtworkCard(
+          artwork: artwork,
+          onTap: () => openArtworkFromList(
+            context,
+            ref,
+            artworks: items,
             artwork: artwork,
-            onTap: () => openArtworkFromList(
-              context,
-              ref,
-              artworks: items,
-              artwork: artwork,
-            ),
           ),
         );
       },

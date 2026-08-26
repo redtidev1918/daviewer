@@ -38,7 +38,8 @@ final class MoreFromArtistSection extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         SizedBox(
-          height: 200,
+          // Image + title/author below it (the metadata no longer overlays).
+          height: 250,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: items.length,
