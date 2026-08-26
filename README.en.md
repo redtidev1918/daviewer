@@ -89,8 +89,8 @@ can move the folder and just launch it again.
 - **Tags**: one compact tag row across detail, search, and tag screens, with
   automatic tag hydration from official metadata; tag pages sort by Newest or
   Popular
-- **Artist**: profile (including bio), gallery, **custom sub-galleries
-  (folders)**, favourites, watch
+- **Artist**: profile (including bio), gallery, **scraps**, custom sub-galleries
+  (folders), favourites, watch
 - **Sharing**: native system sharing for artwork, artists, gallery folders,
   favourite collections, and tags; artwork links can still be copied separately
 - **Social**: favourite (with state), watch/unwatch, watched-user list,

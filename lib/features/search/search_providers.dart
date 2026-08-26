@@ -1,7 +1,12 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/session_state.dart';
+import '../../core/auth/web_session_controller.dart';
+import '../../core/auth/web_session_refresher.dart';
 import '../../core/data/data_access.dart';
+import '../../core/data/web_search.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../../core/search/interest_store.dart';
@@ -12,12 +17,62 @@ import '../home/home_providers.dart';
 
 final searchFeedProvider = StateNotifierProvider.autoDispose
     .family<ArtworkFeedController, ArtworkFeedState, String>((ref, query) {
-      final controller = ArtworkFeedController((request) {
+      final controller = ArtworkFeedController((request) async {
         final runtime = ref.read(runtimeProvider);
+        final dio = runtime.dio;
+        if (dio == null) {
+          throw const DAKitException(
+            kind: DAKitFailureKind.configuration,
+            code: 'app.runtime.dio',
+            message: 'The network layer is not available.',
+          );
+        }
+        // Real search results come from the website's private search endpoint
+        // (the official API removed `browse/search`). Prefer it whenever the
+        // embedded WebView has a web session; a stale session is refreshed once
+        // like the rfy feed. The official `browse/home?q=` fallback keeps the
+        // previous behavior when no web session exists.
+        final webSession = ref.read(webSessionProvider);
+        var csrf = ref.read(webSessionControllerProvider).csrf;
+        var cookieHeader = await webSession.cookieHeader();
+        var page = await _tryWebSearch(dio, query, csrf, cookieHeader, request);
+        if (page == null) {
+          await ref.read(webSessionRefresherProvider).refresh();
+          csrf = ref.read(webSessionControllerProvider).csrf;
+          cookieHeader = await webSession.cookieHeader();
+          page = await _tryWebSearch(dio, query, csrf, cookieHeader, request);
+        }
+        if (page != null) {
+          ref.read(artworkStoreProvider.notifier).putAll(page.items);
+          return page;
+        }
         return dataAccessFor(runtime).search(query, request);
       });
       return controller;
     });
+
+/// Fetches one page of web search results, or `null` when the web session is
+/// missing or the request failed (the caller then refreshes the session and
+/// retries once, finally falling back to the official API).
+Future<Page<Artwork>?> _tryWebSearch(
+  Dio dio,
+  String query,
+  String csrf,
+  String cookieHeader,
+  PageRequest request,
+) async {
+  if (csrf.isEmpty || cookieHeader.isEmpty) return null;
+  try {
+    return await WebSearchFetcher(dio).fetch(
+      query: query,
+      cookieHeader: cookieHeader,
+      csrfToken: csrf,
+      cursor: request.cursor,
+    );
+  } on Object {
+    return null;
+  }
+}
 
 /// A single representative artwork for a tag, used as the tag's preview image
 /// (Pixiv-style). Picks the most popular deviation of the tag so the preview

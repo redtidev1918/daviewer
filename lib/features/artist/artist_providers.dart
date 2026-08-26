@@ -1,7 +1,11 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/session_state.dart';
+import '../../core/auth/web_session_controller.dart';
+import '../../core/auth/web_session_refresher.dart';
 import '../../core/data/data_access.dart';
+import '../../core/data/web_collection_contents.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../artwork/artwork_store.dart';
@@ -54,6 +58,57 @@ final artistFavouriteFoldersProvider = FutureProvider.autoDispose
             options: const FolderQueryOptions(calculateSize: true),
           );
       return page.items;
+    });
+
+/// The artist's Scraps folder. DeviantArt's official API omits scraps entirely
+/// (`gallery/folders` has no scraps entry), so this reads the website's
+/// `gallection/contents` endpoint with `scraps_folder=true` — the same source
+/// the gallery-dl extractor uses. Requires a web session (Cookie + CSRF; an
+/// anonymous deviantart.com visit suffices).
+final artistScrapsProvider = StateNotifierProvider.autoDispose
+    .family<ArtworkFeedController, ArtworkFeedState, String>((ref, username) {
+      final controller = ArtworkFeedController((request) async {
+        final runtime = ref.read(runtimeProvider);
+        final dio = runtime.dio;
+        if (dio == null) {
+          throw const DAKitException(
+            kind: DAKitFailureKind.configuration,
+            code: 'app.runtime.dio',
+            message: 'The network layer is not available.',
+          );
+        }
+        final webSession = ref.read(webSessionProvider);
+        var csrf = ref.read(webSessionControllerProvider).csrf;
+        if (csrf.isEmpty) {
+          await ref.read(webSessionRefresherProvider).refresh();
+          csrf = ref.read(webSessionControllerProvider).csrf;
+        }
+        final cookieHeader = await webSession.cookieHeader();
+        if (csrf.isEmpty || cookieHeader.isEmpty) {
+          throw const DAKitException(
+            kind: DAKitFailureKind.authentication,
+            code: 'web.session.unavailable',
+            message: 'The Scraps folder requires a web session.',
+          );
+        }
+        final offset = int.tryParse(request.cursor ?? '') ?? 0;
+        final page = await WebCollectionContentsFetcher(dio).fetchScrapsPage(
+          username: username,
+          cookieHeader: cookieHeader,
+          csrfToken: csrf,
+          offset: offset,
+        );
+        final continuation = page.hasMore
+            ? '${offset + page.items.length}'
+            : null;
+        ref.read(artworkStoreProvider.notifier).putAll(page.items);
+        return Page<Artwork>(
+          items: page.items,
+          hasMore: page.hasMore,
+          nextCursor: continuation,
+        );
+      });
+      return controller;
     });
 
 /// The artist's journal posts (articles), via the official

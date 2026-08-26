@@ -483,6 +483,8 @@ final class AppStrings {
   String get watchStateOff => _lang == AppLanguage.zh ? '关注' : 'Watch';
   String get journal => _lang == AppLanguage.zh ? '文章' : 'Journal';
   String get artistWorks => _lang == AppLanguage.zh ? '作品' : 'Works';
+  String get artistScraps => _lang == AppLanguage.zh ? 'Scraps' : 'Scraps';
+  String get noScraps => _lang == AppLanguage.zh ? '暂无 Scraps' : 'No scraps';
   String get artistSavedWorks =>
       _lang == AppLanguage.zh ? '收藏作品' : 'Saved works';
   String get folders =>

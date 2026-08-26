@@ -120,6 +120,58 @@ final class WebCollectionContentsFetcher {
     return List<Artwork>.unmodifiable(all);
   }
 
+  /// Fetches one page of an artist's Scraps folder.
+  ///
+  /// DeviantArt's official API has no scraps surface — `gallery/folders` omits
+  /// the Scraps folder — so this reads the same `gallection/contents` endpoint
+  /// the website uses, with `type=gallery&scraps_folder=true` (the same
+  /// approach as the gallery-dl extractor). The response carries the same
+  /// shared website deviation shape as collections.
+  Future<CollectionContentsPage> fetchScrapsPage({
+    required String username,
+    required String cookieHeader,
+    required String csrfToken,
+    int offset = 0,
+    int limit = 24,
+  }) async {
+    final response = await _dio.get<Object?>(
+      _jsonEndpoint.toString(),
+      queryParameters: <String, dynamic>{
+        'username': username.toLowerCase(),
+        'type': 'gallery',
+        'scraps_folder': true,
+        'offset': offset,
+        'limit': limit,
+        'mature_content': true,
+        'csrf_token': csrfToken,
+      },
+      options: webSessionOptions(cookieHeader),
+    );
+    return parseJsonPage(response.data);
+  }
+
+  /// Fetches every page of an artist's Scraps folder (typically small).
+  Future<List<Artwork>> fetchAllScraps({
+    required String username,
+    required String cookieHeader,
+    required String csrfToken,
+  }) async {
+    final all = <Artwork>[];
+    var offset = 0;
+    while (offset < 20000) {
+      final result = await fetchScrapsPage(
+        username: username,
+        cookieHeader: cookieHeader,
+        csrfToken: csrfToken,
+        offset: offset,
+      );
+      all.addAll(result.items);
+      if (!result.hasMore || result.items.isEmpty) break;
+      offset += 24;
+    }
+    return List<Artwork>.unmodifiable(all);
+  }
+
   /// Fetches one page via the server-rendered favourites page (session-free).
   Future<CollectionContentsPage> fetchPage({
     required int folderId,

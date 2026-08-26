@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:daviewer/core/data/web_collection_contents.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -85,6 +87,32 @@ void main() {
       }),
       throwsFormatException,
     );
+  });
+
+  test('scraps request uses type=gallery and scraps_folder=true', () async {
+    final captured = <Map<String, dynamic>>[];
+    final dio = Dio(
+      BaseOptions(baseUrl: 'https://www.deviantart.com'),
+    )..httpClientAdapter = _CaptureAdapter(captured, body: <String, Object?>{
+        'hasMore': false,
+        'results': <Object?>[_deviation(30, 'Scrap 30')],
+      });
+
+    final page = await WebCollectionContentsFetcher(dio).fetchScrapsPage(
+      username: 'ArtistOne',
+      cookieHeader: 'userinfo=x',
+      csrfToken: 'csrf123',
+    );
+
+    expect(page.items.map((artwork) => artwork.id), <String>['30']);
+    final query = captured.single;
+    expect(query['type'], 'gallery');
+    expect(query['scraps_folder'], true);
+    expect(query['username'], 'artistone');
+    expect(query['mature_content'], true);
+    expect(query['csrf_token'], 'csrf123');
+    expect(query['offset'], 0);
+    expect(query['limit'], 24);
   });
 
   const liveHtmlPath = String.fromEnvironment('DA_COLLECTION_HTML');
@@ -193,3 +221,32 @@ Map<String, Object?> _deviation(
         }
       : <String, Object?>{},
 };
+
+/// Captures the outgoing query parameters of one Dio request and returns a
+/// canned JSON body, so fetcher request shapes can be asserted without
+/// touching the network.
+final class _CaptureAdapter implements HttpClientAdapter {
+  _CaptureAdapter(this.captured, {required this.body});
+
+  final List<Map<String, dynamic>> captured;
+  final Map<String, Object?> body;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    captured.add(Map<String, dynamic>.of(options.queryParameters));
+    return ResponseBody.fromString(
+      jsonEncode(body),
+      200,
+      headers: <String, List<String>>{
+        Headers.contentTypeHeader: <String>['application/json'],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
