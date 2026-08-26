@@ -21,6 +21,12 @@ deeper developer and architecture notes.
 - [Contributing](../CONTRIBUTING.md) — development setup, project structure,
   workflow, and style.
 
+## Related
+
+- [DAKit documentation](https://github.com/redtidev1918/dakit/blob/main/docs/README.md)
+  — the upstream SDK this app depends on (OAuth, official API mapping, domain
+  models, background transfers). SDK-level questions belong there.
+
 ## Convention
 
 - Developer notes are written in English; user-facing copy in the READMEs is
