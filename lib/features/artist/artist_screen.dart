@@ -26,6 +26,15 @@ final class ArtistScreen extends ConsumerStatefulWidget {
 final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
   bool _watching = false;
   bool _watchBusy = false;
+  final TextEditingController _gallerySearchController =
+      TextEditingController();
+  String? _galleryQuery;
+
+  @override
+  void dispose() {
+    _gallerySearchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -85,7 +94,6 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(artistProfileProvider(widget.username));
-    final galleryFeed = ref.watch(artistGalleryProvider(widget.username));
     final favouritesFeed = ref.watch(artistFavouritesProvider(widget.username));
     final scrapsFeed = ref.watch(artistScrapsProvider(widget.username));
     final s = strings(ref.watch(appLanguageProvider));
@@ -139,15 +147,12 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
               Expanded(
                 child: TabBarView(
                   children: <Widget>[
-                    ArtworkFeedGrid(
-                      feed: galleryFeed,
-                      emptyMessage: s.noArtworks,
-                      onRefresh: () => ref
-                          .read(artistGalleryProvider(widget.username).notifier)
-                          .refresh(),
-                      onLoadMore: () => ref
-                          .read(artistGalleryProvider(widget.username).notifier)
-                          .loadMore(),
+                    ArtistWorksTab(
+                      username: widget.username,
+                      controller: _gallerySearchController,
+                      query: _galleryQuery,
+                      onQueryChanged: (query) =>
+                          setState(() => _galleryQuery = query),
                     ),
                     ArtworkFeedGrid(
                       feed: scrapsFeed,
@@ -182,6 +187,101 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The artist's Works tab: a keyword search over their own gallery plus the
+/// normal gallery feed. Searching uses the website's `gallection/search`
+/// endpoint (the official API has no gallery-search surface); an empty query
+/// shows the plain gallery feed.
+final class ArtistWorksTab extends ConsumerWidget {
+  const ArtistWorksTab({
+    required this.username,
+    required this.controller,
+    required this.query,
+    required this.onQueryChanged,
+    super.key,
+  });
+
+  final String username;
+  final TextEditingController controller;
+  final String? query;
+  final ValueChanged<String?> onQueryChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = strings(ref.watch(appLanguageProvider));
+    final searching = query != null && query!.isNotEmpty;
+    final feed = searching
+        ? ref.watch(
+            artistGallerySearchProvider(
+              ArtistGallerySearchKey(username: username, query: query!),
+            ),
+          )
+        : ref.watch(artistGalleryProvider(username));
+    return Column(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: TextField(
+            controller: controller,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: s.searchInGallery,
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: searching
+                  ? IconButton(
+                      tooltip: s.clearSearch,
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        controller.clear();
+                        onQueryChanged(null);
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+            ),
+            onSubmitted: (value) {
+              final trimmed = value.trim();
+              onQueryChanged(trimmed.isEmpty ? null : trimmed);
+            },
+          ),
+        ),
+        Expanded(
+          child: ArtworkFeedGrid(
+            feed: feed,
+            emptyMessage: searching ? s.noGallerySearchResults : s.noArtworks,
+            onRefresh: () => ref
+                .read(
+                  searching
+                      ? artistGallerySearchProvider(
+                          ArtistGallerySearchKey(
+                            username: username,
+                            query: query!,
+                          ),
+                        ).notifier
+                      : artistGalleryProvider(username).notifier,
+                )
+                .refresh(),
+            onLoadMore: () => ref
+                .read(
+                  searching
+                      ? artistGallerySearchProvider(
+                          ArtistGallerySearchKey(
+                            username: username,
+                            query: query!,
+                          ),
+                        ).notifier
+                      : artistGalleryProvider(username).notifier,
+                )
+                .loadMore(),
+          ),
+        ),
+      ],
     );
   }
 }

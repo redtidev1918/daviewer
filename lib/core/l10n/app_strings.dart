@@ -500,9 +500,27 @@ final class AppStrings {
   String get emptyFolderBadge => _lang == AppLanguage.zh ? '空画集' : 'Empty';
   String folderArtworkCount(int count) =>
       _lang == AppLanguage.zh ? '$count 作品' : '$count artworks';
-  String artistStats(int deviations, int favourites) => _lang == AppLanguage.zh
-      ? '$deviations 作品 · $favourites 收藏'
-      : '$deviations deviations · $favourites favourites';
+  String artistStats(int deviations, int favourites, [int? watchers]) {
+    final base = _lang == AppLanguage.zh
+        ? '$deviations 作品 · $favourites 收藏'
+        : '$deviations deviations · $favourites favourites';
+    if (watchers == null) return base;
+    return _lang == AppLanguage.zh
+        ? '$base · $watchers 关注者'
+        : '$base · $watchers watchers';
+  }
+
+  String artistJoinDate(DateTime date) => _lang == AppLanguage.zh
+      ? '加入于 ${date.year}'
+      : 'Joined ${date.year}';
+
+  String get searchInGallery =>
+      _lang == AppLanguage.zh ? '搜索该作者的作品' : 'Search this gallery';
+
+  String get noGallerySearchResults =>
+      _lang == AppLanguage.zh ? '没有匹配的作品' : 'No matching works';
+
+  String get clearSearch => _lang == AppLanguage.zh ? '清除搜索' : 'Clear search';
 
   // --- search ---
   String get searchHint => _lang == AppLanguage.zh

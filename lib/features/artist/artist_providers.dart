@@ -6,6 +6,8 @@ import '../../core/auth/web_session_controller.dart';
 import '../../core/auth/web_session_refresher.dart';
 import '../../core/data/data_access.dart';
 import '../../core/data/web_collection_contents.dart';
+import '../../core/data/web_gallery_search.dart';
+import '../../core/data/web_user_profile.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/runtime/runtime_provider.dart';
 import '../artwork/artwork_store.dart';
@@ -107,6 +109,95 @@ final artistScrapsProvider = StateNotifierProvider.autoDispose
           hasMore: page.hasMore,
           nextCursor: continuation,
         );
+      });
+      return controller;
+    });
+
+/// Extra profile facts (watchers count, join date) from the website's about
+/// endpoint. `null` when unavailable (no web session or a reshaped response) —
+/// the header simply omits the enrichment.
+final webUserProfileProvider = FutureProvider.autoDispose
+    .family<WebUserProfileInfo?, String>((ref, username) async {
+      final runtime = ref.watch(runtimeProvider);
+      final dio = runtime.dio;
+      if (dio == null) return null;
+      final webSession = ref.read(webSessionProvider);
+      var csrf = ref.read(webSessionControllerProvider).csrf;
+      if (csrf.isEmpty) {
+        await ref.read(webSessionRefresherProvider).refresh();
+        csrf = ref.read(webSessionControllerProvider).csrf;
+      }
+      final cookieHeader = await webSession.cookieHeader();
+      if (csrf.isEmpty || cookieHeader.isEmpty) return null;
+      try {
+        return await WebUserProfileFetcher(dio).fetch(
+          username: username,
+          cookieHeader: cookieHeader,
+          csrfToken: csrf,
+        );
+      } on Object {
+        return null;
+      }
+    });
+
+/// Identifies a keyword search inside one artist's gallery.
+final class ArtistGallerySearchKey {
+  const ArtistGallerySearchKey({required this.username, required this.query});
+
+  final String username;
+  final String query;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ArtistGallerySearchKey &&
+      other.username == username &&
+      other.query == query;
+
+  @override
+  int get hashCode => Object.hash(username, query);
+}
+
+/// Keyword search within one artist's own gallery, via the website's
+/// `gallection/search` endpoint (the official API has no gallery-search
+/// surface). Requires a web session (Cookie + CSRF).
+final artistGallerySearchProvider = StateNotifierProvider.autoDispose
+    .family<ArtworkFeedController, ArtworkFeedState, ArtistGallerySearchKey>((
+      ref,
+      key,
+    ) {
+      final controller = ArtworkFeedController((request) async {
+        final runtime = ref.read(runtimeProvider);
+        final dio = runtime.dio;
+        if (dio == null) {
+          throw const DAKitException(
+            kind: DAKitFailureKind.configuration,
+            code: 'app.runtime.dio',
+            message: 'The network layer is not available.',
+          );
+        }
+        final webSession = ref.read(webSessionProvider);
+        var csrf = ref.read(webSessionControllerProvider).csrf;
+        if (csrf.isEmpty) {
+          await ref.read(webSessionRefresherProvider).refresh();
+          csrf = ref.read(webSessionControllerProvider).csrf;
+        }
+        final cookieHeader = await webSession.cookieHeader();
+        if (csrf.isEmpty || cookieHeader.isEmpty) {
+          throw const DAKitException(
+            kind: DAKitFailureKind.authentication,
+            code: 'web.session.unavailable',
+            message: 'Gallery search requires a web session.',
+          );
+        }
+        final page = await WebGallerySearchFetcher(dio).fetch(
+          username: key.username,
+          query: key.query,
+          cookieHeader: cookieHeader,
+          csrfToken: csrf,
+          cursor: request.cursor,
+        );
+        ref.read(artworkStoreProvider.notifier).putAll(page.items);
+        return page;
       });
       return controller;
     });
