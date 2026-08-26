@@ -33,10 +33,7 @@ administrator rights, installs no service, and reads no system password. You
 can move the folder and just launch it again.
 
 > **A note on the macOS build:** this is a **non-Apple-signed, unnotarized test
-> preview**. Right-click the app and choose Open on first launch. Signing in
-> never asks for your Mac login password; if a password prompt appears at
-> launch, cancel it, do not type anything, and report the version plus a
-> screenshot on GitHub Issues.
+> preview**. Right-click the app and choose Open on first launch.
 
 ## Screenshots
 
