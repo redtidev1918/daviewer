@@ -185,6 +185,13 @@ final class _WebLoginScreenState extends ConsumerState<WebLoginScreen> {
       appBar: AppBar(
         title: Text(s.signInWelcomeTitle),
         actions: <Widget>[
+          // Settings, proxy, diagnostics, updates, and About must stay
+          // reachable even when sign-in is broken (documented recovery route).
+          IconButton(
+            tooltip: s.settings,
+            onPressed: () => context.push('/settings'),
+            icon: const Icon(Icons.settings_outlined),
+          ),
           IconButton(
             tooltip: s.contentSettings,
             onPressed: () => launchUrl(
