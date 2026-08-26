@@ -3,6 +3,14 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.167
+
+- 更新提醒现在会展示更新内容：点一下首页的更新横幅即可查看本次更新说明，再决定是否下载。
+- 更新检查失败后不再等一小时，下次启动或回到前台会自动重试。
+
+- Update reminders now show what's new: tap the Home banner to read the release notes before downloading.
+- A failed update check retries on the next launch or foreground resume instead of waiting an hour.
+
 ## 0.2.166
 
 - 移除画师页的 Scraps 标签（官网画师导航没有 Scraps，且大部分画师不使用）。
