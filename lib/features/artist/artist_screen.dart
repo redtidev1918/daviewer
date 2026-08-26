@@ -87,10 +87,11 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
     final profile = ref.watch(artistProfileProvider(widget.username));
     final galleryFeed = ref.watch(artistGalleryProvider(widget.username));
     final favouritesFeed = ref.watch(artistFavouritesProvider(widget.username));
+    final scrapsFeed = ref.watch(artistScrapsProvider(widget.username));
     final s = strings(ref.watch(appLanguageProvider));
 
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.username),
@@ -121,6 +122,7 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
             isScrollable: true,
             tabs: <Widget>[
               Tab(text: s.artistWorks),
+              Tab(text: s.artistScraps),
               Tab(text: s.artistSavedWorks),
               Tab(text: s.journal),
               Tab(text: s.folders),
@@ -145,6 +147,16 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                           .refresh(),
                       onLoadMore: () => ref
                           .read(artistGalleryProvider(widget.username).notifier)
+                          .loadMore(),
+                    ),
+                    ArtworkFeedGrid(
+                      feed: scrapsFeed,
+                      emptyMessage: s.noScraps,
+                      onRefresh: () => ref
+                          .read(artistScrapsProvider(widget.username).notifier)
+                          .refresh(),
+                      onLoadMore: () => ref
+                          .read(artistScrapsProvider(widget.username).notifier)
                           .loadMore(),
                     ),
                     ArtworkFeedGrid(
