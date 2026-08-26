@@ -34,7 +34,10 @@ those are the providers' pages and are not bypassed by the app.
   deviations, search, artwork lookup, favourites, watch, and downloads.
 - **Web session** (the WebView's cookies plus the CSRF token and login state,
   persisted locally and restored at startup) powers the website-only adapters:
-  the personalized `rfy/deviations` feed and collection contents.
+  the personalized `rfy/deviations` feed and collection contents. The signed-in
+  cookies are snapshotted into the app's own storage and re-injected on a cold
+  start when the platform WebView store lost them (e.g. across an app update),
+  so the personalized feed survives without another sign-in.
 
 One embedded login establishes both sessions. The WebView reports the web
 session (CSRF token and the `userinfo` cookie) only after the OAuth callback has

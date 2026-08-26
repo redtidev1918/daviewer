@@ -1,7 +1,9 @@
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../runtime/runtime_provider.dart';
 import 'auth_controller.dart';
+import 'session_state.dart';
 import 'web_session_store.dart';
 
 /// Browser state used only by hidden website adapters. It is not a second App
@@ -41,10 +43,67 @@ final class WebSessionController extends StateNotifier<WebSessionState> {
       isLoggedIn: saved['isLoggedIn'] as bool?,
       username: (saved['username'] as String?) ?? '',
     );
+    // The platform WebView store can lose its cookies across an app update;
+    // re-inject the persisted copy so the signed-in web session (and with it
+    // the personalized feed) survives without asking the user to sign in again.
+    await _restoreWebCookies(saved);
+  }
+
+  /// Re-injects the persisted deviantart.com cookies when the WebView store
+  /// currently has no signed-in `userinfo` cookie. Only restores when the
+  /// saved session belongs to the current OAuth account; a restored session is
+  /// not treated as a second login.
+  Future<void> _restoreWebCookies(Map<String, Object?> saved) async {
+    final rawCookies = saved['cookies'];
+    if (rawCookies is! Map || rawCookies.isEmpty) return;
+    final savedUsername = (saved['username'] as String?)?.trim() ?? '';
+    if (savedUsername.isEmpty) return;
+    final oauthUsername = _ref.read(authControllerProvider).account?.username;
+    if (oauthUsername != null &&
+        oauthUsername.isNotEmpty &&
+        savedUsername.toLowerCase() != oauthUsername.toLowerCase()) {
+      // Saved web session belongs to a different account; do not restore it.
+      return;
+    }
+    try {
+      final currentUser = await _ref.read(webSessionProvider).webUsername();
+      if (currentUser.isNotEmpty) return; // Web session already present.
+      final cookieManager = _ref
+          .read(runtimeProvider)
+          .webViewProxyManager
+          ?.cookieManager;
+      if (cookieManager == null) return;
+      for (final entry in rawCookies.entries) {
+        if (entry.value is! String) continue;
+        await cookieManager.setCookie(
+          url: WebUri('https://www.deviantart.com/'),
+          name: entry.key,
+          value: entry.value as String,
+        );
+      }
+      final restoredUser = await _ref.read(webSessionProvider).webUsername();
+      if (restoredUser.isNotEmpty) {
+        state = WebSessionState(
+          csrf: state.csrf,
+          isLoggedIn: true,
+          username: restoredUser,
+        );
+        await _store.write(
+          csrf: state.csrf,
+          isLoggedIn: true,
+          username: restoredUser,
+          cookies: _stringMap(rawCookies),
+        );
+      }
+    } on Object {
+      // Best effort; a failed restore only means the user signs in again.
+    }
   }
 
   /// Records browser state. A legacy mismatched identity is cleared instead of
-  /// being treated as an additional login.
+  /// being treated as an additional login. A signed-in report also snapshots
+  /// the current deviantart.com cookies for later re-injection; an anonymous
+  /// refresh keeps the previously saved cookies untouched.
   Future<void> report({required String csrf, required String username}) async {
     final loggedIn = username.isNotEmpty;
     final oauthUsername = _ref.read(authControllerProvider).account?.username;
@@ -65,12 +124,20 @@ final class WebSessionController extends StateNotifier<WebSessionState> {
       await _store.clear();
       return;
     }
+    final cookies = loggedIn
+        ? await _captureCookies()
+        : _stringMap((await _store.read())['cookies']);
     state = WebSessionState(
       csrf: csrf,
       isLoggedIn: loggedIn,
       username: username,
     );
-    await _store.write(csrf: csrf, isLoggedIn: loggedIn, username: username);
+    await _store.write(
+      csrf: csrf,
+      isLoggedIn: loggedIn,
+      username: username,
+      cookies: cookies,
+    );
   }
 
   /// Stores a fresh public browser CSRF even without a `userinfo` cookie.
@@ -85,8 +152,38 @@ final class WebSessionController extends StateNotifier<WebSessionState> {
     await report(csrf: csrf, username: username);
   }
 
+  /// Snapshots the current deviantart.com cookies (name → value).
+  Future<Map<String, String>> _captureCookies() async {
+    try {
+      final cookieManager = _ref
+          .read(runtimeProvider)
+          .webViewProxyManager
+          ?.cookieManager;
+      if (cookieManager == null) return const <String, String>{};
+      final cookies = await cookieManager.getCookies(
+        url: WebUri('https://www.deviantart.com/'),
+      );
+      return <String, String>{
+        for (final cookie in cookies) cookie.name: cookie.value,
+      };
+    } on Object {
+      return const <String, String>{};
+    }
+  }
+
   Future<void> clear() async {
     state = const WebSessionState(isLoggedIn: false);
     await _store.clear();
   }
+}
+
+/// Safely converts a decoded JSON value to a string map, dropping anything
+/// that is not a string pair.
+Map<String, String> _stringMap(Object? value) {
+  if (value is! Map) return const <String, String>{};
+  return <String, String>{
+    for (final entry in value.entries)
+      if (entry.key is String && entry.value is String)
+        entry.key as String: entry.value as String,
+  };
 }

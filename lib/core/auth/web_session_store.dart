@@ -7,6 +7,13 @@ import 'package:path_provider/path_provider.dart';
 /// login flag + username) so a cold start restores it alongside the OAuth
 /// session, instead of leaving the home feed signed out while the OAuth account
 /// still shows in the app bar.
+///
+/// [write] also persists the deviantart.com cookies of a signed-in session.
+/// The platform WebView store can lose cookies across an app update; keeping a
+/// copy here lets the app re-inject them on the next cold start so the
+/// personalized feed survives without asking the user to sign in again. The
+/// cookies are session credentials and live in the app's own support
+/// directory, the same container the WebView store already uses.
 final class WebSessionStore {
   const WebSessionStore();
 
@@ -33,6 +40,7 @@ final class WebSessionStore {
     required String csrf,
     required bool isLoggedIn,
     required String username,
+    Map<String, String> cookies = const <String, String>{},
   }) async {
     try {
       final file = await _file();
@@ -41,6 +49,7 @@ final class WebSessionStore {
           'csrf': csrf,
           'isLoggedIn': isLoggedIn,
           'username': username,
+          'cookies': cookies,
         }),
       );
     } on Object {
