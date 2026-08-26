@@ -9,12 +9,38 @@ const String _releasesUrl = 'https://github.com/redtidev1918/daviewer/releases';
 
 /// A slim, dismissible banner shown above the Home feed when a newer release is
 /// available. It never blocks content and never re-appears for a version the
-/// user has dismissed.
-final class UpdateBanner extends ConsumerWidget {
+/// user has dismissed. It also re-checks when the app returns to the
+/// foreground, so a release published mid-session shows up on the next resume.
+final class UpdateBanner extends ConsumerStatefulWidget {
   const UpdateBanner({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UpdateBanner> createState() => _UpdateBannerState();
+}
+
+final class _UpdateBannerState extends ConsumerState<UpdateBanner>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(updateCheckControllerProvider.notifier).check();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final update = ref.watch(updateCheckControllerProvider);
     if (!update.hasUpdate) return const SizedBox.shrink();
     final s = strings(ref.watch(appLanguageProvider));

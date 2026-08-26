@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dakit_core/dakit_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/theme/app_theme.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
@@ -223,7 +225,7 @@ final class _SearchIdleView extends ConsumerWidget {
             ),
           ),
         ),
-        _TagChips(tags: _popularTags),
+        _TagPreviewRow(tags: _popularTags.take(6).toList()),
         const Divider(),
         _SearchHistorySection(onSelect: onSelect),
       ],
@@ -257,6 +259,103 @@ final class _TagChips extends StatelessWidget {
     return CompactTagStrip(
       tags: tags,
       onSelected: (tag) => context.push('/tag/${Uri.encodeComponent(tag)}'),
+    );
+  }
+}
+
+/// Pixiv-style popular tags with a representative artwork preview each.
+final class _TagPreviewRow extends StatelessWidget {
+  const _TagPreviewRow({required this.tags});
+
+  final List<String> tags;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 132,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: tags.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
+        itemBuilder: (context, index) => _TagPreviewCard(tag: tags[index]),
+      ),
+    );
+  }
+}
+
+/// A tappable tag card showing the tag's most popular artwork as its preview.
+final class _TagPreviewCard extends ConsumerWidget {
+  const _TagPreviewCard({required this.tag});
+
+  final String tag;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final preview = ref.watch(tagPreviewProvider(tag));
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: 132,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => context.push('/tag/${Uri.encodeComponent(tag)}'),
+        child: Card(
+          margin: EdgeInsets.zero,
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              SizedBox(
+                height: 96,
+                width: double.infinity,
+                child: preview.when(
+                  loading: () =>
+                      const ColoredBox(color: AppTheme.placeholderColor),
+                  error: (error, stackTrace) => const ColoredBox(
+                    color: AppTheme.placeholderColor,
+                    child: Icon(Icons.tag),
+                  ),
+                  data: (artwork) {
+                    final uri = artwork?.media
+                        .where((m) => m.kind == MediaKind.image)
+                        .firstOrNull
+                        ?.uri;
+                    if (uri == null) {
+                      return const ColoredBox(
+                        color: AppTheme.placeholderColor,
+                        child: Icon(Icons.tag),
+                      );
+                    }
+                    return CachedNetworkImage(
+                      imageUrl: uri.toString(),
+                      fit: BoxFit.cover,
+                      memCacheWidth: 264,
+                      placeholder: (context, url) =>
+                          const ColoredBox(color: AppTheme.placeholderColor),
+                      errorWidget: (context, url, error) => const ColoredBox(
+                        color: AppTheme.placeholderColor,
+                        child: Icon(Icons.tag),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
+                child: Text(
+                  '#$tag',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -18,6 +18,23 @@ final searchFeedProvider = StateNotifierProvider.autoDispose
       return controller;
     });
 
+/// A single representative artwork for a tag, used as the tag's preview image
+/// (Pixiv-style). Picks the most popular deviation of the tag so the preview
+/// looks curated rather than arbitrary.
+final tagPreviewProvider = FutureProvider.autoDispose.family<Artwork?, String>((
+  ref,
+  tag,
+) async {
+  final runtime = ref.watch(runtimeProvider);
+  try {
+    final page = await OfficialDiscoveryRepository(runtime.transport!)
+        .tag(tag, const PageRequest(limit: 1), sort: BrowseSort.popular);
+    return page.items.isEmpty ? null : page.items.first;
+  } on Object {
+    return null;
+  }
+});
+
 /// Searches users by name (official `user/friends/search` endpoint).
 final userSearchProvider = FutureProvider.autoDispose
     .family<List<UserProfile>, String>((ref, query) async {

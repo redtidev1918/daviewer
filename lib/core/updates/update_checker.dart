@@ -62,8 +62,11 @@ final class UpdateCheckController extends StateNotifier<UpdateCheckState> {
     if (state.checking) return;
     final lastCheck = await AppPreferences.loadLastUpdateCheck();
     final now = DateTime.now().millisecondsSinceEpoch;
+    // Throttle to once per hour (generous against GitHub's 60 req/hr rate
+    // limit) so a release shows up on the next launch or resume instead of
+    // being suppressed for a whole day.
     if (lastCheck != null &&
-        now - lastCheck < const Duration(hours: 24).inMilliseconds) {
+        now - lastCheck < const Duration(hours: 1).inMilliseconds) {
       return;
     }
     await AppPreferences.saveLastUpdateCheck(now);
