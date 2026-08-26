@@ -50,18 +50,23 @@ final class WebSessionController extends StateNotifier<WebSessionState> {
   }
 
   /// Re-injects the persisted deviantart.com cookies when the WebView store
-  /// currently has no signed-in `userinfo` cookie. Only restores when the
-  /// saved session belongs to the current OAuth account; a restored session is
-  /// not treated as a second login.
+  /// currently has no signed-in `userinfo` cookie. Only restores for a
+  /// signed-in OAuth account whose username matches the saved session, so a
+  /// signed-out user is never silently given a web session (that would make
+  /// the login screen dismiss itself before OAuth completes) and a different
+  /// account's cookies are never injected.
   Future<void> _restoreWebCookies(Map<String, Object?> saved) async {
     final rawCookies = saved['cookies'];
     if (rawCookies is! Map || rawCookies.isEmpty) return;
     final savedUsername = (saved['username'] as String?)?.trim() ?? '';
     if (savedUsername.isEmpty) return;
     final oauthUsername = _ref.read(authControllerProvider).account?.username;
-    if (oauthUsername != null &&
-        oauthUsername.isNotEmpty &&
-        savedUsername.toLowerCase() != oauthUsername.toLowerCase()) {
+    if (oauthUsername == null || oauthUsername.isEmpty) {
+      // Not signed in (or the account is still loading): never restore a web
+      // session the user has not explicitly re-established.
+      return;
+    }
+    if (savedUsername.toLowerCase() != oauthUsername.toLowerCase()) {
       // Saved web session belongs to a different account; do not restore it.
       return;
     }
