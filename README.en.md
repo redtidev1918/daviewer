@@ -135,7 +135,8 @@ DAViewer is built on these open-source projects:
 
 - **[DAKit](https://github.com/redtidev1918/dakit)** — the DeviantArt SDK this app
   uses (OAuth, official API mapping, domain models, background transfers),
-  published on pub.dev
+  published on pub.dev; docs:
+  [DAKit documentation](https://github.com/redtidev1918/dakit#documentation)
 - **[Flutter](https://flutter.dev)** — the cross-platform UI framework
 - **[flutter_inappwebview](https://pub.dev/packages/flutter_inappwebview)** — embedded
   WebView (sign-in, web adapters)

@@ -109,7 +109,8 @@ App 内嵌网页的官方页面中。回调后 App 同时使用这一份 OAuth �
 DAViewer 建立在以下开源项目之上：
 
 - **[DAKit](https://github.com/redtidev1918/dakit)** —— 本项目的 DeviantArt SDK
-  （OAuth、官方 API 映射、领域模型、后台传输），已发布到 pub.dev
+  （OAuth、官方 API 映射、领域模型、后台传输），已发布到 pub.dev，文档见
+  [DAKit 文档](https://github.com/redtidev1918/dakit#文档)
 - **[Flutter](https://flutter.dev)** —— 跨平台 UI 框架
 - **[flutter_inappwebview](https://pub.dev/packages/flutter_inappwebview)** —— 内嵌网页
   （登录、网页适配器）
