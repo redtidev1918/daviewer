@@ -129,10 +129,10 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
             isScrollable: true,
             tabs: <Widget>[
               Tab(text: s.artistWorks),
-              Tab(text: s.artistScraps),
               Tab(text: s.artistSavedWorks),
               Tab(text: s.journal),
               Tab(text: s.folders),
+              Tab(text: s.artistScraps),
             ],
           ),
         ),
@@ -153,7 +153,6 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                       onQueryChanged: (query) =>
                           setState(() => _galleryQuery = query),
                     ),
-                    ArtistScrapsTab(username: widget.username),
                     ArtworkFeedGrid(
                       feed: favouritesFeed,
                       emptyMessage: s.noFavourites,
@@ -170,6 +169,7 @@ final class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                     ),
                     JournalsView(username: widget.username),
                     FoldersOverviewView(username: widget.username),
+                    ArtistScrapsTab(username: widget.username),
                   ],
                 ),
               ),
