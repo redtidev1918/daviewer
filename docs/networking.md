@@ -46,12 +46,12 @@ Diagnostics.
 | Windows | dynamic App proxy | shared WebView2 `--proxy-server` | same shared WebView2 `--proxy-server` |
 | macOS 14+ | dynamic App proxy | `WKWebsiteDataStore.proxyConfigurations` | same `WKWebsiteDataStore.proxyConfigurations` |
 | macOS 12/13 | dynamic App proxy | OS system proxy only | OS system proxy only |
-| Linux | dynamic App proxy | OS WebView/system behavior | unavailable until packaged callback registration exists |
+| Linux | not a current build target (no `linux/` platform directory; CI builds Android/macOS/Windows only) | — | — |
 
-On GNOME, `none` ignores stale host/port values and `manual` prefers HTTPS
-before HTTP. PAC `auto` cannot be represented by `dart:io`'s static proxy
-directive, so DAViewer logs the limitation and continues to environment,
-build-time, or direct fallback.
+If Linux support is added later, note that on GNOME `none` ignores stale
+host/port values and `manual` prefers HTTPS before HTTP, and PAC `auto` cannot
+be represented by `dart:io`'s static proxy directive — DAViewer would log the
+limitation and continue to environment, build-time, or direct fallback.
 
 Windows hidden WebViews and cookie reads share one WebView2 environment. This
 keeps public adapter cookies and proxy behavior consistent; it is not a second

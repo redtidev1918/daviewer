@@ -77,7 +77,7 @@
 - Search: recent searches moved to the top as compact chips.
 - “Recommended for you” tags persist your viewing interests across restarts.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.161
 
@@ -87,7 +87,7 @@
 
 - “Recommended for you” tags on the search page now show artwork previews, ordered by your interests.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.160
 
@@ -99,7 +99,7 @@
 - Update reminders appear sooner (hourly + on return to foreground).
 - Popular tags on the search page now show an artwork preview (Pixiv style).
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.159
 
@@ -109,7 +109,7 @@
 
 - Tag pages now sort by Newest or Popular; search results can be ordered newest-first.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.158
 
@@ -119,7 +119,7 @@
 
 - Artwork card titles and author names now sit below the image instead of covering it.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.157
 
@@ -129,7 +129,7 @@
 
 - Fixed opening artworks from pasted links (numeric links now load the detail page, including R18).
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.156
 
@@ -139,7 +139,7 @@
 
 - Fixed “api endpoint not found” when opening an R18 artwork from a pasted link.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.155
 
@@ -149,7 +149,7 @@
 
 - The Watched tab now surfaces many more watched artists at the top.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.154
 
@@ -159,7 +159,7 @@
 
 - Shows a “Signed in — syncing your session” screen right after sign-in instead of lingering on the login page.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.153
 
@@ -169,7 +169,7 @@
 
 - Fixed the sign-in occasionally being lost after a restart (no more forced re-login).
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.152
 
@@ -179,7 +179,7 @@
 
 - Further reduced sign-in page lag when the keyboard opens.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.151
 
@@ -191,7 +191,7 @@
 - Shows a “Signed in” toast after a fresh sign-in.
 - Sign-in failures now display the reason on the login page instead of failing silently.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.150
 
@@ -203,7 +203,7 @@
 - Fixed having to sign in again after restarting the app; the session is restored on the next launch.
 - Recommendations now refresh their session and retry instead of spinning forever.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.149
 
@@ -215,7 +215,7 @@
 - Fixed the black screen appearing after sign-in completes.
 - Sign-in now shows a hint when a human-verification challenge appears.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.148
 
@@ -227,7 +227,7 @@
 - Fixed recommendations not appearing after sign-in (tapping sign-in kept bouncing back to Home).
 - Fixed sign-in from the Watched tab returning to the wrong page.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.147
 
@@ -237,7 +237,7 @@
 
 - Fixed the sign-in page lagging and dropping frames when the keyboard opens.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.146
 
@@ -247,7 +247,7 @@
 
 - Fixed the Android build crashing on launch (the entry activity wasn't moved to the new package name).
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.145
 
@@ -259,7 +259,7 @@
 - Home now shows a slim, dismissible banner when a newer version is available; ignored versions won't nag again.
 - Diagnostics gains “Report a problem”: opens a pre-filled GitHub issue in your browser with an optional redacted log; the app never uploads anything automatically.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.144
 
@@ -271,7 +271,7 @@
 - Home “For you” is back to the website's personalized recommendation feed.
 - Removed stale “system browser” wording from sign-in and network settings.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.143
 
@@ -287,7 +287,7 @@
 - Login failures now show actionable guidance instead of internal errors like “Unable to access”.
 - A signed-in user who lands on the login screen is sent back to Home.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.142
 
@@ -303,7 +303,7 @@
 - Home “For you” is renamed “Discover”: it is the official generic discovery feed.
 - The app identifier is now neutral: uninstall the old build, reinstall, and sign in again.
 
-> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+> The macOS build is a community preview that has not gone through Apple's review (which requires a paid developer account). macOS may block the first launch — right-click the app icon in Finder and choose Open. The app never uploads or collects any data.
 
 ## 0.2.141
 

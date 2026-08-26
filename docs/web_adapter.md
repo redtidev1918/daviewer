@@ -43,7 +43,7 @@ feature code.
 | Feature | Module | Endpoint / source | Session | Fallback | Contract test (snapshot define) |
 | --- | --- | --- | --- | --- | --- |
 | Personalized home feed | `rfy_feed.dart` | `_puppy/dabrowse/networkbar/rfy/deviations` | web Cookie + CSRF (signed-in) | none (needs the web session; shows sign-in prompt) | `rfy_feed_test.dart` |
-| Numeric→UUID + description | `deviation_init.dart` | `_puppy/dadeviation/init` | anonymous browser CSRF | tags via `deviation/metadata` | `deviation_init_test.dart` (`DA_DEVIATION_INIT_JSON`) |
+| Numeric→UUID + description | `deviation_init.dart` | `_puppy/dadeviation/init` | anonymous browser CSRF | description falls back to the short excerpt; tags empty (official `deviation/metadata` serves only OAuth items) | `deviation_init_test.dart` (`DA_DEVIATION_INIT_JSON`) |
 | Related artwork | `web_more_like_this.dart` | artwork page `__INITIAL_STATE__` / `__RCACHE__` | none (public) | official `browse/morelikethis` | `web_more_like_this_test.dart` (`DA_MORE_LIKE_THIS_HTML`) |
 | Collection full contents | `web_collection_contents.dart` | `_puppy/dashared/gallection/contents` (JSON), fallback `deviantart.com/{user}/favourites/{id}?page=N` | anonymous browser CSRF (JSON) / none (SSR) | preview deviations + open-on-web | `web_collection_contents_test.dart` (`DA_COLLECTION_JSON`, `DA_COLLECTION_HTML`) |
 | Deviation search | `web_search.dart` | `_puppy/dabrowse/search/deviations` | web Cookie + CSRF (signed-in) | official `browse/home?q=` (coarse, no web session) | `web_search_test.dart` |
