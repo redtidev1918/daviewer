@@ -189,26 +189,26 @@ packages:
     dependency: "direct main"
     description:
       name: dakit_api
-      sha256: "26a854a75fe692e2f4b6c6b178998ed7962e85c9ceca6807ba5889734836329a"
+      sha256: b47465d4140bf37207468dfb7126e8e01c6e11eebbecf56da7d5b7a4a7ea8f63
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.27"
+    version: "0.1.30"
   dakit_core:
     dependency: "direct main"
     description:
       name: dakit_core
-      sha256: "58f33837e89cc99b5b835eb6808a2c0eabfc4fcb3572e4f1765d705e97e861ba"
+      sha256: "8386529ab292adbab8bf1c50295e968656795a9f9d837d8169df3a061e5cc949"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.13"
+    version: "0.1.15"
   dakit_flutter:
     dependency: "direct main"
     description:
       name: dakit_flutter
-      sha256: e5e157eedafb5d6c56dc2fcd7faaa5585475ce5817649d4dbf7b29edffc485cf
+      sha256: "1bad08c8748fb1f7b176043137831e8401c7c03e42e7fea20373cfc24e5831f9"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.10"
+    version: "0.1.12"
   dbus:
     dependency: transitive
     description:

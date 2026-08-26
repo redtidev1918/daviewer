@@ -95,9 +95,9 @@ Windows 版解压即可运行：登录在 App 内完成，不需要管理员权�
 
 ```yaml
 dependencies:
-  dakit_core: ^0.1.14
-  dakit_api: ^0.1.28
-  dakit_flutter: ^0.1.11
+  dakit_core: ^0.1.15
+  dakit_api: ^0.1.30
+  dakit_flutter: ^0.1.12
 ```
 
 每次登录只创建一个官方 OAuth/PKCE 事务，全部账号选择、密码和人机验证都留在
