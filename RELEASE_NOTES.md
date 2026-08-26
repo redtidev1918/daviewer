@@ -3,6 +3,16 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.161
+
+- 搜索页「为你推荐」标签也显示作品预览图，按你的兴趣排序（最感兴趣的在最前）。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- “Recommended for you” tags on the search page now show artwork previews, ordered by your interests.
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.160
 
 - 更新提醒更灵敏：新版本发布后能更快看到提示（每小时检查 + 回到前台时检查）。

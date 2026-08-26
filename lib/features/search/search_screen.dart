@@ -10,7 +10,6 @@ import '../../app/theme/app_theme.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../shared/widgets/artwork_feed_grid.dart';
-import '../../shared/widgets/compact_tag_strip.dart';
 import '../../shared/widgets/settings_action.dart';
 import 'search_providers.dart';
 import 'search_user_results.dart';
@@ -212,7 +211,9 @@ final class _SearchIdleView extends ConsumerWidget {
       children: <Widget>[
         if (recommended.isNotEmpty) ...[
           _SectionTitle(text: s.recommendedTags),
-          _TagChips(tags: recommended),
+          // Personalized tags are the most relevant to the user, so give them
+          // the same artwork-preview cards as popular tags.
+          _TagPreviewRow(tags: recommended.take(6).toList()),
           const Divider(),
         ],
         _SectionTitle(text: s.popularTags),
@@ -244,21 +245,6 @@ final class _SectionTitle extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
       child: Text(text, style: Theme.of(context).textTheme.titleSmall),
-    );
-  }
-}
-
-/// A compact, horizontally scrollable row of tappable tags.
-final class _TagChips extends StatelessWidget {
-  const _TagChips({required this.tags});
-
-  final List<String> tags;
-
-  @override
-  Widget build(BuildContext context) {
-    return CompactTagStrip(
-      tags: tags,
-      onSelected: (tag) => context.push('/tag/${Uri.encodeComponent(tag)}'),
     );
   }
 }
