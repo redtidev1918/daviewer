@@ -3,6 +3,22 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.162
+
+- 网络异常时不再把已登录状态误显示为未登录。
+- 标签排序「最新 / 热门」现在真正生效（之前返回相同结果）。
+- 搜索页：最近搜索移到最上面，并改为紧凑的标签样式。
+- 「为你推荐」标签会记住你看过的作品，重启后仍然可用。
+
+> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+
+- Sign-in is no longer shown as signed-out when the network is unavailable.
+- Tag sorting (Newest / Popular) now actually differs.
+- Search: recent searches moved to the top as compact chips.
+- “Recommended for you” tags persist your viewing interests across restarts.
+
+> The macOS build is not Apple-signed or notarized. On first launch, right-click it in Finder and choose Open.
+
 ## 0.2.161
 
 - 搜索页「为你推荐」标签也显示作品预览图，按你的兴趣排序（最感兴趣的在最前）。

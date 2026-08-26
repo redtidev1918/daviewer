@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/data/data_access.dart';
 import '../../core/feed/artwork_feed_controller.dart';
 import '../../core/runtime/runtime_provider.dart';
+import '../../core/search/interest_store.dart';
 import '../../core/search/search_history_store.dart';
 import '../artwork/artwork_store.dart';
 import '../favourites/favourites_providers.dart';
@@ -43,29 +44,29 @@ final userSearchProvider = FutureProvider.autoDispose
     });
 
 /// Personalized search tags derived from the user's interests, weighted:
-/// favourites (explicit interest) > watched artists > everything the user has
-/// browsed/seen (the in-memory artwork cache). Empty when nothing is available.
-final recommendedTagsProvider = Provider<List<String>>((ref) {
-  return recommendedTagsFrom(<List<String>, int>{
-    ref
-            .watch(currentFavouritesProvider)
-            .items
-            .expand((artwork) => artwork.tags)
-            .toList(growable: false):
-        3,
-    ref
-            .watch(followingFeedProvider)
-            .items
-            .expand((artwork) => artwork.tags)
-            .toList(growable: false):
-        2,
-    ref
-            .watch(artworkStoreProvider)
-            .values
-            .expand((artwork) => artwork.tags)
-            .toList(growable: false):
-        1,
-  });
+/// favourites (explicit interest, 3) > watched artists (2) > everything the
+/// user has viewed (persisted view interests + the in-memory artwork cache, 1).
+/// The persisted view interests survive app restarts, so recommendations are
+/// available even before the favourites/watch feeds have loaded.
+final recommendedTagsProvider = FutureProvider<List<String>>((ref) async {
+  final persisted = await InterestStore.load();
+  final counts = <String, int>{};
+  void addAll(Iterable<String> tags, int weight) {
+    for (final tag in tags) {
+      final normalized = tag.trim().toLowerCase();
+      if (normalized.isEmpty) continue;
+      counts[normalized] = (counts[normalized] ?? 0) + weight;
+    }
+  }
+
+  // Persisted view interests: weight 1 each (already counted per view).
+  addAll(persisted.keys, 1);
+  addAll(ref.watch(currentFavouritesProvider).items.expand((a) => a.tags), 3);
+  addAll(ref.watch(followingFeedProvider).items.expand((a) => a.tags), 2);
+  addAll(ref.watch(artworkStoreProvider).values.expand((a) => a.tags), 1);
+  final sorted = counts.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+  return sorted.take(10).map((e) => e.key).toList(growable: false);
 });
 
 /// Merges weighted tag sources and returns the top tags by score. Pure so it

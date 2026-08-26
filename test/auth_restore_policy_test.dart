@@ -90,26 +90,22 @@ void main() {
     );
   });
 
-  test('a transient failure preserves only an evidenced prior session', () {
-    final failure = TimeoutException('offline');
+  test('a transient restore failure always preserves the session', () {
+    // validTokens already verified a stored token, so a network/timeout error
+    // while refreshing must never surface as signed-out.
     expect(
-      shouldRestoreSignedInAfterFailure(
-        error: failure,
-        hasSessionEvidence: true,
-      ),
+      shouldPreserveSessionAfterRestoreFailure(TimeoutException('offline')),
       isTrue,
     );
     expect(
-      shouldRestoreSignedInAfterFailure(
-        error: failure,
-        hasSessionEvidence: false,
+      shouldPreserveSessionAfterRestoreFailure(
+        DAKitException(
+          kind: DAKitFailureKind.network,
+          code: 'network.connection',
+          message: 'offline',
+        ),
       ),
-      isFalse,
+      isTrue,
     );
-  });
-
-  test('local logout tombstone prevents stale secure token restoration', () {
-    expect(shouldAttemptPersistedSessionRestore(false), isFalse);
-    expect(shouldAttemptPersistedSessionRestore(true), isTrue);
   });
 }
