@@ -118,9 +118,9 @@ native interaction live in DAViewer. Dependencies:
 
 ```yaml
 dependencies:
-  dakit_core: ^0.1.13
-  dakit_api: ^0.1.27
-  dakit_flutter: ^0.1.10
+  dakit_core: ^0.1.14
+  dakit_api: ^0.1.28
+  dakit_flutter: ^0.1.11
 ```
 
 Each attempt creates one official OAuth/PKCE transaction. Account selection,
