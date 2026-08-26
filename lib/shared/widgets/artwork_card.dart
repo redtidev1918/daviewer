@@ -29,9 +29,8 @@ double artworkAspectRatio(
   return 0.68;
 }
 
-/// Mobile two-column feeds give very wide images a little more height. The
-/// thumbnail still uses [BoxFit.cover], so banner subjects remain legible
-/// instead of becoming a thin strip behind the metadata overlay.
+/// Mobile two-column feeds give very wide images a little more height so a
+/// banner subject stays legible instead of becoming a thin strip.
 double artworkPreviewAspectRatio(BuildContext context, Artwork artwork) =>
     artworkAspectRatio(
       artwork,
@@ -39,16 +38,6 @@ double artworkPreviewAspectRatio(BuildContext context, Artwork artwork) =>
           ? 1.6
           : 2.0,
     );
-
-bool usesCompactArtworkMetadata({
-  required double width,
-  required double height,
-}) {
-  if (!width.isFinite || !height.isFinite || width <= 0 || height <= 0) {
-    return false;
-  }
-  return height < 120 || width / height >= 1.45;
-}
 
 final class ArtworkCard extends ConsumerWidget {
   const ArtworkCard({required this.artwork, this.onTap, super.key});
@@ -59,6 +48,7 @@ final class ArtworkCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = strings(ref.watch(appLanguageProvider));
+    final theme = Theme.of(context);
     // Track the favourite flag through the store so a favourite action here is
     // reflected immediately (and mirrored in the detail screen).
     final favourited = ref.watch(
@@ -82,122 +72,100 @@ final class ArtworkCard extends ConsumerWidget {
           (m.uri?.path.toLowerCase().endsWith('.gif') ?? false),
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compactMetadata = usesCompactArtworkMetadata(
-          width: constraints.maxWidth,
-          height: constraints.maxHeight,
-        );
-        return Card(
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
-            onLongPress: () => _showCardMenu(context, ref, favourited),
-            child: Stack(
-              fit: StackFit.expand,
-              children: <Widget>[
-                if (thumbnail?.uri case final uri?)
-                  Hero(
-                    tag: 'artwork-${artwork.id}',
-                    child: CachedNetworkImage(
-                      imageUrl: uri.toString(),
-                      fit: BoxFit.cover,
-                      memCacheWidth: 480,
-                      placeholder: (context, url) =>
-                          const ColoredBox(color: AppTheme.placeholderColor),
-                      errorWidget: (context, url, error) => const ColoredBox(
-                        color: AppTheme.placeholderColor,
-                        child: Icon(Icons.broken_image_outlined),
-                      ),
-                    ),
-                  )
-                else
-                  const ColoredBox(
-                    color: AppTheme.placeholderColor,
-                    child: Icon(Icons.image_outlined),
-                  ),
-                // Title + author overlaid on a light bottom gradient. The title is
-                // semi-transparent so a long title never hides the artwork; the
-                // lighter gradient keeps the card looking airy instead of a solid
-                // dark block.
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: compactMetadata
-                      ? _CompactArtworkMetadata(artwork: artwork)
-                      : _RegularArtworkMetadata(artwork: artwork),
-                ),
-                if (hasVideo)
-                  Center(
-                    child: Icon(
-                      Icons.play_circle_fill,
-                      size: compactMetadata ? 32 : 40,
-                      color: Colors.white70,
-                    ),
-                  ),
-                if (hasGif)
-                  Positioned(
-                    top: 6,
-                    left: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'GIF',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: () => _showCardMenu(context, ref, favourited),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            // The image keeps its natural shape; title/author sit below it so
+            // they never cover the artwork.
+            AspectRatio(
+              aspectRatio: artworkPreviewAspectRatio(context, artwork),
+              child: Stack(
+                fit: StackFit.expand,
+                children: <Widget>[
+                  if (thumbnail?.uri case final uri?)
+                    Hero(
+                      tag: 'artwork-${artwork.id}',
+                      child: CachedNetworkImage(
+                        imageUrl: uri.toString(),
+                        fit: BoxFit.cover,
+                        memCacheWidth: 480,
+                        placeholder: (context, url) =>
+                            const ColoredBox(color: AppTheme.placeholderColor),
+                        errorWidget: (context, url, error) => const ColoredBox(
+                          color: AppTheme.placeholderColor,
+                          child: Icon(Icons.broken_image_outlined),
                         ),
                       ),
+                    )
+                  else
+                    const ColoredBox(
+                      color: AppTheme.placeholderColor,
+                      child: Icon(Icons.image_outlined),
                     ),
-                  ),
-                if (artwork.isMultiMedia)
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          const Icon(
-                            Icons.filter_none,
-                            size: 12,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            s.multiImageBadge,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                  if (hasVideo)
+                    const Center(
+                      child: Icon(
+                        Icons.play_circle_fill,
+                        size: 40,
+                        color: Colors.white70,
                       ),
                     ),
-                  ),
-              ],
+                  if (hasGif)
+                    const Positioned(
+                      top: 6,
+                      left: 6,
+                      child: _CornerBadge(label: 'GIF', icon: null),
+                    ),
+                  if (artwork.isMultiMedia)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: _CornerBadge(
+                        label: s.multiImageBadge,
+                        icon: Icons.filter_none,
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    artwork.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
+                  ),
+                  if (artwork.author.username.isNotEmpty) ...<Widget>[
+                    const SizedBox(height: 2),
+                    Text(
+                      '@${artwork.author.username}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -292,114 +260,46 @@ final class ArtworkCard extends ConsumerWidget {
   }
 }
 
-final class _CompactArtworkMetadata extends StatelessWidget {
-  const _CompactArtworkMetadata({required this.artwork});
+/// A small translucent pill used for GIF / multi-image badges on the image.
+final class _CornerBadge extends StatelessWidget {
+  const _CornerBadge({required this.label, required this.icon});
 
-  final Artwork artwork;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.fromLTRB(8, 14, 8, 6),
-    decoration: const BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: <Color>[Colors.transparent, Color(0x75000000)],
-      ),
-    ),
-    child: Row(
-      children: <Widget>[
-        Expanded(
-          flex: 3,
-          child: Text(
-            artwork.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.86),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              height: 1.15,
-            ),
-          ),
-        ),
-        if (artwork.author.username.isNotEmpty) ...<Widget>[
-          const SizedBox(width: 6),
-          Flexible(
-            flex: 2,
-            child: Text(
-              '@${artwork.author.username}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 10,
-                height: 1.15,
-              ),
-            ),
-          ),
-        ],
-      ],
-    ),
-  );
-}
-
-final class _RegularArtworkMetadata extends StatelessWidget {
-  const _RegularArtworkMetadata({required this.artwork});
-
-  final Artwork artwork;
+  final String label;
+  final IconData? icon;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.fromLTRB(10, 22, 10, 8),
-    decoration: const BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: <Color>[Colors.transparent, Color(0x78000000)],
-      ),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          artwork.title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.88),
-            fontSize: 12.5,
-            fontWeight: FontWeight.w600,
-            height: 1.2,
-          ),
-        ),
-        if (artwork.author.username.isNotEmpty) ...<Widget>[
-          const SizedBox(height: 2),
-          Row(
+  Widget build(BuildContext context) {
+    final content = icon == null
+        ? Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          )
+        : Row(
+            mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(
-                Icons.person_outline,
-                size: 12,
-                color: Colors.white.withValues(alpha: 0.62),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  artwork.author.username,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.62),
-                    fontSize: 10.5,
-                  ),
+              Icon(icon, size: 12, color: Colors.white),
+              const SizedBox(width: 2),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
-          ),
-        ],
-      ],
-    ),
-  );
+          );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: content,
+    );
+  }
 }

@@ -111,12 +111,9 @@ class _CollectionContentsScreenState
       itemCount: artworks.length,
       itemBuilder: (context, index) {
         final artwork = artworks[index];
-        return AspectRatio(
-          aspectRatio: artworkPreviewAspectRatio(context, artwork),
-          child: ArtworkCard(
-            artwork: artwork,
-            onTap: () => context.push('/artwork/${artwork.id}'),
-          ),
+        return ArtworkCard(
+          artwork: artwork,
+          onTap: () => context.push('/artwork/${artwork.id}'),
         );
       },
     );
