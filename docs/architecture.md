@@ -198,6 +198,12 @@ Some state is deliberately kept client-side and never synced to DeviantArt:
 - **Search interests** (`core/search/InterestStore`): lightweight persisted
   tag-view counts that drive the personalized "recommended tags" on the search
   page across restarts.
+- **Web-session cookie snapshot** (`core/auth/WebSessionStore`): the signed-in
+  deviantart.com cookies are snapshotted alongside the CSRF/username state and
+  re-injected on a cold start when the platform WebView store lost them (e.g.
+  across an app update). This keeps the personalized `rfy` feed alive without
+  another sign-in; the snapshot is guarded to the current OAuth account and is
+  not a second identity.
 - **Theme mode** (`core/theme/ThemeModeController`): system / light / dark, fed
   into the MaterialApp and persisted with the preferences above.
 

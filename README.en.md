@@ -102,7 +102,8 @@ can move the folder and just launch it again.
 - **Appearance & settings**: light / dark / system theme; persisted language and
   theme; clear cache; check for updates
 - **Update reminders**: a slim dismissible Home banner when a newer version is
-  available; ignored versions never nag again — no modals, no auto-download
+  available — tap it to read what's new before deciding to download; ignored
+  versions never nag again — no modals, no auto-download
 - **Problem reporting**: Diagnostics generates a pre-filled GitHub issue (with
   an optional redacted log); the app collects and uploads nothing
 - **Bilingual**: Chinese / English toggle
