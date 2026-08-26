@@ -127,6 +127,14 @@ final class WebCollectionContentsFetcher {
   /// the website uses, with `type=gallery&scraps_folder=true` (the same
   /// approach as the gallery-dl extractor). The response carries the same
   /// shared website deviation shape as collections.
+  ///
+  /// Unlike collections there is no session-free SSR fallback, and the
+  /// endpoint is strict about the web session: a missing or mismatched Cookie +
+  /// CSRF pair returns either a 400 error object or an empty `results` list
+  /// without `hasMore`. Both are reported as a retryable session failure
+  /// ([DAKitException] kind [DAKitFailureKind.authentication]) so the caller
+  /// can refresh the anonymous browser session and retry instead of showing a
+  /// misleading empty folder.
   Future<CollectionContentsPage> fetchScrapsPage({
     required String username,
     required String cookieHeader,
@@ -147,7 +155,20 @@ final class WebCollectionContentsFetcher {
       },
       options: webSessionOptions(cookieHeader),
     );
-    return parseJsonPage(response.data);
+    final data = response.data;
+    if (data is Map &&
+        data['results'] is List &&
+        data['hasMore'] is! bool &&
+        data['gallection'] is! Map) {
+      // Empty results without a pagination/folder envelope: the endpoint
+      // could not authenticate this web session.
+      throw const DAKitException(
+        kind: DAKitFailureKind.authentication,
+        code: 'web.session.unavailable',
+        message: 'The Scraps folder requires a valid web session.',
+      );
+    }
+    return parseJsonPage(data);
   }
 
   /// Fetches every page of an artist's Scraps folder (typically small).

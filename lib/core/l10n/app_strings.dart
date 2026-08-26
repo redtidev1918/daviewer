@@ -485,6 +485,9 @@ final class AppStrings {
   String get artistWorks => _lang == AppLanguage.zh ? '作品' : 'Works';
   String get artistScraps => _lang == AppLanguage.zh ? 'Scraps' : 'Scraps';
   String get noScraps => _lang == AppLanguage.zh ? '暂无 Scraps' : 'No scraps';
+  String get scrapsUnavailable => _lang == AppLanguage.zh
+      ? 'Scraps 暂时无法加载，请检查网络后重试'
+      : 'Scraps are unavailable right now — check the network and retry';
   String get artistSavedWorks =>
       _lang == AppLanguage.zh ? '收藏作品' : 'Saved works';
   String get folders =>

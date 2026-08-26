@@ -1,4 +1,5 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/session_state.dart';
@@ -66,7 +67,8 @@ final artistFavouriteFoldersProvider = FutureProvider.autoDispose
 /// (`gallery/folders` has no scraps entry), so this reads the website's
 /// `gallection/contents` endpoint with `scraps_folder=true` — the same source
 /// the gallery-dl extractor uses. Requires a web session (Cookie + CSRF; an
-/// anonymous deviantart.com visit suffices).
+/// anonymous deviantart.com visit suffices); a missing or stale session is
+/// refreshed once and retried before giving up.
 final artistScrapsProvider = StateNotifierProvider.autoDispose
     .family<ArtworkFeedController, ArtworkFeedState, String>((ref, username) {
       final controller = ArtworkFeedController((request) async {
@@ -80,26 +82,38 @@ final artistScrapsProvider = StateNotifierProvider.autoDispose
           );
         }
         final webSession = ref.read(webSessionProvider);
+        final offset = int.tryParse(request.cursor ?? '') ?? 0;
         var csrf = ref.read(webSessionControllerProvider).csrf;
-        if (csrf.isEmpty) {
+        var cookieHeader = await webSession.cookieHeader();
+        var page = await _tryFetchScraps(
+          dio,
+          username,
+          csrf,
+          cookieHeader,
+          offset,
+        );
+        if (page == null) {
+          // Missing or stale web session (the endpoint is strict about the
+          // Cookie + CSRF pair): load the anonymous browser session once and
+          // retry, mirroring the rfy feed's recovery contract.
           await ref.read(webSessionRefresherProvider).refresh();
           csrf = ref.read(webSessionControllerProvider).csrf;
+          cookieHeader = await webSession.cookieHeader();
+          page = await _tryFetchScraps(
+            dio,
+            username,
+            csrf,
+            cookieHeader,
+            offset,
+          );
         }
-        final cookieHeader = await webSession.cookieHeader();
-        if (csrf.isEmpty || cookieHeader.isEmpty) {
+        if (page == null) {
           throw const DAKitException(
             kind: DAKitFailureKind.authentication,
             code: 'web.session.unavailable',
-            message: 'The Scraps folder requires a web session.',
+            message: 'The Scraps folder requires a valid web session.',
           );
         }
-        final offset = int.tryParse(request.cursor ?? '') ?? 0;
-        final page = await WebCollectionContentsFetcher(dio).fetchScrapsPage(
-          username: username,
-          cookieHeader: cookieHeader,
-          csrfToken: csrf,
-          offset: offset,
-        );
         final continuation = page.hasMore
             ? '${offset + page.items.length}'
             : null;
@@ -112,6 +126,28 @@ final artistScrapsProvider = StateNotifierProvider.autoDispose
       });
       return controller;
     });
+
+/// Fetches one scraps page, or `null` when the web session is missing or the
+/// request failed (the caller then refreshes the session and retries once).
+Future<CollectionContentsPage?> _tryFetchScraps(
+  Dio dio,
+  String username,
+  String csrf,
+  String cookieHeader,
+  int offset,
+) async {
+  if (csrf.isEmpty || cookieHeader.isEmpty) return null;
+  try {
+    return await WebCollectionContentsFetcher(dio).fetchScrapsPage(
+      username: username,
+      cookieHeader: cookieHeader,
+      csrfToken: csrf,
+      offset: offset,
+    );
+  } on Object {
+    return null;
+  }
+}
 
 /// Extra profile facts (watchers count, join date) from the website's about
 /// endpoint. `null` when unavailable (no web session or a reshaped response) —
@@ -159,7 +195,8 @@ final class ArtistGallerySearchKey {
 
 /// Keyword search within one artist's own gallery, via the website's
 /// `gallection/search` endpoint (the official API has no gallery-search
-/// surface). Requires a web session (Cookie + CSRF).
+/// surface). Requires a web session (Cookie + CSRF); a missing or stale
+/// session is refreshed once and retried.
 final artistGallerySearchProvider = StateNotifierProvider.autoDispose
     .family<ArtworkFeedController, ArtworkFeedState, ArtistGallerySearchKey>((
       ref,
@@ -177,30 +214,61 @@ final artistGallerySearchProvider = StateNotifierProvider.autoDispose
         }
         final webSession = ref.read(webSessionProvider);
         var csrf = ref.read(webSessionControllerProvider).csrf;
-        if (csrf.isEmpty) {
+        var cookieHeader = await webSession.cookieHeader();
+        var page = await _tryFetchGallerySearch(
+          dio,
+          key,
+          csrf,
+          cookieHeader,
+          request.cursor,
+        );
+        if (page == null) {
           await ref.read(webSessionRefresherProvider).refresh();
           csrf = ref.read(webSessionControllerProvider).csrf;
+          cookieHeader = await webSession.cookieHeader();
+          page = await _tryFetchGallerySearch(
+            dio,
+            key,
+            csrf,
+            cookieHeader,
+            request.cursor,
+          );
         }
-        final cookieHeader = await webSession.cookieHeader();
-        if (csrf.isEmpty || cookieHeader.isEmpty) {
+        if (page == null) {
           throw const DAKitException(
             kind: DAKitFailureKind.authentication,
             code: 'web.session.unavailable',
-            message: 'Gallery search requires a web session.',
+            message: 'Gallery search requires a valid web session.',
           );
         }
-        final page = await WebGallerySearchFetcher(dio).fetch(
-          username: key.username,
-          query: key.query,
-          cookieHeader: cookieHeader,
-          csrfToken: csrf,
-          cursor: request.cursor,
-        );
         ref.read(artworkStoreProvider.notifier).putAll(page.items);
         return page;
       });
       return controller;
     });
+
+/// Fetches one gallery-search page, or `null` when the web session is missing
+/// or the request failed (the caller refreshes the session and retries once).
+Future<Page<Artwork>?> _tryFetchGallerySearch(
+  Dio dio,
+  ArtistGallerySearchKey key,
+  String csrf,
+  String cookieHeader,
+  String? cursor,
+) async {
+  if (csrf.isEmpty || cookieHeader.isEmpty) return null;
+  try {
+    return await WebGallerySearchFetcher(dio).fetch(
+      username: key.username,
+      query: key.query,
+      cookieHeader: cookieHeader,
+      csrfToken: csrf,
+      cursor: cursor,
+    );
+  } on Object {
+    return null;
+  }
+}
 
 /// The artist's journal posts (articles), via the official
 /// `user/profile/posts` endpoint filtered to `/journal/` entries.
