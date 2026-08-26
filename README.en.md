@@ -23,17 +23,19 @@ Download the package for your platform from
 [Releases](https://github.com/redtidev1918/daviewer/releases):
 
 - **Android**: `DAViewer-<version>.apk`
-- **macOS 12+ unsigned test preview**:
+- **macOS 12+ test preview**:
   `DAViewer-<version>-macos-unsigned-preview.zip` (universal Intel and Apple
   Silicon build; unzip and drag to Applications)
 - **Windows**: `DAViewer-<version>-windows.zip` (unzip and run `DAViewer.exe`)
 
-The Windows build is portable: sign-in happens inside the app, it needs no
-administrator rights, installs no service, and reads no system password. You
-can move the folder and just launch it again.
+The Windows build is portable: sign-in happens entirely inside the app — it
+never touches system settings, needs no administrator rights, and installs
+no service. You can move the folder anywhere and just launch it.
 
-> **A note on the macOS build:** this is a **non-Apple-signed, unnotarized test
-> preview**. Right-click the app and choose Open on first launch.
+> **A note on the macOS build:** this is a community preview that has not gone
+> through Apple's review (which requires a paid developer account), so macOS may
+> block the first launch. Right-click the app icon in Finder and choose **Open** —
+> it will run normally after that, and the app never uploads or collects any data.
 
 ## Screenshots
 
@@ -253,8 +255,8 @@ registration, social providers, and security checks. `dakit://oauth/callback` is
 intercepted in the WebView to complete sign-in; there is no second browser
 identity to synchronize.
 
-macOS previews use a stable project identity. Sign-in data lives in a dedicated
-`DAViewer Account` Keychain item; pending PKCE records are recovery-only and can
+macOS previews use a stable project identity. Sign-in data is stored securely
+in a dedicated `DAViewer Account` Keychain (password-safe) item; pending PKCE records are recovery-only and can
 never block a live sign-in when they cannot be stored or cleared.
 
 ## Login FAQ
@@ -272,13 +274,15 @@ never block a live sign-in when they cannot be stored or cleared.
   established user is never shown as signed-out just because the network is down.
 - **Mature content**: DeviantArt account browsing preferences override the app request. Open Settings → DeviantArt account settings → Mature content settings.
 - **Settings while sign-in is broken**: the gear on the login screen keeps language, proxy, diagnostics, updates, and About reachable without authentication.
-- **macOS Keychain prompt at first sign-in**: macOS may ask whether the app may
-  access the Keychain (e.g. “DAViewer Account wants to use confidential
-  information”). Choose **Allow** or **Always Allow** — this is the normal
-  authorization the app needs to store your sign-in state securely on this Mac;
-  nothing is uploaded and no other passwords are read. If macOS asks for your
-  Mac password because the Keychain is locked, that is macOS unlocking your own
-  keychain; the app never collects or uploads your password.
+- **macOS security prompt at first sign-in**: macOS keeps a built-in “password
+  safe” (officially called the Keychain). Before storing your sign-in state
+  there, the system asks for your permission — just like any well-behaved app
+  saving your password. When you see “DAViewer Account wants to use confidential
+  information”, choose **Allow** or **Always Allow**: this simply saves your
+  sign-in securely on this Mac — nothing is uploaded and no other passwords are
+  read. If macOS asks for your Mac password because the safe is locked, that’s
+  just macOS unlocking your own keychain; the app never collects or uploads
+  your password.
 
 See [Authentication and session recovery](docs/authentication.md) for the full
 state contract.

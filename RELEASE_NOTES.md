@@ -70,7 +70,7 @@
 - 搜索页：最近搜索移到最上面，并改为紧凑的标签样式。
 - 「为你推荐」标签会记住你看过的作品，重启后仍然可用。
 
-> macOS 包未经过 Apple 签名和公证，仅供测试；首次启动请在 Finder 中右键选择「打开」。
+> macOS 测试版未走 Apple 官方审核流程，首次启动请在 Finder 中右键图标选择「打开」；App 不上传任何数据。
 
 - Sign-in is no longer shown as signed-out when the network is unavailable.
 - Tag sorting (Newest / Popular) now actually differs.
