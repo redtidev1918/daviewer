@@ -3,6 +3,12 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.168
+
+- 修复更新 App 后「推荐」消失、需要重新登录的问题：登录 Cookie 现在会保存并在更新后自动恢复。
+
+- Fixed the personalized feed disappearing after an app update: your sign-in cookies are now saved and restored automatically — no re-login needed.
+
 ## 0.2.167
 
 - 更新提醒现在会展示更新内容：点一下首页的更新横幅即可查看本次更新说明，再决定是否下载。
