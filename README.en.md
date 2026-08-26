@@ -251,13 +251,9 @@ registration, social providers, and security checks. `dakit://oauth/callback` is
 intercepted in the WebView to complete sign-in; there is no second browser
 identity to synchronize.
 
-macOS previews use a stable project identity. Version 0.2.139 moves sign-in data
-to a fresh `DAViewer Account` Keychain item and no longer queries the 0.2.138
-`DAViewer OAuth` item or older ad-hoc items. This prevents an inaccessible legacy
-record from turning a completed authorization into “Unable to access”. The
-upgrade needs one fresh official sign-in, while downloads, settings, and other
-local data remain. Pending PKCE data is now recovery-only and cannot block a
-live sign-in when it cannot be stored or cleared.
+macOS previews use a stable project identity. Sign-in data lives in a dedicated
+`DAViewer Account` Keychain item; pending PKCE records are recovery-only and can
+never block a live sign-in when they cannot be stored or cleared.
 
 ## Login FAQ
 
@@ -274,7 +270,13 @@ live sign-in when it cannot be stored or cleared.
   established user is never shown as signed-out just because the network is down.
 - **Mature content**: DeviantArt account browsing preferences override the app request. Open Settings → DeviantArt account settings → Mature content settings.
 - **Settings while sign-in is broken**: the gear on the login screen keeps language, proxy, diagnostics, updates, and About reachable without authentication.
-- **macOS asks for your Mac password**: deny the request, do not enter the password, and report the version and a screenshot. Version 0.2.139 uses a fresh Keychain item, so the upgrade needs one new sign-in without deleting downloads or settings.
+- **macOS Keychain prompt at first sign-in**: macOS may ask whether the app may
+  access the Keychain (e.g. “DAViewer Account wants to use confidential
+  information”). Choose **Allow** or **Always Allow** — this is the normal
+  authorization the app needs to store your sign-in state securely on this Mac;
+  nothing is uploaded and no other passwords are read. If macOS asks for your
+  Mac password because the Keychain is locked, that is macOS unlocking your own
+  keychain; the app never collects or uploads your password.
 
 See [Authentication and session recovery](docs/authentication.md) for the full
 state contract.
@@ -300,5 +302,6 @@ If this project is useful to you, **star it** so more people can find it.
 
 - `DAViewer` is a third-party client and is not affiliated with DeviantArt;
 - The client does not store a `client_secret`;
-- All account authorization uses DeviantArt's official page in the system
-  browser. DAViewer never embeds or reads an account/password form of its own.
+- All account authorization uses DeviantArt's official page inside the app's
+  embedded WebView. DAViewer never implements or reads an account/password form
+  of its own.
