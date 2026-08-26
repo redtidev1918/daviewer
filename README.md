@@ -46,6 +46,7 @@ Windows 版解压即可运行：登录在 App 内完成，不需要管理员权�
 - [为什么做这个项目](#为什么做这个项目)
 - [功能特性](#功能特性)
 - [与 DAKit 的关系](#与-dakit-的关系)
+- [参考与致谢](#参考与致谢)
 - [使用前准备](#使用前准备)
 - [运行](#运行)
 - [代理](#代理)
@@ -102,6 +103,34 @@ dependencies:
 App 内嵌网页的官方页面中。回调后 App 同时使用这一份 OAuth 身份与网页会话，
 不再要求第二次网页登录。未登录是正常引导状态。详细边界见
 [架构说明](docs/architecture.md)。
+
+## 参考与致谢
+
+DAViewer 建立在以下开源项目之上：
+
+- **[DAKit](https://github.com/redtidev1918/dakit)** —— 本项目的 DeviantArt SDK
+  （OAuth、官方 API 映射、领域模型、后台传输），已发布到 pub.dev
+- **[Flutter](https://flutter.dev)** —— 跨平台 UI 框架
+- **[flutter_inappwebview](https://pub.dev/packages/flutter_inappwebview)** —— 内嵌网页
+  （登录、网页适配器）
+- **[flutter_riverpod](https://pub.dev/packages/flutter_riverpod)** —— 状态管理
+- **[go_router](https://pub.dev/packages/go_router)** —— 路由
+- **[dio](https://pub.dev/packages/dio)** —— HTTP 客户端
+- **[cached_network_image](https://pub.dev/packages/cached_network_image)** /
+  **[flutter_cache_manager](https://pub.dev/packages/flutter_cache_manager)** —— 图片缓存
+- **[flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage)** —— 安全存储（登录令牌）
+- **[share_plus](https://pub.dev/packages/share_plus)** —— 系统原生分享
+- **[url_launcher](https://pub.dev/packages/url_launcher)** —— 打开外部链接
+- **[path_provider](https://pub.dev/packages/path_provider)** —— 本地路径
+- **[chewie](https://pub.dev/packages/chewie)** / **[video_player](https://pub.dev/packages/video_player)** —— 视频播放
+- **[flutter_html](https://pub.dev/packages/flutter_html)** —— 富文本渲染
+
+网页私有接口的逆向参考：
+
+- **[gallery-dl](https://github.com/mikf/gallery-dl)** —— 记录了 DeviantArt 网站私有
+  数据提取方式的下载器项目
+- **[deviantart.ts](https://www.npmjs.com/package/deviantart.ts)** —— DeviantArt API 的
+  TypeScript 封装，用于核对接口参数
 
 ## 使用前准备
 
