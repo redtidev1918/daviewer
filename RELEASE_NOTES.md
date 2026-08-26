@@ -3,6 +3,12 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.165
+
+- 画师页的 Scraps 标签移到最后一个位置（大部分画师不使用 Scraps）。
+
+- The artist Scraps tab moved to the last position (most artists never use it).
+
 ## 0.2.164
 
 - 修复画师页 Scraps 在网页会话缺失或过期时显示为空的问题（现在会自动刷新会话并重试）。

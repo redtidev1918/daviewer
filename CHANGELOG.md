@@ -3,6 +3,13 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.165（画师页标签顺序）
+
+### Changed
+
+- Scraps 标签从第二位移到最后一个位置（作品 / 收藏 / 文章 / 画集与收藏夹 /
+  Scraps）——大部分画师不使用 Scraps，放在前面会让常用标签更难找。
+
 ## 0.2.164（Scraps 会话修复）
 
 ### Fixed
