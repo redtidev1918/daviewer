@@ -3,6 +3,12 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.166
+
+- 移除画师页的 Scraps 标签（官网画师导航没有 Scraps，且大部分画师不使用）。
+
+- Removed the artist Scraps tab (the official artist navigation has no Scraps, and most artists never use it).
+
 ## 0.2.165
 
 - 画师页的 Scraps 标签移到最后一个位置（大部分画师不使用 Scraps）。
