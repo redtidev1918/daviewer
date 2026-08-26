@@ -3,6 +3,14 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.164
+
+- 修复画师页 Scraps 在网页会话缺失或过期时显示为空的问题（现在会自动刷新会话并重试）。
+- 画集内搜索在会话失效时同样会自动恢复。
+
+- Fixed the artist Scraps tab showing empty when the web session is missing or stale (the session is now refreshed and retried).
+- Gallery search recovers the same way when the web session is stale.
+
 ## 0.2.163
 
 - 搜索现在返回真实的 DeviantArt 搜索结果（官方 API 已移除搜索接口）。
