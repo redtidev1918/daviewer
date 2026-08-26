@@ -50,6 +50,7 @@ can move the folder and just launch it again.
 - [Why](#why)
 - [Features](#features)
 - [Relationship with DAKit](#relationship-with-dakit)
+- [References & acknowledgements](#references--acknowledgements)
 - [Before you start](#before-you-start)
 - [Run](#run)
 - [Proxy](#proxy)
@@ -127,6 +128,37 @@ the app's embedded WebView. After the callback, every feature uses that one
 OAuth identity plus the WebView's web session; there is no second web sign-in to
 synchronize. Signed-out state is onboarding, not a feed error. See
 [Architecture](docs/architecture.md) for the full boundaries.
+
+## References & acknowledgements
+
+DAViewer is built on these open-source projects:
+
+- **[DAKit](https://github.com/redtidev1918/dakit)** — the DeviantArt SDK this app
+  uses (OAuth, official API mapping, domain models, background transfers),
+  published on pub.dev
+- **[Flutter](https://flutter.dev)** — the cross-platform UI framework
+- **[flutter_inappwebview](https://pub.dev/packages/flutter_inappwebview)** — embedded
+  WebView (sign-in, web adapters)
+- **[flutter_riverpod](https://pub.dev/packages/flutter_riverpod)** — state management
+- **[go_router](https://pub.dev/packages/go_router)** — routing
+- **[dio](https://pub.dev/packages/dio)** — HTTP client
+- **[cached_network_image](https://pub.dev/packages/cached_network_image)** /
+  **[flutter_cache_manager](https://pub.dev/packages/flutter_cache_manager)** — image caching
+- **[flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage)** — secure
+  storage for the sign-in token
+- **[share_plus](https://pub.dev/packages/share_plus)** — native share sheet
+- **[url_launcher](https://pub.dev/packages/url_launcher)** — opening external links
+- **[path_provider](https://pub.dev/packages/path_provider)** — local paths
+- **[chewie](https://pub.dev/packages/chewie)** / **[video_player](https://pub.dev/packages/video_player)** —
+  video playback
+- **[flutter_html](https://pub.dev/packages/flutter_html)** — rich-text rendering
+
+Reverse-engineering references for DeviantArt's private website endpoints:
+
+- **[gallery-dl](https://github.com/mikf/gallery-dl)** — a downloader that documents how
+  DeviantArt's private website data is fetched
+- **[deviantart.ts](https://www.npmjs.com/package/deviantart.ts)** — a TypeScript
+  DeviantArt API wrapper, used to cross-check endpoint parameters
 
 ## Before you start
 
