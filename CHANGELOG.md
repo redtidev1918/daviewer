@@ -3,6 +3,16 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.172（全屏大图滑动切换修复）
+
+### Fixed
+
+- 全屏查看器中 `InteractiveViewer` 即使在未缩放状态下也参与手势竞技场，
+  抢走了水平拖动手势——导致点击进入大图后左右滑动切换作品完全不响应。
+  现在未缩放时不挂载 InteractiveViewer（由外层 GestureDetector 接管滑动），
+  缩放后才挂载以支持双指平移；缩放状态下滑动不触发作品切换（与设计合约
+  一致）。
+
 ## 0.2.171（通知入口）
 
 ### Added
