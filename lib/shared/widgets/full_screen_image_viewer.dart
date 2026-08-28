@@ -40,19 +40,23 @@ final class _FullScreenImageViewerState
   TapDownDetails? _doubleTap;
   bool _zoomed = false;
   double _horizontalDrag = 0;
-  late final PageController _pageController = PageController(
-    initialPage: widget.initialPage,
-  );
+  late final PageController _pageController;
   final ArtworkEdgeSwipeTracker _edgeSwipe = ArtworkEdgeSwipeTracker();
 
   int get _pageCount => 1 + widget.additionalMedia.length;
   bool get _isMultiPage => widget.additionalMedia.isNotEmpty;
 
-  int _page = 0;
+  ImageProvider<Object> _providerAt(int index) =>
+      index == 0 ? widget.imageProvider : widget.additionalMedia[index - 1];
+
+  late int _page;
+  bool _navigatingArtwork = false;
 
   @override
   void initState() {
     super.initState();
+    _page = widget.initialPage.clamp(0, _pageCount - 1).toInt();
+    _pageController = PageController(initialPage: _page);
     _transformation.addListener(_syncZoomState);
   }
 
@@ -61,6 +65,7 @@ final class _FullScreenImageViewerState
     _transformation
       ..removeListener(_syncZoomState)
       ..dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -111,9 +116,36 @@ final class _FullScreenImageViewerState
       _ => null,
     };
     _horizontalDrag = 0;
-    if (callback == null) return;
+    _navigateArtwork(callback);
+  }
+
+  void _navigateArtwork(VoidCallback? callback) {
+    if (callback == null || _navigatingArtwork) return;
+    _navigatingArtwork = true;
     Navigator.of(context).pop();
     WidgetsBinding.instance.addPostFrameCallback((_) => callback());
+  }
+
+  void _navigatePrevious() {
+    if (_isMultiPage && _page > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+      return;
+    }
+    _navigateArtwork(widget.onPreviousArtwork);
+  }
+
+  void _navigateNext() {
+    if (_isMultiPage && _page < _pageCount - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+      return;
+    }
+    _navigateArtwork(widget.onNextArtwork);
   }
 
   /// 构建主体：
@@ -128,7 +160,9 @@ final class _FullScreenImageViewerState
         maxScale: 8,
         boundaryMargin: const EdgeInsets.all(80),
         panEnabled: true,
-        child: SizedBox.expand(child: image),
+        child: SizedBox.expand(
+          child: Image(image: _providerAt(_page), fit: BoxFit.contain),
+        ),
       );
     }
     if (_isMultiPage) {
@@ -149,9 +183,9 @@ final class _FullScreenImageViewerState
                 if (!mounted) return;
                 switch (direction) {
                   case ArtworkSwipeDirection.previous:
-                    widget.onPreviousArtwork?.call();
+                    _navigateArtwork(widget.onPreviousArtwork);
                   case ArtworkSwipeDirection.next:
-                    widget.onNextArtwork?.call();
+                    _navigateArtwork(widget.onNextArtwork);
                 }
               });
             }
@@ -166,10 +200,7 @@ final class _FullScreenImageViewerState
             setState(() => _page = index);
           },
           itemBuilder: (context, index) {
-            final provider = index == 0
-                ? widget.imageProvider
-                : widget.additionalMedia[index - 1];
-            final image = Image(image: provider, fit: BoxFit.contain);
+            final image = Image(image: _providerAt(index), fit: BoxFit.contain);
             final heroTag = index == 0 ? widget.heroTag : null;
             if (heroTag != null) return Hero(tag: heroTag, child: image);
             return image;
@@ -186,6 +217,10 @@ final class _FullScreenImageViewerState
     final canSwipeArtwork =
         !_zoomed &&
         (widget.onPreviousArtwork != null || widget.onNextArtwork != null);
+    final canNavigatePrevious =
+        !_zoomed && (_page > 0 || widget.onPreviousArtwork != null);
+    final canNavigateNext =
+        !_zoomed && (_page < _pageCount - 1 || widget.onNextArtwork != null);
     Widget image = Image(
       image: widget.imageProvider,
       fit: BoxFit.contain,
@@ -254,29 +289,19 @@ final class _FullScreenImageViewerState
           children: <Widget>[
             Positioned.fill(child: _buildBody(image)),
             // 显式翻页按钮：不依赖手势系统，始终可见可点击。
-            if (canSwipeArtwork && widget.onPreviousArtwork != null)
+            if (canNavigatePrevious)
               _NavArrowButton(
                 icon: Icons.chevron_left,
                 tooltip: s.previousArtwork,
                 alignment: Alignment.centerLeft,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  WidgetsBinding.instance.addPostFrameCallback(
-                    (_) => widget.onPreviousArtwork?.call(),
-                  );
-                },
+                onTap: _navigatePrevious,
               ),
-            if (canSwipeArtwork && widget.onNextArtwork != null)
+            if (canNavigateNext)
               _NavArrowButton(
                 icon: Icons.chevron_right,
                 tooltip: s.nextArtwork,
                 alignment: Alignment.centerRight,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  WidgetsBinding.instance.addPostFrameCallback(
-                    (_) => widget.onNextArtwork?.call(),
-                  );
-                },
+                onTap: _navigateNext,
               ),
           ],
         ),

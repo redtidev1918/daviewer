@@ -1,5 +1,7 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:daviewer/features/artwork/media_viewer.dart';
+import 'package:daviewer/shared/widgets/full_screen_image_viewer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -172,5 +174,60 @@ void main() {
     await tester.drag(find.byType(PageView), const Offset(-320, 0));
     await tester.pump(const Duration(milliseconds: 400));
     expect(nextArtwork, 1);
+  });
+
+  testWidgets('opening a multi-image page passes every image to fullscreen', (
+    tester,
+  ) async {
+    final first = asset(
+      'first',
+      MediaKind.image,
+      uri: Uri.parse('https://example.test/first.jpg'),
+    );
+    final second = asset(
+      'second',
+      MediaKind.image,
+      uri: Uri.parse('https://example.test/second.jpg'),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: 400,
+                child: MediaViewer(
+                  media: <MediaAsset>[first],
+                  additionalMedia: <MediaAsset>[second],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final inlineImage = find.byType(CachedNetworkImage).first;
+    final tapTarget = find
+        .ancestor(of: inlineImage, matching: find.byType(GestureDetector))
+        .first;
+    await tester.tap(tapTarget);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+
+    final viewer = tester.widget<FullScreenImageViewer>(
+      find.byType(FullScreenImageViewer),
+    );
+    expect(viewer.additionalMedia, hasLength(1));
+    expect(viewer.initialPage, 0);
+    expect(
+      find.descendant(
+        of: find.byType(FullScreenImageViewer),
+        matching: find.byType(PageView),
+      ),
+      findsOneWidget,
+    );
   });
 }

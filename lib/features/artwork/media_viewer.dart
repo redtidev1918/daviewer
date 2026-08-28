@@ -95,6 +95,7 @@ final class MediaViewerState extends State<MediaViewer> {
   @override
   Widget build(BuildContext context) {
     final pages = _pages;
+    final fullScreenPages = pages.where(_canOpenFullScreen).toList();
     if (pages.isEmpty) {
       final s = strings(
         ProviderScope.containerOf(
@@ -109,7 +110,11 @@ final class MediaViewerState extends State<MediaViewer> {
     }
 
     if (pages.length == 1) {
-      return _pageWidget(pages.first, heroTag: widget.heroTag);
+      return _pageWidget(
+        pages.first,
+        heroTag: widget.heroTag,
+        fullScreenPages: fullScreenPages,
+      );
     }
 
     return Column(
@@ -153,6 +158,7 @@ final class MediaViewerState extends State<MediaViewer> {
                   itemBuilder: (context, index) => _pageWidget(
                     pages[index],
                     heroTag: index == 0 ? widget.heroTag : null,
+                    fullScreenPages: fullScreenPages,
                   ),
                 ),
               ),
@@ -203,7 +209,11 @@ final class MediaViewerState extends State<MediaViewer> {
     );
   }
 
-  Widget _pageWidget(MediaAsset asset, {String? heroTag}) {
+  Widget _pageWidget(
+    MediaAsset asset, {
+    String? heroTag,
+    required List<MediaAsset> fullScreenPages,
+  }) {
     // Gated content (premium/paid, blocked, deleted): show a clear placeholder
     // instead of trying to load a URL that will 403 and render a broken image.
     if (asset.availability != MediaAvailability.available) {
@@ -223,14 +233,18 @@ final class MediaViewerState extends State<MediaViewer> {
       // Animated GIFs render through Image.network so they actually animate.
       child = _AnimatedImage(
         url: url,
-        onPreviousArtwork: _pages.length == 1 ? widget.onPreviousArtwork : null,
-        onNextArtwork: _pages.length == 1 ? widget.onNextArtwork : null,
+        fullScreenPages: fullScreenPages,
+        initialPage: fullScreenPages.indexOf(asset),
+        onPreviousArtwork: widget.onPreviousArtwork,
+        onNextArtwork: widget.onNextArtwork,
       );
     } else {
       child = _TappableImage(
         url: url,
-        onPreviousArtwork: _pages.length == 1 ? widget.onPreviousArtwork : null,
-        onNextArtwork: _pages.length == 1 ? widget.onNextArtwork : null,
+        fullScreenPages: fullScreenPages,
+        initialPage: fullScreenPages.indexOf(asset),
+        onPreviousArtwork: widget.onPreviousArtwork,
+        onNextArtwork: widget.onNextArtwork,
       );
     }
     if (heroTag != null && asset.kind != MediaKind.video) {
@@ -239,6 +253,11 @@ final class MediaViewerState extends State<MediaViewer> {
     return child;
   }
 }
+
+bool _canOpenFullScreen(MediaAsset asset) =>
+    asset.availability == MediaAvailability.available &&
+    asset.uri != null &&
+    asset.kind != MediaKind.video;
 
 /// A centered icon + message used for empty/gated/error media states.
 final class _MediaMessage extends StatelessWidget {
@@ -313,21 +332,31 @@ final class _GatedPlaceholder extends StatelessWidget {
 final class _TappableImage extends StatelessWidget {
   const _TappableImage({
     required this.url,
+    required this.fullScreenPages,
+    required this.initialPage,
     this.onPreviousArtwork,
     this.onNextArtwork,
   });
 
   final String url;
+  final List<MediaAsset> fullScreenPages;
+  final int initialPage;
   final VoidCallback? onPreviousArtwork;
   final VoidCallback? onNextArtwork;
 
   @override
   Widget build(BuildContext context) {
+    final providers = <ImageProvider<Object>>[
+      for (final asset in fullScreenPages)
+        CachedNetworkImageProvider(asset.uri.toString()),
+    ];
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (context) => FullScreenImageViewer(
-            imageProvider: CachedNetworkImageProvider(url),
+            imageProvider: providers.first,
+            additionalMedia: providers.skip(1).toList(),
+            initialPage: initialPage,
             onPreviousArtwork: onPreviousArtwork,
             onNextArtwork: onNextArtwork,
           ),
@@ -375,16 +404,24 @@ final class _TappableImage extends StatelessWidget {
 final class _AnimatedImage extends StatelessWidget {
   const _AnimatedImage({
     required this.url,
+    required this.fullScreenPages,
+    required this.initialPage,
     this.onPreviousArtwork,
     this.onNextArtwork,
   });
 
   final String url;
+  final List<MediaAsset> fullScreenPages;
+  final int initialPage;
   final VoidCallback? onPreviousArtwork;
   final VoidCallback? onNextArtwork;
 
   @override
   Widget build(BuildContext context) {
+    final providers = <ImageProvider<Object>>[
+      for (final asset in fullScreenPages)
+        CachedNetworkImageProvider(asset.uri.toString()),
+    ];
     final decodeWidth =
         (MediaQuery.sizeOf(context).width *
                 MediaQuery.devicePixelRatioOf(context))
@@ -395,7 +432,9 @@ final class _AnimatedImage extends StatelessWidget {
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (context) => FullScreenImageViewer(
-            imageProvider: CachedNetworkImageProvider(url),
+            imageProvider: providers.first,
+            additionalMedia: providers.skip(1).toList(),
+            initialPage: initialPage,
             onPreviousArtwork: onPreviousArtwork,
             onNextArtwork: onNextArtwork,
           ),

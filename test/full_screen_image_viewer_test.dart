@@ -90,4 +90,35 @@ void main() {
     expect(next, 1);
     expect(find.text('open'), findsOneWidget);
   });
+
+  testWidgets('multi-image viewer starts on the requested page and swipes', (
+    tester,
+  ) async {
+    var previousArtwork = 0;
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: FullScreenImageViewer(
+            imageProvider: MemoryImage(bytes),
+            additionalMedia: <ImageProvider<Object>>[MemoryImage(bytes)],
+            initialPage: 1,
+            onPreviousArtwork: () => previousArtwork++,
+          ),
+        ),
+      ),
+    );
+
+    final pageView = tester.widget<PageView>(find.byType(PageView));
+    expect(pageView.controller?.initialPage, 1);
+    expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
+
+    await tester.fling(find.byType(PageView), const Offset(700, 0), 1000);
+    await tester.pumpAndSettle();
+
+    expect(pageView.controller?.page, 0);
+    expect(previousArtwork, 0);
+    expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+  });
 }
