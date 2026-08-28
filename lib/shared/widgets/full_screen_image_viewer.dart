@@ -250,7 +250,81 @@ final class _FullScreenImageViewerState
         // panEnabled=false 时也会参与竞技场并抢走水平拖动，
         // 导致全屏查看器里的左右滑动切换作品永远不触发。
         // 缩放后仍需要 InteractiveViewer 来支持平移与边界控制。
-        child: _buildBody(image),
+        child: Stack(
+          children: <Widget>[
+            Positioned.fill(child: _buildBody(image)),
+            // 显式翻页按钮：不依赖手势系统，始终可见可点击。
+            if (canSwipeArtwork && widget.onPreviousArtwork != null)
+              _NavArrowButton(
+                icon: Icons.chevron_left,
+                tooltip: s.previousArtwork,
+                alignment: Alignment.centerLeft,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => widget.onPreviousArtwork?.call(),
+                  );
+                },
+              ),
+            if (canSwipeArtwork && widget.onNextArtwork != null)
+              _NavArrowButton(
+                icon: Icons.chevron_right,
+                tooltip: s.nextArtwork,
+                alignment: Alignment.centerRight,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => widget.onNextArtwork?.call(),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 半透明左右翻页箭头按钮——不依赖手势系统，始终可见可点击。
+final class _NavArrowButton extends StatelessWidget {
+  const _NavArrowButton({
+    required this.icon,
+    required this.tooltip,
+    required this.alignment,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final Alignment alignment;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: Align(
+        alignment: alignment,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Material(
+            color: Colors.transparent,
+            child: Tooltip(
+              message: tooltip,
+              child: InkWell(
+                onTap: onTap,
+                customBorder: const CircleBorder(),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Colors.black38,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: Colors.white70, size: 32),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
