@@ -126,13 +126,16 @@ final class MediaViewerState extends State<MediaViewer> {
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
                   if (notification is ScrollStartNotification) {
-                    _edgeSwipe.reset();
+                    if (notification.dragDetails == null) {
+                      _edgeSwipe.reset();
+                    } else {
+                      _edgeSwipe.start(
+                        atFirst: _page == 0,
+                        atLast: _page == pages.length - 1,
+                      );
+                    }
                   } else if (notification is OverscrollNotification) {
-                    _edgeSwipe.add(
-                      notification.overscroll,
-                      atFirst: _page == 0,
-                      atLast: _page == pages.length - 1,
-                    );
+                    _edgeSwipe.add(notification.overscroll);
                   } else if (notification is ScrollEndNotification) {
                     final direction = _edgeSwipe.finish();
                     if (direction != null) {

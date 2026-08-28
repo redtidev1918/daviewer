@@ -1,7 +1,6 @@
 import 'package:dakit_flutter/dakit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/l10n/app_strings.dart';
@@ -9,6 +8,7 @@ import '../../core/sharing/app_share.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/artwork_card.dart';
+import 'artwork_navigation.dart';
 import 'collection_contents_provider.dart';
 
 /// A native view of a favourites collection's deviations.
@@ -113,7 +113,12 @@ class _CollectionContentsScreenState
         final artwork = artworks[index];
         return ArtworkCard(
           artwork: artwork,
-          onTap: () => context.push('/artwork/${artwork.id}'),
+          onTap: () => openArtworkFromList(
+            context,
+            ref,
+            artworks: artworks,
+            artwork: artwork,
+          ),
         );
       },
     );

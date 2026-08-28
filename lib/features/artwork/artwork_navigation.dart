@@ -207,16 +207,30 @@ enum ArtworkSwipeDirection { previous, next }
 final class ArtworkEdgeSwipeTracker {
   ArtworkSwipeDirection? _direction;
   double _distance = 0;
+  bool _allowPrevious = false;
+  bool _allowNext = false;
+
+  /// Locks edge ownership when a new pointer gesture begins. A gesture that
+  /// starts on an ordinary page can only change pages; reaching the first or
+  /// last page during that same gesture never promotes it into artwork
+  /// navigation. The user must release and swipe outward again.
+  void start({required bool atFirst, required bool atLast}) {
+    reset();
+    _allowPrevious = atFirst;
+    _allowNext = atLast;
+  }
 
   void reset() {
     _direction = null;
     _distance = 0;
+    _allowPrevious = false;
+    _allowNext = false;
   }
 
-  void add(double overscroll, {required bool atFirst, required bool atLast}) {
+  void add(double overscroll) {
     final direction = switch (overscroll) {
-      < 0 when atFirst => ArtworkSwipeDirection.previous,
-      > 0 when atLast => ArtworkSwipeDirection.next,
+      < 0 when _allowPrevious => ArtworkSwipeDirection.previous,
+      > 0 when _allowNext => ArtworkSwipeDirection.next,
       _ => null,
     };
     if (direction == null) return;
