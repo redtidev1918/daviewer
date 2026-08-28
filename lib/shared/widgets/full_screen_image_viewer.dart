@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../features/artwork/artwork_navigation.dart';
 import '../../core/diagnostics/app_logger.dart';
 
 /// The single full-screen image experience used by remote artwork media and
@@ -10,6 +11,8 @@ import '../../core/diagnostics/app_logger.dart';
 final class FullScreenImageViewer extends ConsumerStatefulWidget {
   const FullScreenImageViewer({
     required this.imageProvider,
+    this.additionalMedia = const <ImageProvider>[],
+    this.initialPage = 0,
     this.heroTag,
     this.onPreviousArtwork,
     this.onNextArtwork,
@@ -17,6 +20,11 @@ final class FullScreenImageViewer extends ConsumerStatefulWidget {
   });
 
   final ImageProvider<Object> imageProvider;
+
+  /// 多图作品的附加图片（additionalMedia 的 provider 列表），
+  /// 全屏查看器内部用 PageView 翻页，到边缘后 overscroll 切换作品。
+  final List<ImageProvider<Object>> additionalMedia;
+  final int initialPage;
   final Object? heroTag;
   final VoidCallback? onPreviousArtwork;
   final VoidCallback? onNextArtwork;
@@ -32,6 +40,15 @@ final class _FullScreenImageViewerState
   TapDownDetails? _doubleTap;
   bool _zoomed = false;
   double _horizontalDrag = 0;
+  late final PageController _pageController = PageController(
+    initialPage: widget.initialPage,
+  );
+  final ArtworkEdgeSwipeTracker _edgeSwipe = ArtworkEdgeSwipeTracker();
+
+  int get _pageCount => 1 + widget.additionalMedia.length;
+  bool get _isMultiPage => widget.additionalMedia.isNotEmpty;
+
+  int _page = 0;
 
   @override
   void initState() {
@@ -97,6 +114,70 @@ final class _FullScreenImageViewerState
     if (callback == null) return;
     Navigator.of(context).pop();
     WidgetsBinding.instance.addPostFrameCallback((_) => callback());
+  }
+
+  /// 构建主体：
+  /// - 缩放后：InteractiveViewer 平移缩放（不响应水平滑动切换）
+  /// - 多页未缩放：PageView 翻页 + 边缘 overscroll 委托给作品切换
+  /// - 单页未缩放：静态图片（水平滑动由外层 GestureDetector 处理切换作品）
+  Widget _buildBody(Widget image) {
+    if (_zoomed) {
+      return InteractiveViewer(
+        transformationController: _transformation,
+        minScale: 1,
+        maxScale: 8,
+        boundaryMargin: const EdgeInsets.all(80),
+        panEnabled: true,
+        child: SizedBox.expand(child: image),
+      );
+    }
+    if (_isMultiPage) {
+      return NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollStartNotification) {
+            _edgeSwipe.reset();
+          } else if (notification is OverscrollNotification) {
+            _edgeSwipe.add(
+              notification.overscroll,
+              atFirst: _page == 0,
+              atLast: _page == _pageCount - 1,
+            );
+          } else if (notification is ScrollEndNotification) {
+            final direction = _edgeSwipe.finish();
+            if (direction != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                switch (direction) {
+                  case ArtworkSwipeDirection.previous:
+                    widget.onPreviousArtwork?.call();
+                  case ArtworkSwipeDirection.next:
+                    widget.onNextArtwork?.call();
+                }
+              });
+            }
+          }
+          return false;
+        },
+        child: PageView.builder(
+          controller: _pageController,
+          itemCount: _pageCount,
+          onPageChanged: (index) {
+            _edgeSwipe.reset();
+            setState(() => _page = index);
+          },
+          itemBuilder: (context, index) {
+            final provider = index == 0
+                ? widget.imageProvider
+                : widget.additionalMedia[index - 1];
+            final image = Image(image: provider, fit: BoxFit.contain);
+            final heroTag = index == 0 ? widget.heroTag : null;
+            if (heroTag != null) return Hero(tag: heroTag, child: image);
+            return image;
+          },
+        ),
+      );
+    }
+    return Center(child: image);
   }
 
   @override
@@ -169,16 +250,7 @@ final class _FullScreenImageViewerState
         // panEnabled=false 时也会参与竞技场并抢走水平拖动，
         // 导致全屏查看器里的左右滑动切换作品永远不触发。
         // 缩放后仍需要 InteractiveViewer 来支持平移与边界控制。
-        child: _zoomed
-            ? InteractiveViewer(
-                transformationController: _transformation,
-                minScale: 1,
-                maxScale: 8,
-                boundaryMargin: const EdgeInsets.all(80),
-                panEnabled: true,
-                child: SizedBox.expand(child: image),
-              )
-            : Center(child: image),
+        child: _buildBody(image),
       ),
     );
   }
