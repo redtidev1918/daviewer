@@ -3,6 +3,12 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.173
+
+- 全屏大图查看器新增滑动诊断日志（如仍有滑动问题可通过日志与诊断页导出定位）。
+
+- Full-screen viewer now logs swipe diagnostics to help pinpoint any remaining navigation issues.
+
 ## 0.2.172
 
 - 修复全屏查看大图时左右滑动无反应的问题：滑动现在可以正常切换到上一个/下一个作品。
