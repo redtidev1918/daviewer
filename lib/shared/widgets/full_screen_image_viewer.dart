@@ -151,14 +151,20 @@ final class _FullScreenImageViewerState
             ? () => _horizontalDrag = 0
             : null,
         onHorizontalDragEnd: canSwipeArtwork ? _finishHorizontalDrag : null,
-        child: InteractiveViewer(
-          transformationController: _transformation,
-          minScale: 1,
-          maxScale: 8,
-          boundaryMargin: const EdgeInsets.all(80),
-          panEnabled: _zoomed,
-          child: SizedBox.expand(child: image),
-        ),
+        // 未缩放时不挂 InteractiveViewer：它的手势识别器即使在
+        // panEnabled=false 时也会参与竞技场并抢走水平拖动，
+        // 导致全屏查看器里的左右滑动切换作品永远不触发。
+        // 缩放后仍需要 InteractiveViewer 来支持平移与边界控制。
+        child: _zoomed
+            ? InteractiveViewer(
+                transformationController: _transformation,
+                minScale: 1,
+                maxScale: 8,
+                boundaryMargin: const EdgeInsets.all(80),
+                panEnabled: true,
+                child: SizedBox.expand(child: image),
+              )
+            : Center(child: image),
       ),
     );
   }
