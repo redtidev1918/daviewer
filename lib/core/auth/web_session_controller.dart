@@ -129,9 +129,18 @@ final class WebSessionController extends StateNotifier<WebSessionState> {
       await _store.clear();
       return;
     }
-    final cookies = loggedIn
+    final savedCookies = _stringMap((await _store.read())['cookies']);
+    final capturedCookies = loggedIn
         ? await _captureCookies()
-        : _stringMap((await _store.read())['cookies']);
+        : const <String, String>{};
+    // CookieManager can be temporarily unavailable while the platform WebView
+    // is starting. Never let that transient empty read destroy the last known
+    // good snapshot, or a later app update would have nothing to restore.
+    final cookies = selectCookiesForSnapshot(
+      loggedIn: loggedIn,
+      captured: capturedCookies,
+      saved: savedCookies,
+    );
     state = WebSessionState(
       csrf: csrf,
       isLoggedIn: loggedIn,
@@ -181,6 +190,14 @@ final class WebSessionController extends StateNotifier<WebSessionState> {
     await _store.clear();
   }
 }
+
+/// Keeps the last valid cookie snapshot when a signed-in platform read fails.
+/// Anonymous refreshes also preserve it; explicit logout still calls [clear].
+Map<String, String> selectCookiesForSnapshot({
+  required bool loggedIn,
+  required Map<String, String> captured,
+  required Map<String, String> saved,
+}) => loggedIn && captured.isNotEmpty ? captured : saved;
 
 /// Safely converts a decoded JSON value to a string map, dropping anything
 /// that is not a string pair.

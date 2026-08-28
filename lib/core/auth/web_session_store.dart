@@ -44,14 +44,17 @@ final class WebSessionStore {
   }) async {
     try {
       final file = await _file();
-      await file.writeAsString(
+      final temporary = File('${file.path}.tmp');
+      await temporary.writeAsString(
         jsonEncode(<String, Object?>{
           'csrf': csrf,
           'isLoggedIn': isLoggedIn,
           'username': username,
           'cookies': cookies,
         }),
+        flush: true,
       );
+      await temporary.rename(file.path);
     } on Object {
       // Best effort; a failed persist only means the next cold start re-asks
       // for the web sign-in.
