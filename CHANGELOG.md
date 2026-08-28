@@ -3,6 +3,14 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.174（全屏查看器多图翻页修复）
+
+### Fixed
+
+- 多图作品在全屏查看器中缩放后 PageView 被丢弃（变成 `Center(child: image)`），
+  导致无法继续翻页。现在缩放状态正确包裹当前页面的 InteractiveViewer，
+  重置缩放后恢复 PageView 翻页。
+
 ## 0.2.173（滑动诊断日志）
 
 ### Added

@@ -3,6 +3,14 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.174
+
+- 修复多图作品在全屏查看器中缩放后无法返回翻页模式的问题。
+- 全屏查看器完整支持多图翻页与滑动切换作品的组合操作。
+
+- Fixed multi-image works losing PageView after zooming in the full-screen viewer.
+- Full-screen viewer now supports multi-image paging combined with swipe-to-navigate.
+
 ## 0.2.173
 
 - 全屏大图查看器新增滑动诊断日志（如仍有滑动问题可通过日志与诊断页导出定位）。
