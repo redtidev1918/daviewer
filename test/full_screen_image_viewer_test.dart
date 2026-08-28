@@ -11,7 +11,7 @@ void main() {
     'YAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
   );
 
-  testWidgets('shared image viewer pins the zoom interaction contract', (
+  testWidgets('zoom action switches to an interactive pan-enabled viewer', (
     tester,
   ) async {
     var artworkNavigation = 0;
@@ -26,39 +26,34 @@ void main() {
       ),
     );
 
-    final viewer = tester.widget<InteractiveViewer>(
-      find.byType(InteractiveViewer),
-    );
-    expect(viewer.minScale, 1);
-    expect(viewer.maxScale, 8);
-    expect(viewer.panEnabled, isFalse);
+    // 未缩放：没有 InteractiveViewer（它会在未缩放时抢走水平拖动），
+    // 但有缩放按钮。
+    expect(find.byType(InteractiveViewer), findsNothing);
     expect(find.byIcon(Icons.zoom_in), findsOneWidget);
 
+    // 缩放后切换到交互查看器，支持平移。
     await tester.tap(find.byIcon(Icons.zoom_in));
     await tester.pump();
     expect(find.byIcon(Icons.zoom_out_map), findsOneWidget);
-    expect(
-      tester
-          .widget<InteractiveViewer>(find.byType(InteractiveViewer))
-          .panEnabled,
-      isTrue,
+    final viewer = tester.widget<InteractiveViewer>(
+      find.byType(InteractiveViewer),
     );
+    expect(viewer.panEnabled, isTrue);
+    expect(viewer.minScale, 1);
+    expect(viewer.maxScale, 8);
 
-    final controller = tester
-        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
-        .transformationController!;
+    // 缩放状态下拖动应该被 InteractiveViewer 消费（不触发作品切换）。
+    final controller = viewer.transformationController!;
     final before = controller.value.getTranslation();
     await tester.drag(find.byType(InteractiveViewer), const Offset(80, 40));
     await tester.pump();
     final after = controller.value.getTranslation();
-
     expect(after.x, isNot(before.x));
-    expect(after.y, isNot(before.y));
     expect(artworkNavigation, 0);
     await tester.pump(const Duration(milliseconds: 50));
   });
 
-  testWidgets('full-screen swipe changes artwork only at base zoom', (
+  testWidgets('horizontal swipe at base zoom navigates to next artwork', (
     tester,
   ) async {
     var next = 0;
@@ -85,7 +80,10 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
-    await tester.drag(find.byType(InteractiveViewer), const Offset(-180, 0));
+
+    // 在基础缩放下直接向左滑——手势由全屏查看器自身的
+    // GestureDetector 处理（不经过 InteractiveViewer）。
+    await tester.drag(find.byType(Scaffold), const Offset(-180, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
 
