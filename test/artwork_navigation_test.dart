@@ -50,18 +50,31 @@ void main() {
   test('multi-image edge tracker ignores ordinary page movement', () {
     final tracker = ArtworkEdgeSwipeTracker();
 
-    tracker.add(80, atFirst: false, atLast: false);
+    tracker.start(atFirst: false, atLast: false);
+    tracker.add(80);
+    expect(tracker.finish(), isNull);
+  });
+
+  test('edge tracker never promotes a page swipe into artwork navigation', () {
+    final tracker = ArtworkEdgeSwipeTracker();
+
+    tracker.start(atFirst: false, atLast: false);
+    // Even if the PageView reaches its last page and reports overscroll during
+    // the same pointer sequence, ownership stays with image paging.
+    tracker.add(80);
     expect(tracker.finish(), isNull);
   });
 
   test('multi-image edge tracker changes artwork only past an edge', () {
     final tracker = ArtworkEdgeSwipeTracker();
 
-    tracker.add(-30, atFirst: true, atLast: false);
-    tracker.add(-30, atFirst: true, atLast: false);
+    tracker.start(atFirst: true, atLast: false);
+    tracker.add(-30);
+    tracker.add(-30);
     expect(tracker.finish(), ArtworkSwipeDirection.previous);
 
-    tracker.add(60, atFirst: false, atLast: true);
+    tracker.start(atFirst: false, atLast: true);
+    tracker.add(60);
     expect(tracker.finish(), ArtworkSwipeDirection.next);
   });
 

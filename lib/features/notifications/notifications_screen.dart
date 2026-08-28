@@ -17,6 +17,7 @@ import '../../shared/widgets/app_refresh_indicator.dart';
 import '../../shared/widgets/relative_time_text.dart';
 import '../../shared/widgets/scrollable_fill.dart';
 import '../../shared/widgets/skeleton.dart';
+import '../artwork/artwork_navigation.dart';
 import 'notification_read_store.dart';
 import 'notifications_providers.dart';
 
@@ -111,6 +112,9 @@ final class _NotificationsScreenState
               ),
             );
           }
+          final notificationArtworks = <Artwork>[
+            for (final message in items) ?message.artwork,
+          ];
           return AppRefreshIndicator(
             onRefresh: () => ref.refresh(notificationsProvider.future),
             child: ListView.separated(
@@ -122,6 +126,15 @@ final class _NotificationsScreenState
                 s: s,
                 isRead: _readIds.contains(items[index].id),
                 onTap: () => _markRead(items[index].id),
+                onOpenArtwork: switch (items[index].artwork) {
+                  final artwork? => () => openArtworkFromList(
+                    context,
+                    ref,
+                    artworks: notificationArtworks,
+                    artwork: artwork,
+                  ),
+                  null => null,
+                },
               ),
             ),
           );
@@ -137,12 +150,14 @@ final class _MessageTile extends StatelessWidget {
     required this.s,
     required this.isRead,
     required this.onTap,
+    this.onOpenArtwork,
   });
 
   final ProviderMessage message;
   final AppStrings s;
   final bool isRead;
   final VoidCallback onTap;
+  final VoidCallback? onOpenArtwork;
 
   @override
   Widget build(BuildContext context) {
@@ -230,8 +245,8 @@ final class _MessageTile extends StatelessWidget {
       ),
       onTap: () {
         onTap();
-        if (artwork != null) {
-          context.push('/artwork/${artwork.id}');
+        if (onOpenArtwork != null) {
+          onOpenArtwork!();
         } else if (originator != null && originator.username.isNotEmpty) {
           context.push('/artist/${originator.username}');
         }

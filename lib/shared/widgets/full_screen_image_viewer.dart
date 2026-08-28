@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -51,6 +53,8 @@ final class _FullScreenImageViewerState
 
   late int _page;
   bool _navigatingArtwork = false;
+  bool _controlsVisible = true;
+  Timer? _controlsTimer;
 
   @override
   void initState() {
@@ -58,15 +62,37 @@ final class _FullScreenImageViewerState
     _page = widget.initialPage.clamp(0, _pageCount - 1).toInt();
     _pageController = PageController(initialPage: _page);
     _transformation.addListener(_syncZoomState);
+    _scheduleControlsHide();
   }
 
   @override
   void dispose() {
+    _controlsTimer?.cancel();
     _transformation
       ..removeListener(_syncZoomState)
       ..dispose();
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _scheduleControlsHide() {
+    _controlsTimer?.cancel();
+    _controlsTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted && _controlsVisible) {
+        setState(() => _controlsVisible = false);
+      }
+    });
+  }
+
+  void _toggleControls() {
+    _controlsTimer?.cancel();
+    setState(() => _controlsVisible = !_controlsVisible);
+    if (_controlsVisible) _scheduleControlsHide();
+  }
+
+  void _keepControlsTemporarily() {
+    if (!_controlsVisible) setState(() => _controlsVisible = true);
+    _scheduleControlsHide();
   }
 
   void _syncZoomState() {
@@ -169,13 +195,16 @@ final class _FullScreenImageViewerState
       return NotificationListener<ScrollNotification>(
         onNotification: (notification) {
           if (notification is ScrollStartNotification) {
-            _edgeSwipe.reset();
+            if (notification.dragDetails == null) {
+              _edgeSwipe.reset();
+            } else {
+              _edgeSwipe.start(
+                atFirst: _page == 0,
+                atLast: _page == _pageCount - 1,
+              );
+            }
           } else if (notification is OverscrollNotification) {
-            _edgeSwipe.add(
-              notification.overscroll,
-              atFirst: _page == 0,
-              atLast: _page == _pageCount - 1,
-            );
+            _edgeSwipe.add(notification.overscroll);
           } else if (notification is ScrollEndNotification) {
             final direction = _edgeSwipe.finish();
             if (direction != null) {
@@ -216,6 +245,7 @@ final class _FullScreenImageViewerState
     final s = strings(ref.watch(appLanguageProvider));
     final canSwipeArtwork =
         !_zoomed &&
+        !_isMultiPage &&
         (widget.onPreviousArtwork != null || widget.onNextArtwork != null);
     final canNavigatePrevious =
         !_zoomed && (_page > 0 || widget.onPreviousArtwork != null);
@@ -250,19 +280,26 @@ final class _FullScreenImageViewerState
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        actions: <Widget>[
-          IconButton(
-            tooltip: _zoomed ? s.zoomReset : s.zoomIn,
-            onPressed: _toggleZoom,
-            icon: Icon(_zoomed ? Icons.zoom_out_map : Icons.zoom_in),
-          ),
-        ],
-      ),
+      extendBodyBehindAppBar: true,
+      appBar: _controlsVisible
+          ? AppBar(
+              backgroundColor: Colors.black54,
+              foregroundColor: Colors.white,
+              actions: <Widget>[
+                IconButton(
+                  tooltip: _zoomed ? s.zoomReset : s.zoomIn,
+                  onPressed: () {
+                    _keepControlsTemporarily();
+                    _toggleZoom();
+                  },
+                  icon: Icon(_zoomed ? Icons.zoom_out_map : Icons.zoom_in),
+                ),
+              ],
+            )
+          : null,
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
+        onTap: _toggleControls,
         onDoubleTapDown: (details) => _doubleTap = details,
         onDoubleTap: _toggleZoom,
         onHorizontalDragStart: canSwipeArtwork
@@ -289,14 +326,14 @@ final class _FullScreenImageViewerState
           children: <Widget>[
             Positioned.fill(child: _buildBody(image)),
             // 显式翻页按钮：不依赖手势系统，始终可见可点击。
-            if (canNavigatePrevious)
+            if (_controlsVisible && canNavigatePrevious)
               _NavArrowButton(
                 icon: Icons.chevron_left,
                 tooltip: s.previousArtwork,
                 alignment: Alignment.centerLeft,
                 onTap: _navigatePrevious,
               ),
-            if (canNavigateNext)
+            if (_controlsVisible && canNavigateNext)
               _NavArrowButton(
                 icon: Icons.chevron_right,
                 tooltip: s.nextArtwork,

@@ -118,7 +118,60 @@ void main() {
 
     expect(pageView.controller?.page, 0);
     expect(previousArtwork, 0);
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.byIcon(Icons.zoom_in), findsNothing);
+    expect(find.byIcon(Icons.chevron_left), findsNothing);
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
+
+    await tester.tapAt(const Offset(400, 300));
+    await tester.pump(const Duration(milliseconds: 350));
+
+    expect(find.byIcon(Icons.zoom_in), findsOneWidget);
     expect(find.byIcon(Icons.chevron_left), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+  });
+
+  testWidgets('fullscreen requires a new edge swipe to change artwork', (
+    tester,
+  ) async {
+    var nextArtwork = 0;
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => FullScreenImageViewer(
+                    imageProvider: MemoryImage(bytes),
+                    additionalMedia: <ImageProvider<Object>>[
+                      MemoryImage(bytes),
+                    ],
+                    onNextArtwork: () => nextArtwork++,
+                  ),
+                ),
+              ),
+              child: const Text('open multi'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open multi'));
+    await tester.pumpAndSettle();
+
+    // First gesture belongs exclusively to the image pager.
+    await tester.fling(find.byType(PageView), const Offset(-700, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(nextArtwork, 0);
+    expect(find.byType(FullScreenImageViewer), findsOneWidget);
+
+    // A separate outward gesture that starts at the last image may navigate
+    // to the next artwork.
+    await tester.drag(find.byType(PageView), const Offset(-180, 0));
+    await tester.pumpAndSettle();
+    expect(nextArtwork, 1);
+    expect(find.text('open multi'), findsOneWidget);
   });
 }

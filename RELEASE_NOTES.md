@@ -3,6 +3,20 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.176
+
+- 修复多图作品点开大图后无法左右翻页的问题；详情页、多图预览和全屏大图现在各自拥有明确的滑动手势，不再互相抢占。
+- 到达多图首尾页后，需要再次向外滑动才会切换作品，避免一次手势误触发两层导航。
+- 大图中的返回、缩放和翻页控件会自动隐藏，轻点画面可重新显示；图片放大后滑动只用于平移。
+- 收藏夹与通知入口现在会保留完整浏览顺序，上一件/下一件作品导航保持一致。
+- 加固更新后的登录 Cookie 恢复：临时读取失败不再覆盖有效备份，快照采用原子写入。
+
+- Fixed multi-image works not paging after opening the full-screen viewer. Detail navigation, inline media paging, and full-screen paging now have explicit, non-competing gesture ownership.
+- Reaching the first or last image now requires a separate outward swipe to change artworks, preventing one gesture from triggering two navigation layers.
+- Full-screen back, zoom, and paging controls auto-hide and return on tap; panning a zoomed image never changes pages.
+- Collection and notification entry points now preserve their complete browsing sequence for consistent previous/next navigation.
+- Hardened post-update cookie recovery: transient reads no longer overwrite a valid backup, and snapshots are written atomically.
+
 ## 0.2.175
 
 - 全屏大图查看器新增**左右翻页箭头按钮**——不依赖手势系统，始终可见可点击。
