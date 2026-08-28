@@ -3,6 +3,12 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.175
+
+- 全屏大图查看器新增**左右翻页箭头按钮**——不依赖手势系统，始终可见可点击。
+
+- Full-screen viewer now has visible left/right arrow buttons — always tappable, not gesture-dependent.
+
 ## 0.2.174
 
 - 修复多图作品在全屏查看器中缩放后无法返回翻页模式的问题。
