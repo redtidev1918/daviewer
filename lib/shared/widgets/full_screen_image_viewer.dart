@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/diagnostics/app_logger.dart';
 
 /// The single full-screen image experience used by remote artwork media and
 /// local downloads. It owns all zoom limits, double-tap behavior and controls
@@ -72,6 +73,13 @@ final class _FullScreenImageViewerState
   }
 
   void _finishHorizontalDrag(DragEndDetails details) {
+    AppLogger.instance.debug(
+      'fullscreen-swipe',
+      'drag end, zoomed=$_zoomed, drag=$_horizontalDrag, '
+          'velocity=${details.primaryVelocity}, '
+          'hasPrev=${widget.onPreviousArtwork != null}, '
+          'hasNext=${widget.onNextArtwork != null}',
+    );
     if (_zoomed) return;
     final velocity = details.primaryVelocity ?? 0;
     final threshold = (MediaQuery.sizeOf(context).width * 0.16).clamp(
@@ -142,7 +150,13 @@ final class _FullScreenImageViewerState
         onDoubleTapDown: (details) => _doubleTap = details,
         onDoubleTap: _toggleZoom,
         onHorizontalDragStart: canSwipeArtwork
-            ? (_) => _horizontalDrag = 0
+            ? (_) {
+                AppLogger.instance.debug(
+                  'fullscreen-swipe',
+                  'drag start (onPrev=${widget.onPreviousArtwork != null}, onNext=${widget.onNextArtwork != null})',
+                );
+                _horizontalDrag = 0;
+              }
             : null,
         onHorizontalDragUpdate: canSwipeArtwork
             ? (details) => _horizontalDrag += details.delta.dx
