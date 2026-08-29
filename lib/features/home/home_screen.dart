@@ -149,6 +149,9 @@ final class _PersonalizedFeed extends ConsumerStatefulWidget {
 
 final class _PersonalizedFeedState extends ConsumerState<_PersonalizedFeed>
     with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
+  final ScrollController _scrollController = ScrollController();
+  DateTime? _backgroundedAt;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -161,16 +164,35 @@ final class _PersonalizedFeedState extends ConsumerState<_PersonalizedFeed>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Refresh recommendations when the app comes back to the foreground so it
-    // does not sit on a stale list indefinitely — silently, so the current
-    // list stays visible while the new one loads.
-    if (state == AppLifecycleState.resumed && mounted) {
-      ref.read(personalizedFeedProvider.notifier).refreshSilently();
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      _backgroundedAt ??= DateTime.now();
+      return;
+    }
+    if (state != AppLifecycleState.resumed || !mounted) return;
+
+    final backgroundedAt = _backgroundedAt;
+    _backgroundedAt = null;
+    if (backgroundedAt == null) return;
+
+    final routeIsCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+    final recommendedTabIsActive = DefaultTabController.of(context).index == 0;
+    final scrollOffset = _scrollController.hasClients
+        ? _scrollController.offset
+        : 0.0;
+    if (shouldRefreshPersonalizedFeedOnResume(
+      backgroundDuration: DateTime.now().difference(backgroundedAt),
+      routeIsCurrent: routeIsCurrent,
+      recommendedTabIsActive: recommendedTabIsActive,
+      scrollOffset: scrollOffset,
+    )) {
+      unawaited(ref.read(personalizedFeedProvider.notifier).refreshSilently());
     }
   }
 
@@ -191,6 +213,7 @@ final class _PersonalizedFeedState extends ConsumerState<_PersonalizedFeed>
     final feed = ref.watch(personalizedFeedProvider);
 
     return ArtworkFeedGrid(
+      scrollController: _scrollController,
       feed: feed,
       emptyMessage: s.noRecommendations,
       errorMessage: s.recommendedFeedLoadFailure,
@@ -198,6 +221,24 @@ final class _PersonalizedFeedState extends ConsumerState<_PersonalizedFeed>
       onLoadMore: () => ref.read(personalizedFeedProvider.notifier).loadMore(),
     );
   }
+}
+
+const _personalizedFeedAutoRefreshAge = Duration(minutes: 10);
+const _personalizedFeedTopThreshold = 120.0;
+
+/// Automatic refresh is intentionally conservative: keep the current list
+/// while another route or tab is visible, after a short app switch, or when the
+/// reader has scrolled far enough that replacing the feed would be disruptive.
+bool shouldRefreshPersonalizedFeedOnResume({
+  required Duration backgroundDuration,
+  required bool routeIsCurrent,
+  required bool recommendedTabIsActive,
+  required double scrollOffset,
+}) {
+  return backgroundDuration >= _personalizedFeedAutoRefreshAge &&
+      routeIsCurrent &&
+      recommendedTabIsActive &&
+      scrollOffset <= _personalizedFeedTopThreshold;
 }
 
 /// The notification entry point: a bell that opens the message center and

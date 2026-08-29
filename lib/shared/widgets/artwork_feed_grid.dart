@@ -15,6 +15,7 @@ final class ArtworkFeedGrid extends ConsumerWidget {
   const ArtworkFeedGrid({
     required this.feed,
     required this.emptyMessage,
+    this.scrollController,
     this.onRefresh,
     this.onLoadMore,
     this.emptyActionLabel,
@@ -25,6 +26,7 @@ final class ArtworkFeedGrid extends ConsumerWidget {
 
   final ArtworkFeedState feed;
   final String emptyMessage;
+  final ScrollController? scrollController;
   final Future<void> Function()? onRefresh;
   final VoidCallback? onLoadMore;
 
@@ -64,6 +66,7 @@ final class ArtworkFeedGrid extends ConsumerWidget {
       final width = MediaQuery.of(context).size.width;
       final crossAxisCount = (width / 200).round().clamp(2, 4);
       body = MasonryGridView.count(
+        controller: scrollController,
         padding: const EdgeInsets.all(12),
         physics: const AlwaysScrollableScrollPhysics(),
         crossAxisCount: crossAxisCount,

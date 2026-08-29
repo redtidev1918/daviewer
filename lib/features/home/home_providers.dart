@@ -22,7 +22,7 @@ final personalizedFeedProvider =
       final runtime = ref.watch(runtimeProvider);
       final webSession = ref.watch(webSessionProvider);
       ref.watch(
-        webSessionControllerProvider.select((web) => (web.csrf, web.username)),
+        webSessionControllerProvider.select(personalizedFeedSessionIdentity),
       );
       final controller = ArtworkFeedController((request) async {
         final dio = runtime.dio;
@@ -56,6 +56,16 @@ final personalizedFeedProvider =
       });
       return controller;
     });
+
+/// Only account identity changes should rebuild the recommendation feed.
+///
+/// Website metadata requests can rotate the CSRF token while an artwork detail
+/// is open. Treating that short-lived token as provider identity would recreate
+/// the controller and replace the list behind the detail route, so returning to
+/// recommendations would appear to refresh unexpectedly. Fetches still read the
+/// latest CSRF directly from [webSessionControllerProvider].
+(bool?, String) personalizedFeedSessionIdentity(WebSessionState web) =>
+    (web.isLoggedIn, web.username);
 
 /// Fetches one rfy page, or `null` when the web session is missing or the
 /// request failed (the caller then refreshes the session and retries).
