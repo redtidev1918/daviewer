@@ -3,6 +3,14 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.177
+
+- 修复查看作品详情后返回推荐页时列表突然刷新、阅读位置丢失的问题。
+- 自动刷新现在只会在应用离开较久、推荐页可见且位于顶部附近时静默执行；查看详情、浏览其他标签或深度滚动时保持当前内容。
+
+- Fixed the recommendation feed unexpectedly refreshing and losing its reading position after returning from artwork details.
+- Automatic refresh now runs silently only after a longer absence when Recommendations is visible and near the top; viewing details, using another tab, or browsing deeper keeps the current content intact.
+
 ## 0.2.176
 
 - 修复多图作品点开大图后无法左右翻页的问题；详情页、多图预览和全屏大图现在各自拥有明确的滑动手势，不再互相抢占。
