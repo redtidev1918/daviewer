@@ -15,6 +15,8 @@ final class DeviationInit {
     this.descriptionHtml,
     this.additionalMedia = const <MediaAsset>[],
     this.tags = const <String>[],
+    this.publishedAt,
+    this.updatedAt,
   });
 
   final String uuid;
@@ -31,6 +33,14 @@ final class DeviationInit {
 
   /// Searchable tag names attached to the deviation.
   final List<String> tags;
+
+  /// When the deviation was first published, if the website payload carried
+  /// it. Official-API items get this from their own feed response.
+  final DateTime? publishedAt;
+
+  /// When the deviation was last edited/updated. DeviantArt only returns this
+  /// for works that have been edited, so it is often `null`.
+  final DateTime? updatedAt;
 }
 
 /// Resolves a numeric website deviation id to the OAuth UUID, the author
@@ -141,7 +151,22 @@ final class DeviationInitFetcher {
       descriptionHtml: descriptionHtml,
       additionalMedia: List<MediaAsset>.unmodifiable(additional),
       tags: List<String>.unmodifiable(tags),
+      publishedAt: _timestamp(
+        deviation['publishedTime'] ?? extended?['publishedTime'],
+      ),
+      updatedAt: _timestamp(
+        deviation['updatedTime'] ?? extended?['updatedTime'],
+      ),
     );
+  }
+
+  /// Parses a website timestamp (ISO-8601 with offset, e.g.
+  /// `2026-08-20T12:00:00-0700`) to UTC. Returns `null` for missing or
+  /// unparseable values.
+  static DateTime? _timestamp(Object? value) {
+    final text = value is String ? value : null;
+    if (text == null || text.isEmpty) return null;
+    return DateTime.tryParse(text)?.toUtc();
   }
 
   /// Builds a single display-size [MediaAsset] for a Wix media descriptor:

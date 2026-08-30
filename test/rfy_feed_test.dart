@@ -31,6 +31,37 @@ void main() {
       throwsFormatException,
     );
   });
+
+  test('uses the update time for feed ordering when present', () {
+    final page = RfyFeedFetcher.parseJson(<String, Object?>{
+      'deviations': <Object?>[
+        <String, Object?>{
+          ..._deviation(30, 'Edited work'),
+          'publishedTime': '2026-08-01T10:00:00-0700',
+          'updatedTime': '2026-08-25T15:30:00-0700',
+        },
+      ],
+    });
+
+    // The model's single timestamp carries the latest activity time so feed
+    // ordering reflects edits; the init payload still exposes both dates to
+    // the detail page.
+    expect(
+      page.items.single.publishedAt?.toUtc(),
+      DateTime.parse('2026-08-25T22:30:00Z'),
+    );
+  });
+
+  test('falls back to publish time when no update time exists', () {
+    final page = RfyFeedFetcher.parseJson(<String, Object?>{
+      'deviations': <Object?>[_deviation(40, 'Fresh work')],
+    });
+
+    expect(
+      page.items.single.publishedAt?.toUtc(),
+      DateTime.parse('2026-08-20T19:00:00Z'),
+    );
+  });
 }
 
 Map<String, Object?> _deviation(int id, String title) => <String, Object?>{

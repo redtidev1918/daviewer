@@ -51,4 +51,42 @@ void main() {
 
     expect(result.map((a) => a.username).toList(), <String>['bob', 'alice']);
   });
+
+  group('sortArtworksNewestFirst', () {
+    test('orders feed items by latest date newest first', () {
+      final sorted = sortArtworksNewestFirst(<Artwork>[
+        _artwork('1', 'alice', DateTime(2026, 1, 1)),
+        _artwork('2', 'bob', DateTime(2026, 1, 5)),
+        _artwork('3', 'carol', DateTime(2026, 1, 3)),
+      ]);
+
+      expect(sorted.map((a) => a.id).toList(), <String>['2', '3', '1']);
+    });
+
+    test('keeps equal timestamps in their original (server) order', () {
+      final sorted = sortArtworksNewestFirst(<Artwork>[
+        _artwork('a', 'alice', DateTime(2026, 1, 2, 9)),
+        _artwork('b', 'bob', DateTime(2026, 1, 2, 9)),
+        _artwork('c', 'carol', DateTime(2026, 1, 2, 9)),
+      ]);
+
+      expect(sorted.map((a) => a.id).toList(), <String>['a', 'b', 'c']);
+    });
+
+    test('moves items without a date to the end', () {
+      final sorted = sortArtworksNewestFirst(<Artwork>[
+        _artwork('n1', 'nodate', null),
+        _artwork('old', 'alice', DateTime(2026, 1, 1)),
+        _artwork('n2', 'nodate2', null),
+        _artwork('new', 'bob', DateTime(2026, 1, 4)),
+      ]);
+
+      expect(sorted.map((a) => a.id).toList(), <String>[
+        'new',
+        'old',
+        'n1',
+        'n2',
+      ]);
+    });
+  });
 }

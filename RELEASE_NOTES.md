@@ -3,6 +3,16 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.178
+
+- 作品详情页现在显示发布时间和更新时间（相对时间），编辑过的作品会标出「更新于」。
+- 关注动态刷新后按作品最新更新时间排序，刚更新或新发布的作品排在最前。
+- 详情页视频现在自动播放并循环。
+
+- Artwork details now show the publish and update times as relative timestamps; edited works are marked with an "Updated" row.
+- The Watched feed is ordered by latest update time after each refresh, so newly updated or posted work comes first.
+- Videos on the detail page now autoplay and loop.
+
 ## 0.2.177
 
 - 修复查看作品详情后返回推荐页时列表突然刷新、阅读位置丢失的问题。

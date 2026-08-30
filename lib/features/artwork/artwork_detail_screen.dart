@@ -313,6 +313,7 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
       additionalMediaProvider(widget.artworkId),
     );
     final tags = ref.watch(artworkTagsProvider(widget.artworkId));
+    final dates = ref.watch(artworkDatesProvider(widget.artworkId));
     final transfer = _transfer;
     final previousArtwork = widget.browseSession?.previousOf(widget.artworkId);
     final nextArtwork = widget.browseSession?.nextOf(widget.artworkId);
@@ -394,6 +395,7 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
               additionalMedia:
                   additionalMedia.valueOrNull ?? const <MediaAsset>[],
               tags: tags.valueOrNull ?? const <String>[],
+              dates: dates.valueOrNull ?? const ArtworkDates(),
               hasPreviousArtwork: previousArtwork != null,
               hasNextArtwork: nextArtwork != null,
             ),
@@ -412,6 +414,7 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     String? journalHtml,
     List<MediaAsset> additionalMedia = const <MediaAsset>[],
     List<String> tags = const <String>[],
+    ArtworkDates dates = const ArtworkDates(),
     bool hasPreviousArtwork = false,
     bool hasNextArtwork = false,
   }) {
@@ -443,6 +446,11 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
             const SizedBox(height: 16),
           ],
           ArtworkHeader(artwork: artwork, s: s),
+          ArtworkDateSection(
+            publishedAt: dates.publishedAt ?? artwork.publishedAt,
+            updatedAt: dates.updatedAt,
+            s: s,
+          ),
           const Divider(),
           ArtworkDescriptionSection(
             isJournal: isJournal,

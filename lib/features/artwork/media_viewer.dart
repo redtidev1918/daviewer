@@ -531,8 +531,10 @@ final class _VideoPlayerState extends State<_VideoPlayer>
       setState(() {
         _chewie = ChewieController(
           videoPlayerController: controller,
-          autoPlay: false,
-          looping: false,
+          // Videos play automatically and loop, matching the inline,
+          // social-feed style of the rest of the media viewer.
+          autoPlay: true,
+          looping: true,
           allowFullScreen: true,
           allowMuting: true,
           allowPlaybackSpeedChanging: true,

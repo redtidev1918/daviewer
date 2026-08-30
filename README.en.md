@@ -82,9 +82,10 @@ no service. You can move the folder anywhere and just launch it.
   paste a DeviantArt link to jump straight to an artwork or artist; “Recommended
   for you” and popular tags show an artwork preview (Pixiv style)
 - **Artwork detail**: swipe or top-bar buttons to browse previous/next works
-  (adjacent images prefetched); pinch zoom; paged multi-image works
-- **Media**: shared image zoom; highest-quality video with seeking and retry;
-  GIF badge + cached rich-text images with loading progress
+  (adjacent images prefetched); pinch zoom; paged multi-image works; publish and
+  update times shown under the title as auto-refreshing relative timestamps
+- **Media**: shared image zoom; highest-quality video that autoplays and loops,
+  with seeking and retry; GIF badge + cached rich-text images with loading progress
 - **Related content**: native "More like this", similar artists,
   featured/suggested collections (openable in full), and "More from this
   artist" on the detail page, with clear empty and failure states
