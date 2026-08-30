@@ -66,6 +66,44 @@ final artworkUuidProvider = FutureProvider.autoDispose.family<String, String>((
   return init!.uuid;
 });
 
+/// The dates shown on the artwork detail screen: the original publish time and
+/// — when the website reports one — the latest edit/update time. Web (numeric
+/// id) works read both from `dadeviation/init`; official-API works only carry
+/// [Artwork.publishedAt].
+final class ArtworkDates {
+  const ArtworkDates({this.publishedAt, this.updatedAt});
+
+  final DateTime? publishedAt;
+  final DateTime? updatedAt;
+
+  /// The newest time known for the artwork (update time, falling back to
+  /// publish time), used by the following-feed ordering.
+  DateTime? get latestAt => updatedAt ?? publishedAt;
+}
+
+/// Merges the website's timestamps (when available) with the cached
+/// [Artwork.publishedAt] from the feed.
+final artworkDatesProvider = FutureProvider.autoDispose
+    .family<ArtworkDates, String>((ref, artworkId) async {
+      final artwork = await ref.watch(artworkDetailProvider(artworkId).future);
+      var dates = ArtworkDates(publishedAt: artwork.publishedAt);
+      if (isNumericDeviationId(artworkId)) {
+        try {
+          final init = await ref.watch(deviationInitProvider(artworkId).future);
+          if (init != null) {
+            dates = ArtworkDates(
+              publishedAt: init.publishedAt ?? dates.publishedAt,
+              updatedAt: init.updatedAt,
+            );
+          }
+        } on Object {
+          // Dates are supplementary; the detail page must stay usable even if
+          // the init endpoint fails.
+        }
+      }
+      return dates;
+    });
+
 /// Whether the signed-in user has favourited this artwork, read from the
 /// mapped [Artwork.isFavourited] (no extra provider call needed).
 final favouriteStatusProvider = FutureProvider.autoDispose.family<bool, String>(

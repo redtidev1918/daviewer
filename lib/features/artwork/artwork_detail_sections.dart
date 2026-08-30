@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../shared/widgets/compact_tag_strip.dart';
+import '../../shared/widgets/relative_time_text.dart';
 
 import '../../core/l10n/app_strings.dart';
 import 'rich_html.dart';
@@ -50,6 +51,93 @@ final class ArtworkHeader extends StatelessWidget {
             ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// The artwork's publish/update dates, shown under the title as compact,
+/// self-updating relative timestamps. Renders nothing when no date is known.
+final class ArtworkDateSection extends StatelessWidget {
+  const ArtworkDateSection({
+    required this.publishedAt,
+    required this.updatedAt,
+    required this.s,
+    super.key,
+  });
+
+  final DateTime? publishedAt;
+  final DateTime? updatedAt;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    // Only show the update time when the provider reports a real edit that is
+    // later than the original publish time.
+    final updated =
+        updatedAt != null &&
+            (publishedAt == null || updatedAt!.isAfter(publishedAt!))
+        ? updatedAt
+        : null;
+    if (publishedAt == null && updated == null) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, bottom: 2),
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 4,
+        children: <Widget>[
+          if (publishedAt != null)
+            _DateRow(
+              icon: Icons.schedule,
+              label: s.publishedLabel,
+              time: publishedAt!,
+              format: s.relativeTime,
+              style: style,
+            ),
+          if (updated != null)
+            _DateRow(
+              icon: Icons.update,
+              label: s.updatedLabel,
+              time: updated,
+              format: s.relativeTime,
+              style: style,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+final class _DateRow extends StatelessWidget {
+  const _DateRow({
+    required this.icon,
+    required this.label,
+    required this.time,
+    required this.format,
+    required this.style,
+  });
+
+  final IconData icon;
+  final String label;
+  final DateTime time;
+  final String Function(DateTime? time) format;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: 14, color: style?.color),
+        const SizedBox(width: 4),
+        Text('$label ', style: style),
+        RelativeTimeText(time: time, format: format, style: style),
       ],
     );
   }

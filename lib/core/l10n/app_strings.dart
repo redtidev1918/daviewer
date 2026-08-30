@@ -117,6 +117,8 @@ final class AppStrings {
   String get videoLoadFailed =>
       _lang == AppLanguage.zh ? '视频加载失败' : 'Video failed to load';
   String get byPrefix => _lang == AppLanguage.zh ? '作者：' : 'by ';
+  String get publishedLabel => _lang == AppLanguage.zh ? '发布于' : 'Published';
+  String get updatedLabel => _lang == AppLanguage.zh ? '更新于' : 'Updated';
   String get recommendedTags =>
       _lang == AppLanguage.zh ? '为你推荐' : 'Recommended for you';
   String get noDaily =>

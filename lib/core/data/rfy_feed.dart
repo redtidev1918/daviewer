@@ -38,7 +38,11 @@ final class WebDeviationMapper {
       ),
       pageUri: _uri(json['url']) ?? Uri.https('www.deviantart.com'),
       media: _mediaAssets(media, id, json),
-      publishedAt: DateTime.tryParse(json['publishedTime'] as String? ?? ''),
+      // Feeds sort by the artwork's latest activity time. The DAKit model only
+      // carries one timestamp, so prefer the website's update time (present for
+      // edited deviations) and fall back to the publish time; the detail screen
+      // also parses the init payload to show both dates distinctly.
+      publishedAt: _timestamp(json['updatedTime'] ?? json['publishedTime']),
       isMature: json['isMature'] == true,
       isDownloadable: isDownloadable,
       isFavourited: json['isFavourited'] == true,
@@ -230,6 +234,14 @@ final class WebDeviationMapper {
     final text = value is String ? value : null;
     if (text == null || text.isEmpty) return null;
     return Uri.tryParse(text);
+  }
+
+  /// Parses a website timestamp (ISO-8601 with offset, e.g.
+  /// `2026-08-20T12:00:00-0700`) to UTC.
+  static DateTime? _timestamp(Object? value) {
+    final text = value is String ? value : null;
+    if (text == null || text.isEmpty) return null;
+    return DateTime.tryParse(text)?.toUtc();
   }
 }
 

@@ -22,6 +22,34 @@ void main() {
     );
   });
 
+  test('parses publish and update timestamps from the init payload', () {
+    final init = DeviationInitFetcher.parseInit(<String, Object?>{
+      'deviation': <String, Object?>{
+        'deviationId': 819241297,
+        'publishedTime': '2026-08-01T10:00:00-0700',
+        'updatedTime': '2026-08-25T15:30:00-0700',
+        'extended': <String, Object?>{
+          'deviationUuid': 'E9393CB8-E611-987D-6F97-5CE8DE66F4CB',
+        },
+      },
+    });
+
+    expect(init.publishedAt?.toUtc(), DateTime.parse('2026-08-01T17:00:00Z'));
+    expect(init.updatedAt?.toUtc(), DateTime.parse('2026-08-25T22:30:00Z'));
+  });
+
+  test('leaves dates null when the website omits them', () {
+    final init = DeviationInitFetcher.parseInit(<String, Object?>{
+      'deviation': <String, Object?>{
+        'deviationId': 1,
+        'extended': <String, Object?>{'deviationUuid': 'UUID-1'},
+      },
+    });
+
+    expect(init.publishedAt, isNull);
+    expect(init.updatedAt, isNull);
+  });
+
   test('tolerates a missing extended block without crashing', () {
     final init = DeviationInitFetcher.parseInit(<String, Object?>{
       'deviation': <String, Object?>{

@@ -108,9 +108,20 @@ final followingFeedProvider =
         ),
       );
       final controller = ArtworkFeedController(
-        (request) {
-          return OfficialDiscoveryRepository(runtime.transport!)
+        (request) async {
+          final page = await OfficialDiscoveryRepository(runtime.transport!)
               .watched(request);
+          // The official feed is cursor-paged newest-first, but a refresh can
+          // interleave bumped/edited deviations and sparse entries lacking
+          // timestamps. Re-sort the page itself by latest date so the grid and
+          // the avatar strip always reflect a consistent newest-first order;
+          // entries without a date keep their relative order at the tail.
+          final items = sortArtworksNewestFirst(page.items);
+          return Page<Artwork>(
+            items: items,
+            hasMore: page.hasMore,
+            nextCursor: page.nextCursor,
+          );
         },
         // A larger first page surfaces more distinct watched artists in the
         // top avatar strip instead of a few heavy posters dominating it.
@@ -118,6 +129,36 @@ final followingFeedProvider =
       );
       return controller;
     });
+
+/// Newest date known for an artwork. Web-feed items map the website's
+/// update/publish timestamp onto [Artwork.publishedAt], so the model field is
+/// already the latest known time; the detail page additionally reads a
+/// separately-parsed edit timestamp via `dadeviation/init`.
+DateTime? artworkLatestAt(Artwork artwork) => artwork.publishedAt;
+
+/// Returns [items] ordered by latest date newest-first. Items without a date
+/// are moved to the end while preserving their relative (server) order, and
+/// equal timestamps keep their incoming order (stable sort).
+List<Artwork> sortArtworksNewestFirst(List<Artwork> items) {
+  final indexed = <MapEntry<int, DateTime>>[];
+  final undated = <Artwork>[];
+  for (var index = 0; index < items.length; index += 1) {
+    final time = artworkLatestAt(items[index]);
+    if (time == null) {
+      undated.add(items[index]);
+    } else {
+      indexed.add(MapEntry<int, DateTime>(index, time));
+    }
+  }
+  indexed.sort((a, b) {
+    final byDate = b.value.compareTo(a.value);
+    return byDate != 0 ? byDate : a.key.compareTo(b.key);
+  });
+  return List<Artwork>.unmodifiable(<Artwork>[
+    for (final entry in indexed) items[entry.key],
+    ...undated,
+  ]);
+}
 
 /// A watched artist plus the time of their most recent deviation in the feed.
 final class WatchedAuthor {
