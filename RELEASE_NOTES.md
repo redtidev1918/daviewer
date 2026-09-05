@@ -3,6 +3,12 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.179
+
+- 修复详情页视频在退出或跳转到其他页面后仍在后台播放的问题，不再空耗流量和电量；返回该页面时视频会自动继续播放。
+
+- Fixed the detail-page video keeping playing in the background after exiting or navigating to another page; returning to the page resumes playback automatically.
+
 ## 0.2.178
 
 - 作品详情页现在显示发布时间和更新时间（相对时间），编辑过的作品会标出「更新于」。

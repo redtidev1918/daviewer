@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../core/auth/auth_controller.dart';
 import '../core/auth/auth_state.dart';
 import '../core/l10n/app_strings.dart';
+import '../shared/route_observer.dart';
 import '../features/artist/artist_screen.dart';
 import '../features/artist/folder_screen.dart';
 import '../features/artwork/artwork_detail_screen.dart';
@@ -30,6 +31,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: '/splash',
     refreshListenable: authRevision,
+    observers: <NavigatorObserver>[routeObserver],
     routes: <RouteBase>[
       GoRoute(
         path: '/splash',

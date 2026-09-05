@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../app/theme/app_theme.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../shared/route_observer.dart';
 import '../../shared/widgets/full_screen_image_viewer.dart';
 import 'artwork_navigation.dart';
 
@@ -488,7 +489,7 @@ final class _VideoPlayer extends StatefulWidget {
 }
 
 final class _VideoPlayerState extends State<_VideoPlayer>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, RouteAware {
   VideoPlayerController? _controller;
   ChewieController? _chewie;
   Object? _error;
@@ -505,6 +506,12 @@ final class _VideoPlayerState extends State<_VideoPlayer>
   void didUpdateWidget(covariant _VideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.url != widget.url) _initialize();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
   }
 
   Future<void> _initialize() async {
@@ -565,8 +572,20 @@ final class _VideoPlayerState extends State<_VideoPlayer>
   }
 
   @override
+  void didPushNext() => _controller?.pause();
+
+  @override
+  void didPopNext() {
+    final controller = _controller;
+    if (controller != null && controller.value.isInitialized) {
+      controller.play();
+    }
+  }
+
+  @override
   void dispose() {
     _loadGeneration += 1;
+    routeObserver.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
     _chewie?.dispose();
     _controller?.dispose();
