@@ -8,6 +8,16 @@ void main() {
       artworkIdFromTransfer('artwork-97B067C2-XXXX-original'),
       '97B067C2-XXXX',
     );
+    expect(artworkIdFromTransfer('artwork-abc-123-image-2'), 'abc-123');
+  });
+
+  test('image transfer ids are stable and distinct per asset', () {
+    final first = imageTransferId('abc-123', 'abc:page:1');
+    final second = imageTransferId('abc-123', 'abc:page:2');
+
+    expect(first, 'artwork-abc-123-image-YWJjOnBhZ2U6MQ');
+    expect(second, isNot(first));
+    expect(artworkIdFromTransfer(first), 'abc-123');
   });
 
   test('artworkIdFromTransfer returns null for other schemes', () {

@@ -18,6 +18,7 @@ final class FullScreenImageViewer extends ConsumerStatefulWidget {
     this.heroTag,
     this.onPreviousArtwork,
     this.onNextArtwork,
+    this.onImageLongPress,
     super.key,
   });
 
@@ -30,6 +31,7 @@ final class FullScreenImageViewer extends ConsumerStatefulWidget {
   final Object? heroTag;
   final VoidCallback? onPreviousArtwork;
   final VoidCallback? onNextArtwork;
+  final ValueChanged<int>? onImageLongPress;
 
   @override
   ConsumerState<FullScreenImageViewer> createState() =>
@@ -300,6 +302,9 @@ final class _FullScreenImageViewerState
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _toggleControls,
+        onLongPress: widget.onImageLongPress == null
+            ? null
+            : () => widget.onImageLongPress!(_page),
         onDoubleTapDown: (details) => _doubleTap = details,
         onDoubleTap: _toggleZoom,
         onHorizontalDragStart: canSwipeArtwork

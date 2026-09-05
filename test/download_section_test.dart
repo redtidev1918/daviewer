@@ -148,6 +148,32 @@ void main() {
     },
   );
 
+  test('existing transfer messages reflect their real state', () {
+    expect(
+      transferStatusMessage(
+        zh,
+        const TransferSnapshot(
+          id: 'queued',
+          state: TransferState.queued,
+          progress: 0,
+        ),
+      ),
+      zh.transferQueued,
+    );
+    expect(
+      transferStatusMessage(
+        zh,
+        const TransferSnapshot(
+          id: 'done',
+          state: TransferState.completed,
+          progress: 1,
+          localPath: '/downloads/image.jpg',
+        ),
+      ),
+      '${zh.savedToPrefix}/downloads/image.jpg',
+    );
+  });
+
   testWidgets('disabled download always shows a visible reason', (
     tester,
   ) async {

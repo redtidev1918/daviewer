@@ -91,6 +91,21 @@ String transferFailureReason(AppStrings s, TransferSnapshot snapshot) {
   return message.isEmpty ? s.hintUnavailable : message;
 }
 
+String transferStatusMessage(AppStrings s, TransferSnapshot snapshot) {
+  return switch (snapshot.state) {
+    TransferState.completed when snapshot.localPath != null =>
+      '${s.savedToPrefix}${snapshot.localPath}',
+    TransferState.completed => s.transferDone,
+    TransferState.running || TransferState.retrying => s.transferDownloading,
+    TransferState.paused => s.transferPaused,
+    TransferState.failed || TransferState.notFound => s.downloadFailed(
+      transferFailureReason(s, snapshot),
+    ),
+    TransferState.cancelled => s.transferCancelled,
+    TransferState.queued => s.transferQueued,
+  };
+}
+
 String immediateDownloadFailureReason(AppStrings s, Object error) {
   final failure = error is DAKitException ? error : null;
   return transferFailureReason(

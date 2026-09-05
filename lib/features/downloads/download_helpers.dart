@@ -1,20 +1,21 @@
 /// Helpers for the downloads feature. Pure and side-effect free.
 library;
 
-/// Recovers the artwork id from a transfer id of the form
-/// `artwork-<id>-original` (the scheme used by the artwork detail download).
+import 'dart:convert';
+
+/// Creates a stable task id for one image without putting provider ids directly
+/// into the platform download database.
+String imageTransferId(String artworkId, String assetId) {
+  final token = base64Url.encode(utf8.encode(assetId)).replaceAll('=', '');
+  return 'artwork-$artworkId-image-$token';
+}
+
+/// Recovers the artwork id from an original or numbered image transfer id.
 /// Returns `null` when the id does not follow that scheme.
 String? artworkIdFromTransfer(String transferId) {
-  const prefix = 'artwork-';
-  const suffix = '-original';
-  if (!transferId.startsWith(prefix) || !transferId.endsWith(suffix)) {
-    return null;
-  }
-  final id = transferId.substring(
-    prefix.length,
-    transferId.length - suffix.length,
-  );
-  return id.isEmpty ? null : id;
+  return RegExp(r'^artwork-(.+)-(?:original|image-[A-Za-z0-9_-]+)$')
+      .firstMatch(transferId)
+      ?.group(1);
 }
 
 /// Whether [path] points to an image file (by extension).

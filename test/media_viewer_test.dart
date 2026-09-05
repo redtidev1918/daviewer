@@ -179,6 +179,8 @@ void main() {
   testWidgets('opening a multi-image page passes every image to fullscreen', (
     tester,
   ) async {
+    MediaAsset? requestedDownload;
+    var requestedPage = -1;
     final first = asset(
       'first',
       MediaKind.image,
@@ -200,6 +202,10 @@ void main() {
                 child: MediaViewer(
                   media: <MediaAsset>[first],
                   additionalMedia: <MediaAsset>[second],
+                  onDownloadImage: (asset, page) {
+                    requestedDownload = asset;
+                    requestedPage = page;
+                  },
                 ),
               ),
             ),
@@ -222,6 +228,9 @@ void main() {
     );
     expect(viewer.additionalMedia, hasLength(1));
     expect(viewer.initialPage, 0);
+    viewer.onImageLongPress!(1);
+    expect(requestedDownload, same(second));
+    expect(requestedPage, 1);
     expect(
       find.descendant(
         of: find.byType(FullScreenImageViewer),

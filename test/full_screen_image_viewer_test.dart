@@ -15,12 +15,14 @@ void main() {
     tester,
   ) async {
     var artworkNavigation = 0;
+    var longPressedPage = -1;
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
           home: FullScreenImageViewer(
             imageProvider: MemoryImage(bytes),
             onNextArtwork: () => artworkNavigation++,
+            onImageLongPress: (page) => longPressedPage = page,
           ),
         ),
       ),
@@ -50,6 +52,8 @@ void main() {
     final after = controller.value.getTranslation();
     expect(after.x, isNot(before.x));
     expect(artworkNavigation, 0);
+    await tester.longPress(find.byType(InteractiveViewer));
+    expect(longPressedPage, 0);
     await tester.pump(const Duration(milliseconds: 50));
   });
 
@@ -95,6 +99,7 @@ void main() {
     tester,
   ) async {
     var previousArtwork = 0;
+    var longPressedPage = -1;
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
@@ -103,6 +108,7 @@ void main() {
             additionalMedia: <ImageProvider<Object>>[MemoryImage(bytes)],
             initialPage: 1,
             onPreviousArtwork: () => previousArtwork++,
+            onImageLongPress: (page) => longPressedPage = page,
           ),
         ),
       ),
@@ -113,11 +119,16 @@ void main() {
     expect(find.byIcon(Icons.chevron_left), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right), findsNothing);
 
+    await tester.longPress(find.byType(Scaffold));
+    expect(longPressedPage, 1);
+
     await tester.fling(find.byType(PageView), const Offset(700, 0), 1000);
     await tester.pumpAndSettle();
 
     expect(pageView.controller?.page, 0);
     expect(previousArtwork, 0);
+    await tester.longPress(find.byType(Scaffold));
+    expect(longPressedPage, 0);
     await tester.pump(const Duration(seconds: 2));
     expect(find.byIcon(Icons.zoom_in), findsNothing);
     expect(find.byIcon(Icons.chevron_left), findsNothing);

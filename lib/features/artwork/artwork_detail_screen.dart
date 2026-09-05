@@ -14,6 +14,7 @@ import '../../core/runtime/runtime_provider.dart';
 import '../../core/sharing/app_share.dart';
 import '../../shared/widgets/app_error_state.dart';
 import '../../shared/widgets/skeleton.dart';
+import '../downloads/download_helpers.dart';
 import 'artwork_detail_providers.dart';
 import 'artwork_detail_sections.dart';
 import 'artwork_navigation.dart';
@@ -179,13 +180,34 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     unawaited(launchUrl(uri, mode: LaunchMode.externalApplication));
   }
 
-  Future<void> _download(MediaAsset original) async {
+  Future<void> _download(
+    MediaAsset original, {
+    String? id,
+    bool track = true,
+  }) async {
     if (_downloading) return;
     setState(() => _downloading = true);
     try {
       final manager = ref.read(runtimeProvider).transfers;
-      final transferId = 'artwork-${widget.artworkId}-original';
+      final transferId = id ?? 'artwork-${widget.artworkId}-original';
       await manager.initialize();
+      final existing = (await manager.records())
+          .where((record) => record.id == transferId)
+          .firstOrNull;
+      if (existing != null) {
+        if (const <TransferState>{
+          TransferState.failed,
+          TransferState.notFound,
+          TransferState.cancelled,
+        }.contains(existing.state)) {
+          await manager.remove(transferId);
+        } else {
+          if (!mounted) return;
+          _showTransferMessage(existing);
+          if (track) await _trackTransfer(manager, existing);
+          return;
+        }
+      }
       final snapshot = await manager.enqueue(
         TransferRequest(
           id: transferId,
@@ -194,16 +216,9 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
         ),
       );
       if (!mounted) return;
-      setState(() => _transfer = snapshot);
-      _reportTransferFailure(snapshot);
-      await _subscription?.cancel();
-      _subscription = manager.updates
-          .where((update) => update.id == transferId)
-          .listen((update) {
-            if (!mounted) return;
-            setState(() => _transfer = update);
-            _reportTransferFailure(update);
-          });
+      _showTransferMessage(snapshot);
+      if (!track) return;
+      await _trackTransfer(manager, snapshot);
     } on Object catch (error) {
       if (mounted) {
         final s = strings(ref.read(appLanguageProvider));
@@ -214,6 +229,33 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     } finally {
       if (mounted) setState(() => _downloading = false);
     }
+  }
+
+  void _showTransferMessage(TransferSnapshot snapshot) {
+    final s = strings(ref.read(appLanguageProvider));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(transferStatusMessage(s, snapshot))));
+  }
+
+  Future<void> _trackTransfer(
+    TransferManager manager,
+    TransferSnapshot snapshot,
+  ) async {
+    setState(() => _transfer = snapshot);
+    _reportTransferFailure(snapshot);
+    final previous = _subscription;
+    _subscription = null;
+    await previous?.cancel();
+    if (!mounted) return;
+    final transferId = snapshot.id;
+    _subscription = manager.updates
+        .where((update) => update.id == transferId)
+        .listen((update) {
+          if (!mounted) return;
+          setState(() => _transfer = update);
+          _reportTransferFailure(update);
+        });
   }
 
   void _reportTransferFailure(TransferSnapshot snapshot) {
@@ -442,6 +484,16 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
                   ? () => _navigateArtwork(-1)
                   : null,
               onNextArtwork: hasNextArtwork ? () => _navigateArtwork(1) : null,
+              onDownloadImage: (asset, page) => unawaited(
+                _download(
+                  asset,
+                  id: imageTransferId(
+                    widget.artworkId,
+                    asset.id.isEmpty ? 'page:${page + 1}' : asset.id,
+                  ),
+                  track: false,
+                ),
+              ),
             ),
             const SizedBox(height: 16),
           ],

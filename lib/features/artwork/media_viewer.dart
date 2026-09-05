@@ -69,6 +69,7 @@ final class MediaViewer extends StatefulWidget {
     this.heroTag,
     this.onPreviousArtwork,
     this.onNextArtwork,
+    this.onDownloadImage,
   });
 
   final List<MediaAsset> media;
@@ -79,6 +80,7 @@ final class MediaViewer extends StatefulWidget {
   final String? heroTag;
   final VoidCallback? onPreviousArtwork;
   final VoidCallback? onNextArtwork;
+  final void Function(MediaAsset asset, int page)? onDownloadImage;
 
   @override
   State<MediaViewer> createState() => MediaViewerState();
@@ -241,6 +243,7 @@ final class MediaViewerState extends State<MediaViewer> {
         initialPage: fullScreenPages.indexOf(asset),
         onPreviousArtwork: widget.onPreviousArtwork,
         onNextArtwork: widget.onNextArtwork,
+        onDownloadImage: widget.onDownloadImage,
       );
     } else {
       child = _TappableImage(
@@ -249,6 +252,7 @@ final class MediaViewerState extends State<MediaViewer> {
         initialPage: fullScreenPages.indexOf(asset),
         onPreviousArtwork: widget.onPreviousArtwork,
         onNextArtwork: widget.onNextArtwork,
+        onDownloadImage: widget.onDownloadImage,
       );
     }
     if (heroTag != null && asset.kind != MediaKind.video) {
@@ -340,6 +344,7 @@ final class _TappableImage extends StatelessWidget {
     required this.initialPage,
     this.onPreviousArtwork,
     this.onNextArtwork,
+    this.onDownloadImage,
   });
 
   final String url;
@@ -347,6 +352,7 @@ final class _TappableImage extends StatelessWidget {
   final int initialPage;
   final VoidCallback? onPreviousArtwork;
   final VoidCallback? onNextArtwork;
+  final void Function(MediaAsset asset, int page)? onDownloadImage;
 
   @override
   Widget build(BuildContext context) {
@@ -363,6 +369,9 @@ final class _TappableImage extends StatelessWidget {
             initialPage: initialPage,
             onPreviousArtwork: onPreviousArtwork,
             onNextArtwork: onNextArtwork,
+            onImageLongPress: onDownloadImage == null
+                ? null
+                : (page) => onDownloadImage!(fullScreenPages[page], page),
           ),
         ),
       ),
@@ -412,6 +421,7 @@ final class _AnimatedImage extends StatelessWidget {
     required this.initialPage,
     this.onPreviousArtwork,
     this.onNextArtwork,
+    this.onDownloadImage,
   });
 
   final String url;
@@ -419,6 +429,7 @@ final class _AnimatedImage extends StatelessWidget {
   final int initialPage;
   final VoidCallback? onPreviousArtwork;
   final VoidCallback? onNextArtwork;
+  final void Function(MediaAsset asset, int page)? onDownloadImage;
 
   @override
   Widget build(BuildContext context) {
@@ -441,6 +452,9 @@ final class _AnimatedImage extends StatelessWidget {
             initialPage: initialPage,
             onPreviousArtwork: onPreviousArtwork,
             onNextArtwork: onNextArtwork,
+            onImageLongPress: onDownloadImage == null
+                ? null
+                : (page) => onDownloadImage!(fullScreenPages[page], page),
           ),
         ),
       ),
