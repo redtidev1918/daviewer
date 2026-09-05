@@ -233,11 +233,7 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
           if (existingIds.contains(pageId)) continue;
           existingIds.add(pageId);
           await manager.enqueue(
-            TransferRequest(
-              id: pageId,
-              asset: page,
-              filename: page.filename,
-            ),
+            TransferRequest(id: pageId, asset: page, filename: page.filename),
           );
         }
       }
@@ -573,14 +569,13 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
                   ),
                 ],
               ),
-              data: (resolution) =>
-                  _buildDownloadSection(
-                    s,
-                    media,
-                    resolution,
-                    transfer,
-                    additionalOriginals,
-                  ),
+              data: (resolution) => _buildDownloadSection(
+                s,
+                media,
+                resolution,
+                transfer,
+                additionalOriginals,
+              ),
             ),
           ],
           const Divider(),

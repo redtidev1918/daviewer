@@ -212,10 +212,7 @@ final class DeviationInitFetcher {
 
   /// Original-file asset for an additional page: `baseUri` + the first signed
   /// token (baseUri already points at the raw original file on modern DA).
-  static MediaAsset? _originalAsset(
-    Map<Object?, Object?> media,
-    String id,
-  ) {
+  static MediaAsset? _originalAsset(Map<Object?, Object?> media, String id) {
     final base = media['baseUri'] as String?;
     if (base == null || base.isEmpty) return null;
     final tokens = (media['token'] as List? ?? const <Object?>[])
