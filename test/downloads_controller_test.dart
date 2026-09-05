@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dakit_flutter/dakit_flutter.dart';
+import 'package:daviewer/core/downloads/shared_storage_saver.dart';
 import 'package:daviewer/features/downloads/downloads_providers.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -97,6 +98,32 @@ void main() {
       await manager.dispose();
     },
   );
+
+  test(
+    'saved callback fires once after a completed download is moved',
+    () async {
+      final manager = FakeTransferManager(<TransferSnapshot>[])
+        ..movedPath = '/Downloads/image.jpg';
+      final savedPaths = <String>[];
+      final saver = SharedStorageSaver(manager, onSaved: savedPaths.add);
+      const completed = TransferSnapshot(
+        id: 'done',
+        state: TransferState.completed,
+        progress: 1,
+        localPath: '/private/image.jpg',
+      );
+
+      manager
+        ..emit(completed)
+        ..emit(completed);
+      await pumpEventQueue();
+
+      expect(savedPaths, <String>['/Downloads/image.jpg']);
+      expect(manager.moveAttempts, <String>['done']);
+      await saver.dispose();
+      await manager.dispose();
+    },
+  );
 }
 
 final class FakeTransferManager implements TransferManager {
@@ -108,6 +135,8 @@ final class FakeTransferManager implements TransferManager {
   final List<TransferSnapshot> _records;
   final List<String> removeAttempts = <String>[];
   final Set<String> removeFailures = <String>{};
+  final List<String> moveAttempts = <String>[];
+  String? movedPath;
   int recordsCalls = 0;
   Completer<void>? recordsGate;
 
@@ -152,7 +181,10 @@ final class FakeTransferManager implements TransferManager {
   Future<String?> moveToSharedStorage(
     String id,
     TransferSharedStorage destination,
-  ) async => null;
+  ) async {
+    moveAttempts.add(id);
+    return movedPath;
+  }
 
   @override
   Future<void> configureProxy(ProxyConfiguration? proxy) async {}

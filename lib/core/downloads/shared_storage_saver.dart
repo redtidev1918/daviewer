@@ -11,11 +11,12 @@ import 'package:flutter/foundation.dart';
 /// exposing the shared copy, so in-app preview keeps working under scoped
 /// storage.
 final class SharedStorageSaver {
-  SharedStorageSaver(this._transfers) {
+  SharedStorageSaver(this._transfers, {this.onSaved}) {
     _subscription = _transfers.updates.listen(_onUpdate);
   }
 
   final TransferManager _transfers;
+  final ValueChanged<String>? onSaved;
   late final StreamSubscription<TransferSnapshot> _subscription;
   final Set<String> _handled = <String>{};
 
@@ -34,6 +35,7 @@ final class SharedStorageSaver {
         TransferSharedStorage.downloads,
       );
       debugPrint('[downloads] moved to $path');
+      if (path != null && path.isNotEmpty) onSaved?.call(path);
     } on Object catch (error) {
       debugPrint('[downloads] move failed: $error');
     }

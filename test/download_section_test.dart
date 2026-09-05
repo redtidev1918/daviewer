@@ -207,8 +207,12 @@ void main() {
     expect(find.text(zh.downloadUnavailableReason), findsOneWidget);
     expect(find.text(zh.hintPurchaseRequired), findsOneWidget);
     expect(
-      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+      tester.widget<IconButton>(find.byType(IconButton)).onPressed,
       isNull,
+    );
+    expect(
+      tester.widget<IconButton>(find.byType(IconButton)).tooltip,
+      zh.hintPurchaseRequired,
     );
   });
 }

@@ -3,6 +3,14 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.181
+
+- 下载按钮缩小为简洁图标，减少对作品详情页面的视觉干扰。
+- 图片保存到系统下载目录后会显示完成提示和保存位置。
+
+- The download action is now a compact icon that keeps artwork details visually clean.
+- A completion message now shows the saved location after the image reaches the system Downloads folder.
+
 ## 0.2.180
 
 - 全屏查看图片时，现在可以长按当前图片单独下载；多图作品可逐张选择。

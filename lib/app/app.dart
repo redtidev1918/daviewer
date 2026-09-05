@@ -6,6 +6,8 @@ import '../core/theme/theme_mode_provider.dart';
 import 'router.dart';
 import 'theme/app_theme.dart';
 
+final appScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 final class DAViewerApp extends ConsumerWidget {
   const DAViewerApp({super.key});
 
@@ -15,6 +17,7 @@ final class DAViewerApp extends ConsumerWidget {
     final language = ref.watch(appLanguageProvider);
     final themeMode = ref.watch(themeModeProvider);
     return MaterialApp.router(
+      scaffoldMessengerKey: appScaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       locale: language == AppLanguage.zh
           ? const Locale('zh')

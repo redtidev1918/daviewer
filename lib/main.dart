@@ -26,6 +26,19 @@ void _configureImageCache() {
 // ignore: unused_element
 SharedStorageSaver? _sharedStorageSaver;
 
+void _showDownloadComplete(String path) {
+  final context = appScaffoldMessengerKey.currentContext;
+  final messenger = appScaffoldMessengerKey.currentState;
+  if (context == null || messenger == null) return;
+  final language = ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(appLanguageProvider);
+  messenger.showSnackBar(
+    SnackBar(content: Text('${strings(language).savedToPrefix}$path')),
+  );
+}
+
 final class _AppHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
@@ -47,7 +60,10 @@ Future<void> main() async {
   final crashedLastSession = await CrashMarker.consume();
 
   final runtime = await AppRuntime.create();
-  _sharedStorageSaver = SharedStorageSaver(runtime.transfers);
+  _sharedStorageSaver = SharedStorageSaver(
+    runtime.transfers,
+    onSaved: _showDownloadComplete,
+  );
   _globalProxyDirective = runtime.proxyController?.directive ?? 'DIRECT';
   runtime.proxyController?.addListener(() {
     _globalProxyDirective = runtime.proxyController!.directive;

@@ -157,26 +157,22 @@ final class DownloadSection extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 12),
-        Tooltip(
-          message: canDownload ? '' : reason,
-          child: FilledButton.icon(
-            onPressed: canDownload && !downloading ? onDownload : null,
-            icon: downloading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.download),
-            label: Text(
-              downloading
-                  ? s.downloading
-                  : usingFallback
-                  ? s.downloadImage
-                  : s.downloadOriginal,
-            ),
-          ),
+        const SizedBox(height: 4),
+        IconButton(
+          tooltip: canDownload
+              ? downloading
+                    ? s.downloading
+                    : usingFallback
+                    ? s.downloadImage
+                    : s.downloadOriginal
+              : reason,
+          onPressed: canDownload && !downloading ? onDownload : null,
+          icon: downloading
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.download_outlined),
         ),
       ],
     );
