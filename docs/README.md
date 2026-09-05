@@ -1,7 +1,7 @@
 # DAViewer docs
 
 Project documentation index. The user-facing overview lives in the root
-[README](../README.md) / [README.en](../README.en.md); the files here cover the
+[README](https://github.com/redtidev1918/daviewer/blob/main/README.md) / [README.en](https://github.com/redtidev1918/daviewer/blob/main/README.en.md); the files here cover the
 deeper developer and architecture notes.
 
 ## Documents
@@ -18,7 +18,7 @@ deeper developer and architecture notes.
   change runbook).
 - [Build notes](build.md) — pinned toolchain, release/CI contract, and how to
   proxy `pub get` / Gradle builds.
-- [Contributing](../CONTRIBUTING.md) — development setup, project structure,
+- [Contributing](https://github.com/redtidev1918/daviewer/blob/main/CONTRIBUTING.md) — development setup, project structure,
   workflow, and style.
 
 ## Related
@@ -32,4 +32,4 @@ deeper developer and architecture notes.
 - Developer notes are written in English; user-facing copy in the READMEs is
   bilingual (中文 / English).
 - Every document should describe current behavior only; historical decisions
-  live in [CHANGELOG.md](../CHANGELOG.md) and the release history.
+  live in [CHANGELOG.md](https://github.com/redtidev1918/daviewer/blob/main/CHANGELOG.md) and the release history.
