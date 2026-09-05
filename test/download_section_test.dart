@@ -174,7 +174,7 @@ void main() {
     );
   });
 
-  testWidgets('disabled download always shows a visible reason', (
+  testWidgets('unavailable download shows a reason without a fake button', (
     tester,
   ) async {
     const original = MediaAsset(
@@ -204,15 +204,90 @@ void main() {
       ),
     );
 
-    expect(find.text(zh.downloadUnavailableReason), findsOneWidget);
     expect(find.text(zh.hintPurchaseRequired), findsOneWidget);
-    expect(
-      tester.widget<IconButton>(find.byType(IconButton)).onPressed,
-      isNull,
+    expect(find.text(zh.downloadUnavailableReason), findsNothing);
+    expect(find.byType(OutlinedButton), findsNothing);
+  });
+
+  testWidgets('fallback is presented as a clear compact download action', (
+    tester,
+  ) async {
+    var downloaded = false;
+    const original = MediaAsset(
+      id: 'original',
+      kind: MediaKind.image,
+      role: MediaRole.original,
+      availability: MediaAvailability.unavailable,
     );
-    expect(
-      tester.widget<IconButton>(find.byType(IconButton)).tooltip,
-      zh.hintPurchaseRequired,
+    final fallback = MediaAsset(
+      id: 'preview',
+      kind: MediaKind.image,
+      role: MediaRole.preview,
+      availability: MediaAvailability.available,
+      uri: Uri.parse('https://example.test/image.jpg'),
     );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DownloadSection(
+            s: zh,
+            original: original,
+            downloadable: fallback,
+            transfer: null,
+            downloading: false,
+            lookupFailed: false,
+            onDownload: () => downloaded = true,
+            onRetry: () {},
+            onRetryAvailability: () {},
+            onPause: () {},
+            onResume: () {},
+            onCancel: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text(zh.fallbackDownloadNotice), findsOneWidget);
+    expect(find.text(zh.downloadUnavailableReason), findsNothing);
+    expect(
+      find.widgetWithText(OutlinedButton, zh.downloadImage),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(OutlinedButton, zh.downloadImage));
+    expect(downloaded, isTrue);
+  });
+
+  testWidgets('long-press download confirmation requires explicit approval', (
+    tester,
+  ) async {
+    bool? result;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () async {
+              result = await confirmImageDownload(context, strings: zh);
+            },
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.text(zh.confirmImageDownloadTitle), findsOneWidget);
+    expect(result, isNull);
+
+    await tester.tap(find.text(zh.cancel));
+    await tester.pumpAndSettle();
+    expect(result, isFalse);
+
+    result = null;
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(zh.downloadImage));
+    await tester.pumpAndSettle();
+    expect(result, isTrue);
   });
 }

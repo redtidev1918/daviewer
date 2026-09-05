@@ -231,6 +231,22 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     }
   }
 
+  Future<void> _confirmAndDownloadImage(MediaAsset asset, int page) async {
+    final confirmed = await confirmImageDownload(
+      context,
+      strings: strings(ref.read(appLanguageProvider)),
+    );
+    if (!confirmed || !mounted) return;
+    await _download(
+      asset,
+      id: imageTransferId(
+        widget.artworkId,
+        asset.id.isEmpty ? 'page:${page + 1}' : asset.id,
+      ),
+      track: false,
+    );
+  }
+
   void _showTransferMessage(TransferSnapshot snapshot) {
     final s = strings(ref.read(appLanguageProvider));
     ScaffoldMessenger.of(
@@ -484,16 +500,8 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
                   ? () => _navigateArtwork(-1)
                   : null,
               onNextArtwork: hasNextArtwork ? () => _navigateArtwork(1) : null,
-              onDownloadImage: (asset, page) => unawaited(
-                _download(
-                  asset,
-                  id: imageTransferId(
-                    widget.artworkId,
-                    asset.id.isEmpty ? 'page:${page + 1}' : asset.id,
-                  ),
-                  track: false,
-                ),
-              ),
+              onDownloadImage: (asset, page) =>
+                  unawaited(_confirmAndDownloadImage(asset, page)),
             ),
             const SizedBox(height: 16),
           ],

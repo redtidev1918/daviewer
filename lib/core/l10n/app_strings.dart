@@ -267,6 +267,11 @@ final class AppStrings {
   String get downloading => _lang == AppLanguage.zh ? '正在下载…' : 'Downloading…';
   String get downloadImage =>
       _lang == AppLanguage.zh ? '下载图片' : 'Download image';
+  String get confirmImageDownloadTitle =>
+      _lang == AppLanguage.zh ? '下载这张图片？' : 'Download this image?';
+  String get confirmImageDownloadMessage => _lang == AppLanguage.zh
+      ? '确认后会将当前图片保存到系统下载目录。'
+      : 'The current image will be saved to the system Downloads folder.';
   String get savedToPrefix => _lang == AppLanguage.zh ? '已保存到 ' : 'Saved to ';
   String get zoomIn => _lang == AppLanguage.zh ? '放大' : 'Zoom in';
   String get zoomReset => _lang == AppLanguage.zh ? '重置缩放' : 'Reset zoom';

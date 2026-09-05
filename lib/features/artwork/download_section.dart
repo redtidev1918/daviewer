@@ -48,6 +48,30 @@ String formatBytes(int bytes) {
   return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
 }
 
+Future<bool> confirmImageDownload(
+  BuildContext context, {
+  required AppStrings strings,
+}) async {
+  return await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(strings.confirmImageDownloadTitle),
+          content: Text(strings.confirmImageDownloadMessage),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(strings.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(strings.downloadImage),
+            ),
+          ],
+        ),
+      ) ??
+      false;
+}
+
 /// The download button and availability hints shown on the artwork detail page.
 final class DownloadSection extends StatelessWidget {
   const DownloadSection({
@@ -108,72 +132,52 @@ final class DownloadSection extends StatelessWidget {
         if (original.byteLength != null)
           Text('${s.sizeLabel}${formatBytes(original.byteLength!)}'),
         if (!original.canTransfer) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Semantics(
             liveRegion: true,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Icon(
-                    lookupFailed ? Icons.sync_problem : Icons.info_outline,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(
+                  lookupFailed ? Icons.sync_problem : Icons.info_outline,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    usingFallback ? s.fallbackDownloadNotice : reason,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          s.downloadUnavailableReason,
-                          style: Theme.of(context).textTheme.labelLarge,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(reason),
-                        if (usingFallback) ...[
-                          const SizedBox(height: 4),
-                          Text(s.fallbackDownloadNotice),
-                        ],
-                        if (lookupFailed) ...[
-                          const SizedBox(height: 4),
-                          TextButton.icon(
-                            onPressed: onRetryAvailability,
-                            icon: const Icon(Icons.refresh, size: 18),
-                            label: Text(s.retryDownloadCheck),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
+            ),
+          ),
+          if (lookupFailed)
+            TextButton.icon(
+              onPressed: onRetryAvailability,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: Text(s.retryDownloadCheck),
+            ),
+        ],
+        if (canDownload) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: downloading ? null : onDownload,
+            icon: downloading
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.download_outlined),
+            label: Text(
+              downloading
+                  ? s.downloading
+                  : usingFallback
+                  ? s.downloadImage
+                  : s.downloadOriginal,
             ),
           ),
         ],
-        const SizedBox(height: 4),
-        IconButton(
-          tooltip: canDownload
-              ? downloading
-                    ? s.downloading
-                    : usingFallback
-                    ? s.downloadImage
-                    : s.downloadOriginal
-              : reason,
-          onPressed: canDownload && !downloading ? onDownload : null,
-          icon: downloading
-              ? const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.download_outlined),
-        ),
       ],
     );
   }
