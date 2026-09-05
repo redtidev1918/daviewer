@@ -3,6 +3,14 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.180
+
+- 全屏查看图片时，现在可以长按当前图片单独下载；多图作品可逐张选择。
+- 重复长按会显示已有下载状态，失败或取消的任务可直接重新下载。
+
+- Long-press the current image in the full-screen viewer to download it individually, including a selected page from a multi-image work.
+- Repeated long-presses now show the existing transfer state, while failed or cancelled transfers can be downloaded again.
+
 ## 0.2.179
 
 - 修复详情页视频在退出或跳转到其他页面后仍在后台播放的问题，不再空耗流量和电量；返回该页面时视频会自动继续播放。
