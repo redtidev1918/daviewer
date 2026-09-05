@@ -3,6 +3,13 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 未发布（一键下载多图全部页面）
+
+### Added
+
+- 多图作品的「下载原图」现在会一并下载**每一页的原图**（不再只存第一张）；逐张 id 独立，支持中断续传与去重。
+- 附加页原图来自网页 init 响应（`deviation.extended.additionalMedia`），官方 API 不再返回这些页面。
+
 ## 0.2.182（下载按钮与长按确认）
 
 ### Fixed
