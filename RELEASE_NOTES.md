@@ -3,6 +3,14 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.182
+
+- 原图不可下载时，详情页只显示一行原因说明，不再出现会误认为按钮的大块「不能下载」面板；可保存展示图时显示带文字的下载按钮。
+- 长按图片下载前会先确认，避免误触；确认后仍会提示实际保存位置。
+
+- When the original file cannot be downloaded, details now show a one-line reason instead of a large "cannot download" panel that looks like a button; a labeled download button appears when a saveable image is available.
+- Long-pressing an image asks for confirmation before downloading, and the saved-location message still appears afterwards.
+
 ## 0.2.181
 
 - 下载按钮缩小为简洁图标，减少对作品详情页面的视觉干扰。
