@@ -184,6 +184,7 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     MediaAsset original, {
     String? id,
     bool track = true,
+    List<MediaAsset> pages = const <MediaAsset>[],
   }) async {
     if (_downloading) return;
     setState(() => _downloading = true);
@@ -217,6 +218,29 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
       );
       if (!mounted) return;
       _showTransferMessage(snapshot);
+      // 多图作品：主图之后把每一附加页的原图也入队（一键下载全部页）
+      if (pages.isNotEmpty) {
+        final existingIds = (await manager.records())
+            .map((record) => record.id)
+            .toSet();
+        for (var index = 0; index < pages.length; index++) {
+          final page = pages[index];
+          if (!page.canTransfer) continue;
+          final pageId = imageTransferId(
+            widget.artworkId,
+            page.id.isEmpty ? 'page:${index + 1}' : page.id,
+          );
+          if (existingIds.contains(pageId)) continue;
+          existingIds.add(pageId);
+          await manager.enqueue(
+            TransferRequest(
+              id: pageId,
+              asset: page,
+              filename: page.filename,
+            ),
+          );
+        }
+      }
       if (!track) return;
       await _trackTransfer(manager, snapshot);
     } on Object catch (error) {
@@ -370,6 +394,9 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     final additionalMedia = ref.watch(
       additionalMediaProvider(widget.artworkId),
     );
+    final additionalOriginals = ref.watch(
+      additionalOriginalsProvider(widget.artworkId),
+    );
     final tags = ref.watch(artworkTagsProvider(widget.artworkId));
     final dates = ref.watch(artworkDatesProvider(widget.artworkId));
     final transfer = _transfer;
@@ -452,6 +479,8 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
               journalHtml: journalHtml.valueOrNull,
               additionalMedia:
                   additionalMedia.valueOrNull ?? const <MediaAsset>[],
+              additionalOriginals:
+                  additionalOriginals.valueOrNull ?? const <MediaAsset>[],
               tags: tags.valueOrNull ?? const <String>[],
               dates: dates.valueOrNull ?? const ArtworkDates(),
               hasPreviousArtwork: previousArtwork != null,
@@ -471,6 +500,7 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     String? descriptionHtml,
     String? journalHtml,
     List<MediaAsset> additionalMedia = const <MediaAsset>[],
+    List<MediaAsset> additionalOriginals = const <MediaAsset>[],
     List<String> tags = const <String>[],
     ArtworkDates dates = const ArtworkDates(),
     bool hasPreviousArtwork = false,
@@ -544,7 +574,13 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
                 ],
               ),
               data: (resolution) =>
-                  _buildDownloadSection(s, media, resolution, transfer),
+                  _buildDownloadSection(
+                    s,
+                    media,
+                    resolution,
+                    transfer,
+                    additionalOriginals,
+                  ),
             ),
           ],
           const Divider(),
@@ -563,6 +599,7 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
     List<MediaAsset> media,
     OriginalFileResolution resolution,
     TransferSnapshot? transfer,
+    List<MediaAsset> additionalOriginals,
   ) {
     final original = resolution.asset;
     // Only image artworks may fall back to the highest-quality displayed
@@ -578,7 +615,7 @@ final class _ArtworkDetailScreenState extends ConsumerState<ArtworkDetailScreen>
       transfer: transfer,
       downloading: _downloading,
       lookupFailed: resolution.lookupError != null,
-      onDownload: () => _download(downloadable),
+      onDownload: () => _download(downloadable, pages: additionalOriginals),
       onRetryAvailability: () => unawaited(_retryDownloadAvailability()),
       onPause: _pause,
       onResume: _resume,

@@ -14,6 +14,7 @@ final class DeviationInit {
     required this.description,
     this.descriptionHtml,
     this.additionalMedia = const <MediaAsset>[],
+    this.additionalOriginals = const <MediaAsset>[],
     this.tags = const <String>[],
     this.publishedAt,
     this.updatedAt,
@@ -30,6 +31,10 @@ final class DeviationInit {
 
   /// Display-size assets for each additional page of a multi-image deviation.
   final List<MediaAsset> additionalMedia;
+
+  /// Original-size assets (baseUri + signed token) for each additional page,
+  /// so hosts can bulk-download every page of a multi-image deviation.
+  final List<MediaAsset> additionalOriginals;
 
   /// Searchable tag names attached to the deviation.
   final List<String> tags;
@@ -123,6 +128,7 @@ final class DeviationInitFetcher {
 
     final rawAdditional = extended is Map ? extended['additionalMedia'] : null;
     final additional = <MediaAsset>[];
+    final additionalOriginals = <MediaAsset>[];
     if (rawAdditional is List) {
       for (var index = 0; index < rawAdditional.length; index++) {
         final item = rawAdditional[index];
@@ -131,6 +137,11 @@ final class DeviationInitFetcher {
         if (media is! Map) continue;
         final asset = _displayAsset(media, '$deviationId:page:${index + 1}');
         if (asset != null) additional.add(asset);
+        final original = _originalAsset(
+          media,
+          '$deviationId:page:${index + 1}:original',
+        );
+        if (original != null) additionalOriginals.add(original);
       }
     }
 
@@ -150,6 +161,7 @@ final class DeviationInitFetcher {
       description: description,
       descriptionHtml: descriptionHtml,
       additionalMedia: List<MediaAsset>.unmodifiable(additional),
+      additionalOriginals: List<MediaAsset>.unmodifiable(additionalOriginals),
       tags: List<String>.unmodifiable(tags),
       publishedAt: _timestamp(
         deviation['publishedTime'] ?? extended?['publishedTime'],
@@ -194,6 +206,33 @@ final class DeviationInitFetcher {
       role: MediaRole.preview,
       availability: MediaAvailability.available,
       uri: uri,
+      mimeType: isGif ? 'image/gif' : null,
+    );
+  }
+
+  /// Original-file asset for an additional page: `baseUri` + the first signed
+  /// token (baseUri already points at the raw original file on modern DA).
+  static MediaAsset? _originalAsset(
+    Map<Object?, Object?> media,
+    String id,
+  ) {
+    final base = media['baseUri'] as String?;
+    if (base == null || base.isEmpty) return null;
+    final tokens = (media['token'] as List? ?? const <Object?>[])
+        .whereType<String>()
+        .toList(growable: false);
+    final uri = Uri.tryParse(withWixToken(base, null, tokens));
+    if (uri == null) return null;
+    final isGif = base.toLowerCase().endsWith('.gif');
+    final segments = uri.pathSegments;
+    final filename = segments.isEmpty ? null : segments.last;
+    return MediaAsset(
+      id: id,
+      kind: isGif ? MediaKind.animation : MediaKind.image,
+      role: MediaRole.original,
+      availability: MediaAvailability.available,
+      uri: uri,
+      filename: filename,
       mimeType: isGif ? 'image/gif' : null,
     );
   }

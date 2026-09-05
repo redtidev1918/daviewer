@@ -126,6 +126,20 @@ final additionalMediaProvider = FutureProvider.autoDispose
       }
     });
 
+/// Original-size assets for each additional page of a multi-image deviation
+/// (web-feed items only; official API no longer exposes these pages). Used by
+/// the one-tap "download all pages" flow.
+final additionalOriginalsProvider = FutureProvider.autoDispose
+    .family<List<MediaAsset>, String>((ref, artworkId) async {
+      if (!isNumericDeviationId(artworkId)) return const <MediaAsset>[];
+      try {
+        final init = await ref.watch(deviationInitProvider(artworkId).future);
+        return init?.additionalOriginals ?? const <MediaAsset>[];
+      } on Object {
+        return const <MediaAsset>[];
+      }
+    });
+
 /// Searchable tag names for an artwork. Web-feed items read tags from the
 /// `dadeviation/init` endpoint; OAuth items from the mapped [Artwork.tags].
 final artworkTagsProvider = FutureProvider.autoDispose
