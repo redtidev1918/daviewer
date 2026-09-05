@@ -9,6 +9,7 @@
 > DeviantArt 官方已停止维护其移动客户端。DAViewer 是一个基于 [DAKit](https://github.com/redtidev1918/dakit) 的开源 DeviantArt 客户端，面向 Android、macOS 与 Windows，以原生应用提供网页版的主要功能。
 
 [![GitHub stars](https://img.shields.io/github/stars/redtidev1918/daviewer?style=flat&color=yellow)](https://github.com/redtidev1918/daviewer/stargazers) [![GitHub license](https://img.shields.io/github/license/redtidev1918/daviewer?style=flat)](LICENSE) [![GitHub release](https://img.shields.io/github/v/release/redtidev1918/daviewer?style=flat)](https://github.com/redtidev1918/daviewer/releases) [![Platforms](https://img.shields.io/badge/platform-Android%20%7C%20macOS%20%7C%20Windows-blue?style=flat)](https://github.com/redtidev1918/daviewer/releases) [![Flutter](https://img.shields.io/badge/Flutter-3.47.1-blue?style=flat&logo=flutter)](https://flutter.dev)
+[![Docs](https://img.shields.io/badge/Docs-文档站点-6366f1?style=flat-square)](https://redtidev1918.github.io/daviewer/)
 
 ## 安装
 
