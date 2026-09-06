@@ -103,7 +103,9 @@ no service. You can move the folder anywhere and just launch it.
   notifications (unread dot + local mark-as-read)
 - **Download**: real-time original-file permission check; thumbnail previews;
   explains login, purchase, quota, or creator restrictions and falls back to the
-  highest-quality preview; open file/folder and delete confirmation
+  highest-quality preview; long-press an image to download that page (with
+  confirmation) and get a completion toast with the saved location; open
+  file/folder and delete confirmation
 - **Appearance & settings**: light / dark / system theme; persisted language and
   theme; clear cache; check for updates
 - **Update reminders**: a slim dismissible Home banner when a newer version is
