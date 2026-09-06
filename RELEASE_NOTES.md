@@ -3,6 +3,16 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.183
+
+- 设置新增「账号 Cookie」：可以查看当前登录会话 Cookie、一键复制导出，也可以把 Cookie 粘贴导入，在新设备或重新安装后直接恢复登录，不用重新走登录流程。
+- 导入只接受与当前账号一致的会话：切换账号需要先退出登录，应用绝不会把两个不同账号的登录态混在一起；无效或过期的 Cookie 会被拒绝并自动恢复原状。
+- 仅导入 Cookie 后推荐流即可使用；关注、通知、收藏和下载原图等功能仍需要官方授权登录一次，应用会在导入后主动引导，登录页会识别已导入的会话，通常无需再输入账号密码。
+
+- Settings has a new “Account cookies” entry: view your current session cookies, copy/export them with one tap, or paste cookies to restore your sign-in on a new device or after a reinstall — no need to sign in again.
+- Import only accepts a session matching the current account: switching accounts still requires signing out first, and the app never mixes two different accounts together; invalid or expired cookies are rejected and the previous session is restored automatically.
+- Cookies alone power your recommendations; following, notifications, favourites, and original downloads still need one official authorization. The app offers it right after import, and the sign-in page recognizes the imported session — usually without asking for a password.
+
 ## 0.2.182
 
 - 原图不可下载时，详情页只显示一行原因说明，不再出现会误认为按钮的大块「不能下载」面板；可保存展示图时显示带文字的下载按钮。
