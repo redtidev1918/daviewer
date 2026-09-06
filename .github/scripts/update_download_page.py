@@ -66,9 +66,11 @@ def main() -> int:
     published = (rel.get("published_at") or "")[:10]
     assets = rel.get("assets", [])
     project = REPO.split("/")[1]
+    # 仓库名（daviewer）与产品显示名（DAViewer）不一致；其余仓库按原样显示。
+    display = {"daviewer": "DAViewer"}.get(project, project)
 
     lines = [
-        f"# 📥 下载 {project}",
+        f"# 📥 下载 {display}",
         "",
         "本页由 GitHub Actions 在每次发版时**自动更新**，始终指向最新 Release。",
         "",
