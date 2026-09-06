@@ -4,6 +4,17 @@ Project documentation index. The user-facing overview lives in the root
 [README](https://github.com/redtidev1918/daviewer/blob/main/README.md) / [README.en](https://github.com/redtidev1918/daviewer/blob/main/README.en.md); the files here cover the
 deeper developer and architecture notes.
 
+## 📥 Download
+
+Grab the app installer for your platform from
+[GitHub Releases](https://github.com/redtidev1918/daviewer/releases/latest) (latest):
+
+| Platform | File |
+|---|---|
+| Android | `DAViewer-<version>.apk` |
+| Windows | `DAViewer-<version>-windows.zip` |
+| macOS | `DAViewer-<version>-macos-unsigned-preview.zip` |
+
 ## Documents
 
 - [Architecture](architecture.md) — SDK/app boundaries, artwork data flow,
