@@ -10,6 +10,13 @@
 - 多图作品的「下载原图」现在会一并下载**每一页的原图**（不再只存第一张）；逐张 id 独立，支持中断续传与去重。
 - 附加页原图来自网页 init 响应（`deviation.extended.additionalMedia`），官方 API 不再返回这些页面。
 
+## [0.3.0](https://github.com/redtidev1918/daviewer/compare/v0.2.182...v0.3.0) (2026-09-06)
+
+
+### Features
+
+* one-tap download all pages of multi-image deviations ([e1679e5](https://github.com/redtidev1918/daviewer/commit/e1679e54ff6b771404f4f262aa87d79cce523735))
+
 ## 0.2.182（下载按钮与长按确认）
 
 ### Fixed
