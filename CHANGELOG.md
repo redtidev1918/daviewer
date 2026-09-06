@@ -3,6 +3,19 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## [0.3.0](https://github.com/redtidev1918/daviewer/compare/v0.2.182...v0.3.0) (2026-09-06)
+
+
+### Features
+
+* one-tap download all pages of multi-image deviations ([e1679e5](https://github.com/redtidev1918/daviewer/commit/e1679e54ff6b771404f4f262aa87d79cce523735))
+* **settings:** view, export, and import account cookies ([723c7b0](https://github.com/redtidev1918/daviewer/commit/723c7b078383da286825dd02bf373d8e8e0e4c67))
+
+
+### Bug Fixes
+
+* **deps:** sync DAKit 0.2 dependencies for v0.2.184 ([2ebbbe1](https://github.com/redtidev1918/daviewer/commit/2ebbbe106a3c34abc2c067b1271a73e54339c6ad))
+
 ## 0.2.184
 
 - 同步 DAKit API/Core 0.2.0 与 Flutter 适配包 0.1.13，保持应用与 SDK 依赖兼容。
