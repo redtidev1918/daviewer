@@ -14,21 +14,29 @@ final class WebSession {
 
   static final Uri _home = Uri.parse('https://www.deviantart.com/');
 
-  /// Serializes the deviantart.com cookies into a `Cookie` header value.
-  Future<String> cookieHeader() async {
+  /// Reads the deviantart.com cookies as a name → value map. Returns an empty
+  /// map when the cookie manager is unavailable.
+  Future<Map<String, String>> cookies() async {
     try {
       final cookies = await _cookieManager().getCookies(
         url: WebUri(_home.toString()),
       );
-      return cookies
-          .map((cookie) => '${cookie.name}=${cookie.value}')
-          .join('; ');
+      return <String, String>{
+        for (final cookie in cookies) cookie.name: cookie.value,
+      };
     } on Object {
-      // The cookie manager can be unavailable very early in startup; an empty
-      // header simply makes the feed report an auth error, which the UI maps
-      // to a sign-in prompt rather than a crash.
-      return '';
+      // Same as [cookieHeader]: an early-startup failure is treated as empty.
+      return const <String, String>{};
     }
+  }
+
+  /// Serializes the deviantart.com cookies into a `Cookie` header value.
+  Future<String> cookieHeader() async {
+    // The cookie manager can be unavailable very early in startup; an empty
+    // header simply makes the feed report an auth error, which the UI maps
+    // to a sign-in prompt rather than a crash.
+    final values = await cookies();
+    return values.entries.map((e) => '${e.key}=${e.value}').join('; ');
   }
 
   /// The username signed in on deviantart.com, read from the long-lived
@@ -42,16 +50,87 @@ final class WebSession {
       );
       for (final cookie in cookies) {
         if (cookie.name != 'userinfo') continue;
-        final decoded = Uri.decodeComponent(cookie.value);
-        final jsonPart = decoded.split(';').last;
-        final data = jsonDecode(jsonPart);
-        if (data is Map && data['username'] is String) {
-          return (data['username'] as String).trim();
-        }
+        final username = usernameFromUserInfo(cookie.value);
+        if (username.isNotEmpty) return username;
       }
     } on Object {
       // Best effort; treat as anonymous on failure.
     }
     return '';
   }
+
+  /// Extracts the signed-in username from a DeviantArt `userinfo` cookie
+  /// value, or `''` when the cookie is absent, anonymous, or unparseable.
+  static String usernameFromUserInfo(Object? value) {
+    if (value is! String || value.isEmpty) return '';
+    try {
+      final decoded = Uri.decodeComponent(value);
+      final jsonPart = decoded.split(';').last;
+      final data = jsonDecode(jsonPart);
+      if (data is Map && data['username'] is String) {
+        return (data['username'] as String).trim();
+      }
+    } on Object {
+      // Best effort; treat as anonymous.
+    }
+    return '';
+  }
+}
+
+/// Pretty-prints cookies as indented JSON for export and clipboard copy. The
+/// output round-trips through [parseImportedCookies].
+String formatCookieExport(Map<String, String> cookies) =>
+    const JsonEncoder.withIndent('  ').convert(cookies);
+
+/// Parses user-pasted cookies for import. Accepts the JSON map produced by
+/// [formatCookieExport], a browser-extension JSON array of cookie objects
+/// (entries whose `domain` is not DeviantArt are ignored), or a
+/// `name=value; name=value` Cookie header. Returns null when nothing
+/// recognizable is found.
+Map<String, String>? parseImportedCookies(String text) {
+  final trimmed = text.trim();
+  if (trimmed.isEmpty) return null;
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      final decoded = jsonDecode(trimmed);
+      if (decoded is Map) {
+        return <String, String>{
+          for (final entry in decoded.entries)
+            if (entry.key is String && entry.value is String)
+              entry.key as String: entry.value as String,
+        };
+      }
+      if (decoded is List) {
+        final cookies = <String, String>{};
+        for (final item in decoded) {
+          if (item is! Map) continue;
+          final domain = item['domain'];
+          if (domain is String &&
+              domain.isNotEmpty &&
+              !domain.contains('deviantart.com')) {
+            continue;
+          }
+          final name = item['name'];
+          final value = item['value'];
+          if (name is String && name.isNotEmpty && value is String) {
+            cookies[name] = value;
+          }
+        }
+        return cookies.isEmpty ? null : cookies;
+      }
+    } on Object {
+      return null;
+    }
+    return null;
+  }
+  // Cookie header form: name=value; name=value.
+  final cookies = <String, String>{};
+  for (final pair in trimmed.split(';')) {
+    final eq = pair.indexOf('=');
+    if (eq <= 0) continue;
+    final name = pair.substring(0, eq).trim();
+    if (name.isEmpty) continue;
+    cookies[name] = pair.substring(eq + 1).trim();
+  }
+  return cookies.isEmpty ? null : cookies;
 }

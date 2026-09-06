@@ -322,6 +322,61 @@ final class AppStrings {
       : 'Login to use following and favourites';
   String get directProxy => _lang == AppLanguage.zh ? '未使用代理（直连）' : 'Direct';
   String get viewLogs => _lang == AppLanguage.zh ? '查看运行日志与错误记录' : 'View logs';
+  String get accountCookies =>
+      _lang == AppLanguage.zh ? '账号 Cookie' : 'Account cookies';
+  String get accountCookiesSubtitle => _lang == AppLanguage.zh
+      ? '查看、复制导出或导入 DeviantArt 网站会话 Cookie'
+      : 'View, export, or import the DeviantArt web session cookies';
+  String get cookiesWarning => _lang == AppLanguage.zh
+      ? 'Cookie 等同于你的登录凭证，请勿泄露或发送给他人。'
+      : 'Cookies are your login credentials. Never share or send them to anyone.';
+  String get copyCookies =>
+      _lang == AppLanguage.zh ? '复制 Cookie（JSON）' : 'Copy cookies (JSON)';
+  String get cookiesCopied => _lang == AppLanguage.zh
+      ? 'Cookie 已复制到剪贴板'
+      : 'Cookies copied to clipboard';
+  String get noCookies =>
+      _lang == AppLanguage.zh ? '当前没有会话 Cookie。' : 'No session cookies yet.';
+  String get noCookiesHint => _lang == AppLanguage.zh
+      ? '可以登录，或粘贴 Cookie 直接导入会话。'
+      : 'Sign in, or paste cookies to import a session.';
+  String get importCookies =>
+      _lang == AppLanguage.zh ? '导入 Cookie' : 'Import cookies';
+  String get importCookiesTitle =>
+      _lang == AppLanguage.zh ? '导入 Cookie' : 'Import cookies';
+  String get importCookiesHint => _lang == AppLanguage.zh
+      ? '粘贴导出的 JSON、浏览器插件导出的 Cookie 列表，或 name=value; … 格式的 Cookie。只能导入与当前账号一致的会话；切换账号请先退出登录。'
+      : 'Paste exported JSON, a browser-extension cookie list, or a name=value; … Cookie header. Only a session matching the current account can be imported; sign out first to switch accounts.';
+  String get cookiesPasteLabel =>
+      _lang == AppLanguage.zh ? 'Cookie 内容' : 'Cookie contents';
+  String get importAction => _lang == AppLanguage.zh ? '导入' : 'Import';
+  String get importing => _lang == AppLanguage.zh ? '正在导入…' : 'Importing…';
+  String cookiesImported(String username) => _lang == AppLanguage.zh
+      ? 'Cookie 已导入，会话账号：$username'
+      : 'Cookies imported. Session account: $username';
+  String cookieImportNeedsOAuthTitle(String username) => _lang == AppLanguage.zh
+      ? '会话已导入：$username'
+      : 'Session imported: $username';
+  String get cookieImportNeedsOAuthBody => _lang == AppLanguage.zh
+      ? '推荐流已经可以使用。但关注、通知、收藏操作和原图下载等功能还需要官方授权登录一次；内嵌登录页会识别刚导入的会话，无需再输入账号密码。现在去登录吗？'
+      : 'Your recommendations already work. But following, notifications, favourites, and original downloads still need one official authorization. The embedded sign-in page recognizes the imported session — no password needed. Sign in now?';
+  String get signInNow => _lang == AppLanguage.zh ? '去登录' : 'Sign in now';
+  String get notNow => _lang == AppLanguage.zh ? '暂不' : 'Not now';
+  String get cookieImportUnrecognized => _lang == AppLanguage.zh
+      ? '没有识别出有效 Cookie，请粘贴导出的 JSON 或完整 Cookie。'
+      : 'No valid cookies recognized. Paste exported JSON or a full cookie.';
+  String get cookieImportAnonymous => _lang == AppLanguage.zh
+      ? '这些 Cookie 不包含已登录的 DeviantArt 会话（缺少 userinfo）。'
+      : 'These cookies contain no signed-in DeviantArt session (no userinfo).';
+  String cookieImportConflict(String account) => _lang == AppLanguage.zh
+      ? '导入的会话属于 $account，与当前登录账号不同。切换账号请先退出登录，不能同时登录两个账号。'
+      : 'The imported session belongs to $account, a different account. Sign out first to switch accounts — two accounts cannot be signed in at once.';
+  String get cookieImportVerifyFailed => _lang == AppLanguage.zh
+      ? 'Cookie 未被 DeviantArt 接受，可能已过期或无效；已恢复原会话。'
+      : 'DeviantArt did not accept these cookies — they may be expired or invalid. The previous session was restored.';
+  String get cookieImportUnavailable => _lang == AppLanguage.zh
+      ? '当前无法写入会话（网页环境未就绪），请稍后重试。'
+      : 'The session store is not ready yet. Try again shortly.';
   String get aboutDAViewer =>
       _lang == AppLanguage.zh ? '关于 DAViewer' : 'About DAViewer';
   String get aboutDescription => _lang == AppLanguage.zh

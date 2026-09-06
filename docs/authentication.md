@@ -107,6 +107,44 @@ Legacy browser cookies are accepted only for public adapter compatibility. If
 they expose a username different from the OAuth account, they are cleared to
 prevent mixed-account data.
 
+## Cookie viewing, export, and import
+
+Settings → **账号 Cookie / Account cookies** shows the live deviantart.com
+web-session cookies as indented JSON and can copy them to the clipboard, so the
+user can view or back up their web session. The live WebView cookies are
+preferred; the persisted snapshot is used as a fallback when the WebView store
+cannot be read. The dialog carries an explicit warning that these cookies are
+login credentials. Export is a manual, user-initiated copy: nothing is sent
+anywhere by the app, and diagnostics/report output never includes cookies.
+
+The same dialog imports pasted cookies: exported JSON, a browser-extension
+cookie array (non-DeviantArt domains are ignored), or a `name=value; …` Cookie
+header. Import is the most identity-sensitive write in the app and follows a
+strict one-account rule (`evaluateCookieImportIdentity`):
+
+1. The imported cookies must carry a signed-in `userinfo` username; an
+   anonymous paste is rejected.
+2. If an OAuth account is signed in, the imported username must match it.
+3. If the live WebView already has a signed-in web session, the imported
+   username must match it.
+4. A conflict is rejected **before any cookie is written** — the app never
+   overlays one account's session onto another. To switch accounts the user
+   signs out first.
+5. After injection the username is read back from the cookie store. If
+   DeviantArt does not recognize the claimed session (expired/invalid
+   cookies), the previous cookies are restored and nothing is persisted.
+
+On a verified import the snapshot is persisted, the web-session state is
+updated, and a CSRF refresh runs so website adapters use the new session. An
+imported web-only session (no OAuth account) powers the web adapters and the
+personalized feed, while official-API features still require OAuth sign-in.
+After such an import the app therefore offers the normal embedded sign-in
+once: the DeviantArt page recognizes the imported cookies and typically
+completes without asking for a password, and the user can dismiss the prompt
+(web features keep working; official-API features ask for sign-in again on
+use). Cookies never replace the OAuth token — the official-API session can
+only be established by the OAuth/PKCE flow.
+
 ## Mature content
 
 `mature_content: true` is only a request flag. DeviantArt account browsing
