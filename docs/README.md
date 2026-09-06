@@ -6,14 +6,7 @@ deeper developer and architecture notes.
 
 ## 📥 Download
 
-Grab the app installer for your platform from
-[GitHub Releases](https://github.com/redtidev1918/daviewer/releases/latest) (latest):
-
-| Platform | File |
-|---|---|
-| Android | `DAViewer-<version>.apk` |
-| Windows | `DAViewer-<version>-windows.zip` |
-| macOS | `DAViewer-<version>-macos-unsigned-preview.zip` |
+App installers (Android / Windows / macOS) — see the [📥 Download page](download.md), which always points at the latest release.
 
 ## Documents
 

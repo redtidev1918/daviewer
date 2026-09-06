@@ -1,5 +1,6 @@
 - 开始
   - [文档中心](/)
+  - [📥 下载](download.md)
 - 架构与设计
   - [DAViewer architecture](architecture.md)
   - [Web adapter — compatibility contract](web_adapter.md)
