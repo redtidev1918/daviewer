@@ -6,6 +6,8 @@
 
 **Language:** English · [中文](README.md)
 
+[![Docs](https://img.shields.io/badge/Docs-文档站点-6366f1?style=flat-square)](https://redtidev1918.github.io/daviewer/)
+
 > DeviantArt has discontinued its official client app. DAViewer is an
 > open-source DeviantArt client built on
 > [DAKit](https://github.com/redtidev1918/dakit), providing the website's core
