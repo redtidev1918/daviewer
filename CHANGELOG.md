@@ -3,6 +3,10 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## 0.2.184
+
+- 同步 DAKit API/Core 0.2.0 与 Flutter 适配包 0.1.13，保持应用与 SDK 依赖兼容。
+
 ## 未发布（账号 Cookie 查看、导出与导入）
 
 ### Added
