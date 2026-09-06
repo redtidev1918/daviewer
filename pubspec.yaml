@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cached_network_image: ^3.4.1
+  cached_network_image: ^4.0.0
   chewie: ^1.15.0
   cupertino_icons: ^1.0.8
   dakit_api: ^0.1.30
