@@ -3,6 +3,12 @@
 这里只写下载者需要知道的变化，一行一条。内部实现、协议与调试细节请见
 `CHANGELOG.md`。
 
+## 0.2.184
+
+- 同步底层 DAKit 到最新版（API/Core 0.2.0、Flutter 适配包 0.1.13），修复多图作品附加页原图的获取与下载，应用本身界面无变化。
+
+- Updated the underlying DAKit SDK to the latest version (API/Core 0.2.0, Flutter bridge 0.1.13); this fixes fetching and downloading original files for the extra pages of multi-image works. No visible interface changes.
+
 ## 0.2.183
 
 - 设置新增「账号 Cookie」：可以查看当前登录会话 Cookie、一键复制导出，也可以把 Cookie 粘贴导入，在新设备或重新安装后直接恢复登录，不用重新走登录流程。
