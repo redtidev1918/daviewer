@@ -6,15 +6,37 @@ on:
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 要重跑/重发布的已有 tag（如 v0.2.185）；main push 自动发版时忽略
+        required: true
+        type: string
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.rp.outputs.releases_created }}
+      tag_name: ${{ steps.rp.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Release Please
+        id: rp
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
   quality:
     name: Analyze and test
     runs-on: ubuntu-latest
@@ -52,6 +74,13 @@ jobs:
     name: Build Android APK
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    needs: release-please
+    if: >-
+      github.event_name != 'push' ||
+      github.ref == 'refs/heads/main' && needs.release-please.outputs.releases_created == 'true' ||
+      startsWith(github.ref, 'refs/tags/')
+    env:
+      RELEASE_TAG: ${{ needs.release-please.outputs.tag_name || inputs.tag || github.ref_name }}
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -111,6 +140,13 @@ jobs:
     name: Build macOS app
     runs-on: macos-latest
     timeout-minutes: 40
+    needs: release-please
+    if: >-
+      github.event_name != 'push' ||
+      github.ref == 'refs/heads/main' && needs.release-please.outputs.releases_created == 'true' ||
+      startsWith(github.ref, 'refs/tags/')
+    env:
+      RELEASE_TAG: ${{ needs.release-please.outputs.tag_name || inputs.tag || github.ref_name }}
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -261,6 +297,13 @@ jobs:
     # the newer windows-latest (VS 2026 / MSVC 14.51) rejects as an error.
     runs-on: windows-2022
     timeout-minutes: 40
+    needs: release-please
+    if: >-
+      github.event_name != 'push' ||
+      github.ref == 'refs/heads/main' && needs.release-please.outputs.releases_created == 'true' ||
+      startsWith(github.ref, 'refs/tags/')
+    env:
+      RELEASE_TAG: ${{ needs.release-please.outputs.tag_name || inputs.tag || github.ref_name }}
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -300,15 +343,21 @@ jobs:
 
   release:
     name: GitHub Release
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [quality, build-android, build-macos, build-windows]
+    needs: [release-please, quality, build-android, build-macos, build-windows]
+    if: >-
+      github.event_name != 'push' ||
+      github.ref == 'refs/heads/main' && needs.release-please.outputs.releases_created == 'true' ||
+      startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      RELEASE_TAG: ${{ needs.release-please.outputs.tag_name || inputs.tag || github.ref_name }}
     steps:
       - name: Check out source
         uses: actions/checkout@v7
         with:
+          ref: ${{ needs.release-please.outputs.tag_name || inputs.tag || github.ref }}
           fetch-depth: 0
       - name: Download artifacts
         uses: actions/download-artifact@v8
@@ -318,7 +367,7 @@ jobs:
         id: notes
         run: |
           set -euo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${RELEASE_TAG#v}"
           awk -v version="$VERSION" '
             $0 ~ "^## " version "([ （(]|$)" { found=1; next }
             found && /^## / { exit }
@@ -337,8 +386,8 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.ref_name }}
-          name: "DAViewer ${{ github.ref_name }}"
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: "DAViewer ${{ env.RELEASE_TAG }}"
           body_path: release_notes.md
           files: |
             artifacts/daviewer-android-apk/*
@@ -354,7 +403,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
             --jq '.[].tag_name' |
           while IFS= read -r release_tag; do
-            if [ "$release_tag" = "$GITHUB_REF_NAME" ]; then
+            if [ "$release_tag" = "$RELEASE_TAG" ]; then
               continue
             fi
             echo "Deleting old GitHub release: $release_tag"
