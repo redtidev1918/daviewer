@@ -1,0 +1,44 @@
+{
+  "kind": "flutter",
+  "versioning": {
+    "mode": "release-please"
+  },
+  "build": {
+    "test": "flutter pub get && flutter analyze && dart format --output=none --set-exit-if-changed lib test && flutter test",
+    "flutter_version": "3.47.1",
+    "matrix": [
+      {
+        "runner": "ubuntu-latest",
+        "command": "scripts/build-release"
+      },
+      {
+        "runner": "macos-latest",
+        "command": "scripts/build-release"
+      },
+      {
+        "runner": "windows-2022",
+        "command": "scripts/build-release"
+      }
+    ]
+  },
+  "assets": {
+    "required": [
+      "DAViewer-v*.apk",
+      "DAViewer-v*macos-unsigned-preview.zip",
+      "DAViewer-v*windows.zip"
+    ],
+    "optional": []
+  },
+  "registries": {
+    "github": {
+      "required": true
+    }
+  },
+  "retention": {
+    "stable": 1,
+    "prerelease": 1,
+    "failed_draft": 2
+  },
+  "checksums": true,
+  "sbom": false
+}

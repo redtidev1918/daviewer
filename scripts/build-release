@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+rm -rf dist/release && mkdir -p dist/release
+for attempt in 1 2 3 4 5; do flutter pub get && break || { test "$attempt" = 5 && exit 1; sleep 15; }; done
+case "$RUNNER_OS" in
+  Linux)
+    if [ -z "${KEYSTORE_B64:-}" ] || [ -z "${KEYSTORE_PROPERTIES:-}" ]; then echo "KEYSTORE_B64/KEYSTORE_PROPERTIES are required for APK release builds" >&2; exit 1; fi
+    echo "$KEYSTORE_B64" | base64 --decode > android/app/upload-keystore.p12
+    printf '%s' "$KEYSTORE_PROPERTIES" > android/key.properties
+    flutter build apk --release
+    cp build/app/outputs/flutter-apk/app-release.apk "dist/release/DAViewer-v$RELEASE_VERSION.apk"
+    ;;
+  macOS)
+    flutter build macos --release
+    (cd build/macos/Build/Products/Release && zip -r -y "DAViewer-v$RELEASE_VERSION-macos-unsigned-preview.zip" DAViewer.app)
+    cp "build/macos/Build/Products/Release/DAViewer-v$RELEASE_VERSION-macos-unsigned-preview.zip" dist/release/
+    ;;
+  Windows)
+    flutter build windows --release
+    powershell -Command "Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath 'dist/release/DAViewer-v$env:RELEASE_VERSION-windows.zip'"
+    ;;
+esac
