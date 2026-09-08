@@ -29,4 +29,6 @@ jobs:
       force: ${{ inputs.force || false }}
       repair: ${{ github.event_name == 'pull_request' || inputs.repair || false }}
       stage: ${{ inputs.stage || 'all' }}
-    secrets: inherit
+    secrets:
+      ANDROID_KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+      ANDROID_KEYSTORE_PROPERTIES: ${{ secrets.KEYSTORE_PROPERTIES }}
