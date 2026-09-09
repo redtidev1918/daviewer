@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Generate docs/download.md from the latest GitHub release.
 
-Auto-run by .github/workflows/update-download-page.yml on every `release published`
-event so the page always points at the newest assets. Idempotent: no release change
+Run by the ReleaseGraph `post_publish` hook in .release-policy.yml as part of
+the release transaction, so the page always points at the newest assets. Idempotent: no release change
 means no diff, so it won't spam commits.
 """
 import json
