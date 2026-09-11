@@ -13,9 +13,11 @@ CI 由 .github/workflows/update-download-page.yml 在 `release: published` 时�
 
 可选配置（**非托管**文件，各仓库自行维护）：
     .github/scripts/download-page.json
-        { "displayName": "DAViewer", "previewFile": "docs/download-preview.md" }
+        { "displayName": "DAViewer", "previewFile": "docs/download-preview.md", "linkBase": "" }
     displayName  页面标题中显示的产品名，默认取仓库名
     previewFile  手写预览片段；存在时注入中文页（放应用截图等），默认 docs/download-preview.md
+    linkBase     页面内互链的站点路径前缀。默认 ""（Pages 直接上传 ./docs，docs 即站点根）；
+                 若站点是「拼接 _site」模式且把 docs/ 作为子目录发布，填 "/docs"
 """
 import json
 import os
@@ -25,7 +27,7 @@ import sys
 from pathlib import Path
 
 # docsite-managed-file: update_download_page.py
-# docsite-managed-version: 1
+# docsite-managed-version: 2
 
 CONFIG = Path(".github/scripts/download-page.json")
 DEFAULT_PREVIEW = "docs/download-preview.md"
@@ -90,6 +92,8 @@ def main() -> int:
     project = repo.split("/")[1]
     display = cfg.get("displayName") or project
     preview_path = Path(cfg.get("previewFile") or DEFAULT_PREVIEW)
+    # 站点内互链前缀：docs/ 即站点根时为 ""，docs/ 作为子目录发布时为 "/docs"。
+    base = (cfg.get("linkBase") or "").rstrip("/")
 
     try:
         rel = api(f"repos/{repo}/releases/latest")
@@ -106,7 +110,7 @@ def main() -> int:
             return [
                 f"# 📥 下载 {display}",
                 "",
-                "**语言 / Language:** 中文 · [English](/en/download.md)",
+                f"**语言 / Language:** 中文 · [English]({base}/en/download.md)",
                 "",
                 "本页由 GitHub Actions 在每次发版时**自动更新**，始终指向最新 Release。",
                 "",
@@ -118,7 +122,7 @@ def main() -> int:
         return [
             f"# 📥 Download {display}",
             "",
-            "**Language / 语言:** [中文](/download.md) · English",
+            f"**Language / 语言:** [中文]({base}/download.md) · English",
             "",
             "This page is **generated automatically** by GitHub Actions on every release "
             "and always points at the latest one.",
