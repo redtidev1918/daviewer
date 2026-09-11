@@ -1,19 +1,10 @@
 - 开始
-  - [文档中心](/)
+  - [概览](/)
   - [📥 下载](/download.md)
-- 架构与设计
-  - [架构说明](/architecture.md)
-  - [网页适配器 —— 兼容性契约](/web_adapter.md)
-- 认证与网络
+- 使用与配置
   - [认证与会话恢复](/authentication.md)
   - [网络与代理](/networking.md)
-- 构建与发布
+- 开发
+  - [架构说明](/architecture.md)
+  - [Web 适配器契约](/web_adapter.md)
   - [构建说明](/build.md)
-- English
-  - [Documentation](/en/)
-  - [📥 Download](/en/download.md)
-  - [Architecture](/en/architecture.md)
-  - [Web adapter — compatibility contract](/en/web_adapter.md)
-  - [Authentication and session recovery](/en/authentication.md)
-  - [Networking and proxy](/en/networking.md)
-  - [Build notes](/en/build.md)
