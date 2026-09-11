@@ -136,7 +136,7 @@ passwords, and provider security checks stay on DeviantArt's official page insid
 the app's embedded WebView. After the callback, every feature uses that one
 OAuth identity plus the WebView's web session; there is no second web sign-in to
 synchronize. Signed-out state is onboarding, not a feed error. See
-[Architecture](docs/architecture.md) for the full boundaries.
+[Architecture](docs/en/architecture.md) for the full boundaries.
 
 ## References & acknowledgements
 
@@ -220,11 +220,11 @@ proxy while restricted networks receive the relevant recovery steps.
 
 Apps launched from Finder usually do not inherit terminal variables. On macOS
 12/13 an app-only proxy cannot be injected into the hidden browser adapter, so
-use the macOS system proxy. See [Networking and proxy](docs/networking.md) for
+use the macOS system proxy. See [Networking and proxy](docs/en/networking.md) for
 the full priority, platform matrix, and troubleshooting flow.
 
 Environment variables for proxying `flutter pub get` and Gradle builds are in
-[Build notes](docs/build.md#proxying-builds).
+[Build notes](docs/en/build.md#proxying-builds).
 
 ## Build & release
 
@@ -246,7 +246,7 @@ flutter build windows --release      # Windows app
 
 Signing, the pinned toolchain (AGP / Gradle / Kotlin / flutter_inappwebview), and
 the macOS unsigned-preview contract are detailed in
-[Build notes](docs/build.md).
+[Build notes](docs/en/build.md).
 
 ## Home & sign-in state
 
@@ -289,7 +289,7 @@ never block a live sign-in when they cannot be stored or cleared.
   just macOS unlocking your own keychain; the app never collects or uploads
   your password.
 
-See [Authentication and session recovery](docs/authentication.md) for the full
+See [Authentication and session recovery](docs/en/authentication.md) for the full
 state contract.
 
 ## Contributing

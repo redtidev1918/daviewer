@@ -1,11 +1,19 @@
 - 开始
-  - [文档中心](#/)
-  - [📥 下载](download.md)
+  - [文档中心](/)
+  - [📥 下载](/download.md)
 - 架构与设计
-  - [DAViewer architecture](architecture.md)
-  - [Web adapter — compatibility contract](web_adapter.md)
+  - [架构说明](/architecture.md)
+  - [网页适配器 —— 兼容性契约](/web_adapter.md)
 - 认证与网络
-  - [Authentication and session recovery](authentication.md)
-  - [Networking and proxy](networking.md)
+  - [认证与会话恢复](/authentication.md)
+  - [网络与代理](/networking.md)
 - 构建与发布
-  - [DAViewer build notes](build.md)
+  - [构建说明](/build.md)
+- English
+  - [Documentation](/en/)
+  - [📥 Download](/en/download.md)
+  - [Architecture](/en/architecture.md)
+  - [Web adapter — compatibility contract](/en/web_adapter.md)
+  - [Authentication and session recovery](/en/authentication.md)
+  - [Networking and proxy](/en/networking.md)
+  - [Build notes](/en/build.md)

@@ -1,97 +1,62 @@
-# Networking and proxy
+# 网络与代理
 
-DAViewer separates two routes that the operating system genuinely separates:
+> English: [Networking and proxy](/en/networking.md)
 
-- **App traffic**: OAuth token exchange, API, images, video, downloads, and
-  hidden public website adapters.
-- **System-browser traffic**: the one official sign-in/registration page and
-  any DeviantArt, Google, Apple, Facebook, or verification pages it opens.
+DAViewer 区分两条操作系统本身也区分的路由：
 
-The app can configure its own route but cannot silently reconfigure an external
-browser. UI and diagnostics must describe this boundary instead of promising
-that one successful test covers both routes.
+- **应用流量**：OAuth token 交换、API、图片、视频、下载，以及隐藏的公开网页适配器。
+- **系统浏览器流量**：唯一的官方登录/注册页，以及它打开的 DeviantArt、Google、Apple、Facebook 或验证页面。
 
-## Selection and persistence
+应用可以配置自己的路由，但无法静默重配外部浏览器。UI 与诊断必须如实描述这条边界，不能承诺一次成功的连通性测试覆盖了两条路由。
 
-The App runtime priority is:
+## 选择与持久化
 
-1. a persisted in-app manual proxy;
-2. the OS system proxy (`scutil` on macOS, registry on Windows, GNOME manual
-   HTTPS/HTTP settings on Linux);
-3. `https_proxy`, `http_proxy`, or `all_proxy` (lowercase and uppercase);
-4. `DAKIT_PROXY_URL` supplied at build time;
-5. direct connection.
+应用运行时的优先级为：
 
-The settings screen accepts an HTTP CONNECT proxy as `host:port` or a full URL
-such as `http://127.0.0.1:<PORT>`. `<PORT>` is a placeholder: users enter the
-HTTP/Mixed listener displayed by their own proxy app. On mobile,
-`127.0.0.1` means the proxy runs on that same phone. A proxy on a computer or
-router requires its LAN IP and an enabled “allow LAN” option.
+1. 持久化的应用内手动代理；
+2. 操作系统系统代理（macOS 用 `scutil`，Windows 用注册表，Linux 用 GNOME 手动 HTTPS/HTTP 设置）；
+3. `https_proxy`、`http_proxy` 或 `all_proxy`（大小写均支持）；
+4. 构建期传入的 `DAKIT_PROXY_URL`；
+5. 直连。
 
-`export all_proxy=http://127.0.0.1:<PORT>` works when launching from that shell.
-Finder, Start Menu, and most desktop launchers do not inherit the variable, so
-release users should prefer the persisted App setting for App traffic and a
-system proxy or VPN for browser sign-in.
+设置界面接受 HTTP CONNECT 代理，形式为 `host:port` 或完整 URL，例如 `http://127.0.0.1:<PORT>`。`<PORT>` 是占位符：用户需填入自己代理应用显示的 HTTP/Mixed 监听端口。在移动端，`127.0.0.1` 表示代理运行在同一台手机上。电脑或路由器上的代理需要其局域网 IP，并开启「允许局域网」选项。
 
-Clearing the manual setting immediately re-runs automatic detection. The
-connectivity test sends a bounded DeviantArt request through the effective App
-route. It reports App reachability only; detailed socket errors remain in
-Diagnostics.
+从某个 shell 启动时 `export all_proxy=http://127.0.0.1:<PORT>` 有效。Finder、开始菜单与多数桌面启动器不会继承该变量，因此正式用户的应用流量应优先使用持久化的应用内设置，浏览器登录则使用系统代理或 VPN。
 
-## Platform coverage
+清除手动设置会立即重新执行自动探测。连通性测试通过生效的应用路由发送一个有时限的 DeviantArt 请求。它只报告**应用侧**可达性；详细的 socket 错误留在「诊断」中。
 
-| Platform | App API / media / downloads | Hidden public browser adapter | Sign-in WebView |
+## 平台覆盖
+
+| 平台 | 应用 API / 媒体 / 下载 | 隐藏的公开浏览器适配器 | 登录 WebView |
 | --- | --- | --- | --- |
-| Android | system/VPN or dynamic App proxy | process-wide WebView override | same process-wide WebView override |
-| Windows | dynamic App proxy | shared WebView2 `--proxy-server` | same shared WebView2 `--proxy-server` |
-| macOS 14+ | dynamic App proxy | `WKWebsiteDataStore.proxyConfigurations` | same `WKWebsiteDataStore.proxyConfigurations` |
-| macOS 12/13 | dynamic App proxy | OS system proxy only | OS system proxy only |
-| Linux | not a current build target (no `linux/` platform directory; CI builds Android/macOS/Windows only) | — | — |
+| Android | 系统/VPN 或动态应用代理 | 进程级 WebView 覆盖 | 同一进程级 WebView 覆盖 |
+| Windows | 动态应用代理 | 共享 WebView2 `--proxy-server` | 同一共享 WebView2 `--proxy-server` |
+| macOS 14+ | 动态应用代理 | `WKWebsiteDataStore.proxyConfigurations` | 同一 `WKWebsiteDataStore.proxyConfigurations` |
+| macOS 12/13 | 动态应用代理 | 仅操作系统系统代理 | 仅操作系统系统代理 |
+| Linux | 非当前构建目标（无 `linux/` 平台目录；CI 仅构建 Android/macOS/Windows） | — | — |
 
-If Linux support is added later, note that on GNOME `none` ignores stale
-host/port values and `manual` prefers HTTPS before HTTP, and PAC `auto` cannot
-be represented by `dart:io`'s static proxy directive — DAViewer would log the
-limitation and continue to environment, build-time, or direct fallback.
+若日后加入 Linux 支持，注意 GNOME 下 `none` 会忽略过期的 host/port，`manual` 优先 HTTPS 再 HTTP，而 PAC `auto` 无法用 `dart:io` 的静态代理指令表达——届时 DAViewer 应记录该限制并继续回退到环境变量、构建期注入或直连。
 
-Windows hidden WebViews and cookie reads share one WebView2 environment. This
-keeps public adapter cookies and proxy behavior consistent; it is not a second
-authentication session.
+Windows 的隐藏 WebView 与 Cookie 读取共用同一个 WebView2 环境。这保证公开适配器的 Cookie 与代理行为一致；它不是第二个认证会话。
 
-## Sign-in recovery flow
+## 登录恢复流程
 
-The login route starts with native UI. It exposes one official sign-in action,
-the current effective App route, proxy settings, a connectivity test, and public
-Settings/Diagnostics routes.
+登录路由以内置原生 UI 开始，暴露一个官方登录操作、当前生效的应用路由、代理设置、连通性测试，以及公开的「设置/诊断」路由。
 
-OAuth opens once in the app's embedded WebView, on the same network path as the
-hidden adapter. DeviantArt's page decides which account and provider controls are
-available. The user can close and reopen the login screen or cancel the pending
-PKCE transaction. On Windows, the ZIP build registers `dakit://oauth/callback`
-below `HKCU\\Software\\Classes\\dakit` for the external-browser fallback and
-forwards a second-process activation to the running app.
+OAuth 在应用内嵌 WebView 中打开一次，与隐藏适配器走同一条网络路径。由 DeviantArt 页面决定可用哪些账号与服务商控件。用户可以关闭并重新打开登录界面，或取消待处理的 PKCE 事务。在 Windows 上，ZIP 版会在 `HKCU\Software\Classes\dakit` 下注册 `dakit://oauth/callback` 以支持外部浏览器回退，并把第二次进程激活转发给正在运行的应用。
 
-Provider and edge security checks can intentionally return HTTP 403, 429, or
-503 while presenting an interactive page. They are completed inside the embedded
-WebView. DAViewer neither labels those pages as an App connection failure nor
-attempts brittle DOM detection. If the WebView cannot reach the page, users fix
-the App route (proxy/VPN); the App connectivity test reports that same route.
+服务商与边缘安全校验可能故意返回 HTTP 403、429 或 503 同时呈现交互页面。这些都在内嵌 WebView 内完成。DAViewer 既不把这些页面标记为应用连接失败，也不尝试脆弱的 DOM 探测。若 WebView 无法访问该页面，用户应修复应用路由（代理/VPN）；应用连通性测试报告的正是同一条路由。
 
-## Maintainer checks
+## 维护者检查项
 
-Before a network or authentication release:
+网络或认证相关发版之前：
 
-1. verify direct, automatic, manual, environment, and clearing behavior;
-2. test `all_proxy=http://127.0.0.1:<port>` with working and stopped proxies;
-3. verify App connectivity copy does not claim to test an external browser;
-4. complete DeviantArt and available social-provider authorization in the
-   embedded WebView, including callback, close/reopen, cancel, and cold-start
-   callback;
-5. verify a provider challenge remains entirely in the interactive WebView and
-   the App keeps waiting without a false network verdict;
-6. verify successful authorization opens Home recommendations without another
-   login or web-session prompt;
-7. verify hidden public adapters can refresh anonymously and degrade without a
-   login prompt;
-8. on Windows, verify protocol registration, process forwarding, and a moved
-   release folder;
-9. keep raw proxy, HTTP, parsing, and package details in Diagnostics only.
+1. 验证直连、自动、手动、环境变量与清除行为；
+2. 用可用与已停止的代理分别测试 `all_proxy=http://127.0.0.1:<port>`；
+3. 确认应用连通性文案没有声称测试了外部浏览器；
+4. 在内嵌 WebView 中完成 DeviantArt 与可用社交服务商的授权，覆盖回调、关闭/重开、取消与冷启动回调；
+5. 确认服务商挑战完全停留在交互式 WebView 内，应用持续等待且不误判为网络故障；
+6. 确认授权成功后直接进入首页推荐，不再要求登录或网页会话提示；
+7. 确认隐藏的公开适配器能匿名刷新并在无登录提示的情况下降级；
+8. 在 Windows 上验证协议注册、进程转发与移动后的发布目录；
+9. 原始代理、HTTP、解析与包细节只留在「诊断」中。

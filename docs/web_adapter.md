@@ -1,71 +1,53 @@
-# Web adapter — compatibility contract
+# 网页适配器 —— 兼容性契约
 
-DAViewer talks to two DeviantArt surfaces:
+> English: [Web adapter — compatibility contract](/en/web_adapter.md)
 
-- **Official OAuth API** (stable, versioned, owned by DAKit).
-- **Website-private JSON/HTML endpoints** (unstable, undocumented) for the few
-  detail features the official API does not expose: numeric-id resolution,
-  related-artwork blocks, collection full contents, real deviation search,
-  gallery keyword search, and profile facts (watchers/join date).
+DAViewer 与两个 DeviantArt 表面通信：
 
-This document is the compatibility contract for that second, private surface.
-Its job is not to prevent DeviantArt from changing — that is out of our
-control — but to make any change **cheap to detect and cheap to fix**.
+- **官方 OAuth API**（稳定、有版本、由 DAKit 负责）。
+- **网站私有 JSON/HTML 接口**（不稳定、未公开），用于官方 API 未暴露的少数详情功能：数字 id 解析、相关作品区块、合集完整内容、真正的作品搜索、画廊关键词搜索，以及个人资料事实（关注者数/加入日期）。
 
-## Where the code lives
+本文是第二个私有表面的兼容性契约。它的目标不是阻止 DeviantArt 变更——那不在我们控制之内——而是让任何变更**易于发现、易于修复**。
 
-These modules are intentionally kept in DAViewer (not in DAKit, not in a
-separate published package). They depend on undocumented, volatile endpoints,
-so publishing them would promise a stability that does not exist. They are
-grouped under `lib/core/data/` and must never leak HTML/JSON parsing into
-feature code.
+## 代码位置
 
-## The three-layer defense
+这些模块刻意保留在 DAViewer 中（不放 DAKit，也不单独发包）。它们依赖未公开、易变的端点，发布出去就等于承诺一种并不存在的稳定性。它们集中在 `lib/core/data/` 下，且绝不允许把 HTML/JSON 解析泄漏进业务代码。
 
-1. **Stable interface isolation.** Feature code depends on a small interface or
-   a DAKit domain model (`CollectionContentsSource.contents`, `Artwork`,
-   `DeviationInit`), never on raw HTML/JSON. A site change is fixed inside one
-   adapter without touching a screen.
+## 三层防御
 
-2. **Tolerant parsing + graceful degradation.** Every adapter parses
-   defensively (a malformed entry is skipped, not fatal) and has a fallback:
-   the official API, the preview data, or simply hiding the optional section.
-   A web failure must never take down the artwork detail page.
+1. **稳定接口隔离。** 业务代码只依赖一个小接口或 DAKit 领域模型（`CollectionContentsSource.contents`、`Artwork`、`DeviationInit`），绝不依赖原始 HTML/JSON。站点变更在一个适配器内修好，不必碰任何界面。
 
-3. **Contract tests against captured snapshots.** Each parser has a committed
-   unit test with a synthetic fixture, plus a gated live-snapshot test that
-   reads a real captured page when the corresponding `DA_*` dart-define points
-   at it. When DeviantArt changes shape, the snapshot test turns red and names
-   the exact parser.
+2. **宽容解析 + 优雅降级。** 每个适配器都防御式解析（单条畸形数据跳过，而不是致命错误），并带有回退：官方 API、预览数据，或直接隐藏该可选区块。网页失败绝不能拖垮作品详情页。
 
-## Endpoint registry
+3. **针对抓取快照的契约测试。** 每个解析器都有一个使用合成 fixture 的提交式单元测试，外加一个受门控的实时快照测试——当对应的 `DA_*` dart-define 指向真实抓取页面时才会读取。DeviantArt 结构一变，快照测试就会变红并直接点名是哪个解析器。
 
-| Feature | Module | Endpoint / source | Session | Fallback | Contract test (snapshot define) |
+## 端点注册表
+
+| 功能 | 模块 | 端点 / 数据源 | 会话 | 回退 | 契约测试（快照 define） |
 | --- | --- | --- | --- | --- | --- |
-| Personalized home feed | `rfy_feed.dart` | `_puppy/dabrowse/networkbar/rfy/deviations` | web Cookie + CSRF (signed-in) | none (needs the web session; shows sign-in prompt) | `rfy_feed_test.dart` — `updatedTime ?? publishedTime` feeds the artwork timestamp so ordering reflects edits |
-| Numeric→UUID + description + dates | `deviation_init.dart` | `_puppy/dadeviation/init` | anonymous browser CSRF | description falls back to the short excerpt; tags empty (official `deviation/metadata` serves only OAuth items); dates fall back to the feed item's publish time | `deviation_init_test.dart` (`DA_DEVIATION_INIT_JSON`) — also parses `publishedTime` / `updatedTime` for the detail date rows |
-| Related artwork | `web_more_like_this.dart` | artwork page `__INITIAL_STATE__` / `__RCACHE__` | none (public) | official `browse/morelikethis` | `web_more_like_this_test.dart` (`DA_MORE_LIKE_THIS_HTML`) |
-| Collection full contents | `web_collection_contents.dart` | `_puppy/dashared/gallection/contents` (JSON), fallback `deviantart.com/{user}/favourites/{id}?page=N` | anonymous browser CSRF (JSON) / none (SSR) | preview deviations + open-on-web | `web_collection_contents_test.dart` (`DA_COLLECTION_JSON`, `DA_COLLECTION_HTML`) |
-| Deviation search | `web_search.dart` | `_puppy/dabrowse/search/deviations` | web Cookie + CSRF (signed-in) | official `browse/home?q=` (coarse, no web session) | `web_search_test.dart` |
-| Gallery keyword search | `web_gallery_search.dart` | `_puppy/dashared/gallection/search` | anonymous browser CSRF | none (search needs the web session) | `web_gallery_search_test.dart` |
-| Profile facts (watchers/join date) | `web_user_profile.dart` | `_puppy/dauserprofile/init/about` | anonymous browser CSRF | none (header omits the enrichment) | `web_user_profile_test.dart` |
+| 个性化首页信息流 | `rfy_feed.dart` | `_puppy/dabrowse/networkbar/rfy/deviations` | 网页 Cookie + CSRF（已登录） | 无（需要网页会话；展示登录提示） | `rfy_feed_test.dart` —— `updatedTime ?? publishedTime` 提供给作品时间戳，使排序反映编辑 |
+| 数字→UUID + 简介 + 日期 | `deviation_init.dart` | `_puppy/dadeviation/init` | 匿名浏览器 CSRF | 简介回退到短摘要；标签为空（官方 `deviation/metadata` 只服务 OAuth 作品）；日期回退到信息流条目的发布时间 | `deviation_init_test.dart`（`DA_DEVIATION_INIT_JSON`）—— 同时解析 `publishedTime` / `updatedTime` 供详情页日期行使用 |
+| 相关作品 | `web_more_like_this.dart` | 作品页 `__INITIAL_STATE__` / `__RCACHE__` | 无（公开） | 官方 `browse/morelikethis` | `web_more_like_this_test.dart`（`DA_MORE_LIKE_THIS_HTML`） |
+| 合集完整内容 | `web_collection_contents.dart` | `_puppy/dashared/gallection/contents`（JSON），回退 `deviantart.com/{user}/favourites/{id}?page=N` | 匿名浏览器 CSRF（JSON）/ 无（SSR） | 预览作品 + 在网页中打开 | `web_collection_contents_test.dart`（`DA_COLLECTION_JSON`、`DA_COLLECTION_HTML`） |
+| 作品搜索 | `web_search.dart` | `_puppy/dabrowse/search/deviations` | 网页 Cookie + CSRF（已登录） | 官方 `browse/home?q=`（粗粒度，无需网页会话） | `web_search_test.dart` |
+| 画廊关键词搜索 | `web_gallery_search.dart` | `_puppy/dashared/gallection/search` | 匿名浏览器 CSRF | 无（搜索需要网页会话） | `web_gallery_search_test.dart` |
+| 个人资料事实（关注者/加入日期） | `web_user_profile.dart` | `_puppy/dauserprofile/init/about` | 匿名浏览器 CSRF | 无（响应头缺少该富信息） | `web_user_profile_test.dart` |
 
-Shared, non-endpoint helpers (no separate fallback, tested directly):
+共享的、非端点辅助模块（无独立回退，直接测试）：
 
-| Helper | Module | Purpose | Test |
+| 辅助 | 模块 | 用途 | 测试 |
 | --- | --- | --- | --- |
-| Wix media descriptor → URL | `wix_media.dart` | `baseUri` + `prettyName` + `types` resolution | `wix_media_test.dart` |
-| JS literal JSON decoder | `html_state.dart` | `window.__X = JSON.parse("…")` decoding | via the snapshot tests above |
-| HTML / tiptap → text/html | `html_text.dart` | description rendering | `html_text_test.dart` |
-| Public browser state | `web_session.dart` | read anonymous browser cookies | `web_session_refresh_policy_test.dart` |
-| Link → route | `da_uri.dart` | paste-link parsing (no network) | `da_uri_test.dart` |
+| Wix 媒体描述 → URL | `wix_media.dart` | `baseUri` + `prettyName` + `types` 解析 | `wix_media_test.dart` |
+| JS 字面量 JSON 解码 | `html_state.dart` | `window.__X = JSON.parse("…")` 解码 | 由上面的快照测试覆盖 |
+| HTML / tiptap → 文本/HTML | `html_text.dart` | 简介渲染 | `html_text_test.dart` |
+| 公开浏览器状态 | `web_session.dart` | 读取匿名浏览器 Cookie | `web_session_refresh_policy_test.dart` |
+| 链接 → 路由 | `da_uri.dart` | 粘贴链接解析（无网络） | `da_uri_test.dart` |
 
-Sections that are derived or use the official API (`more_from_artist`,
-`similar_artists`) are **not** web adapters and are excluded here.
+派生区块或使用官方 API 的区块（`more_from_artist`、`similar_artists`）**不是**网页适配器，不在此列。
 
-## When DeviantArt changes: runbook
+## DeviantArt 变更时的排查手册
 
-1. **Run the snapshot tests** with the latest capture to see which parser broke:
+1. **用最新抓取运行快照测试**，看是哪个解析器坏了：
 
    ```bash
    flutter test --dart-define=DA_MORE_LIKE_THIS_HTML=/path/to/artwork.html \
@@ -73,28 +55,19 @@ Sections that are derived or use the official API (`more_from_artist`,
                 --dart-define=DA_DEVIATION_INIT_JSON=/path/to/init.json
    ```
 
-2. **Isolate the failure** to one adapter. A red snapshot means "the shape of
-   that one endpoint changed", not "the app is broken".
+2. **把失败定位到一个适配器**。快照变红意味着「那一个端点的结构变了」，而不是「应用坏了」。
 
-3. **Fix the parser** in that one file, keeping the mapped DAKit model
-   unchanged. Prefer tolerant reads (skip the bad entry) over strict parsing
-   unless the endpoint is wholly gone.
+3. **只在那一个文件里修解析器**，保持映射出的 DAKit 模型不变。除非端点彻底消失，否则优先宽容读取（跳过坏条目）而非严格解析。
 
-4. **Refresh the snapshot** and re-run; then update the endpoint registry above
-   if the URL or fallback changed.
+4. **刷新快照**并重跑；若 URL 或回退变了，同步更新上面的端点注册表。
 
-5. **If the endpoint is removed**, do not invent a replacement. Swap in the
-   official API path or hide the section, and update the fallback column here.
+5. **若端点被移除**，不要臆造替代品。改用官方 API 路径或隐藏该区块，并更新此处的回退列。
 
-## Capturing snapshots
+## 抓取快照
 
-Snapshots are real responses saved locally (they are **not** committed — they
-are large and change every time the site does). To capture one:
+快照是本地保存的真实响应（**不提交**——它们体积大且随站点每次变更而变）。抓取方式：
 
-- **Public pages** (artwork, collection): save the page HTML with a browser
-  User-Agent (login not required).
-- **Browser-shaped endpoints** (`dadeviation/init`): capture the JSON response
-  from a public browser session. Do not include account cookies in fixtures.
+- **公开页面**（作品、合集）：用浏览器 User-Agent 保存页面 HTML（无需登录）。
+- **浏览器形态端点**（`dadeviation/init`）：从公开浏览器会话抓取 JSON 响应。fixture 中不要包含账号 Cookie。
 
-The `DA_*` dart-defines point at those files; when unset, the gated tests skip,
-so CI never depends on a captured page.
+`DA_*` dart-define 指向这些文件；未设置时受门控的测试会跳过，因此 CI 永不依赖抓取页面。
