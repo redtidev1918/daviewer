@@ -43,5 +43,19 @@
     "failed_draft": 2
   },
   "checksums": true,
-  "sbom": false
+  "sbom": false,
+  "repository": {
+    "git": {
+      "productionOperations": {
+        "base": "default",
+        "branches": [
+          "chore/cutover-*",
+          "ops/*",
+          "release/*",
+          "hotfix/*"
+        ],
+        "requireLatestBase": true
+      }
+    }
+  }
 }
