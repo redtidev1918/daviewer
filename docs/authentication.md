@@ -1,164 +1,70 @@
-# Authentication and session recovery
+# 认证与会话恢复
 
-DAViewer has one user identity: the official DeviantArt OAuth session. The app
-never receives or stores a DeviantArt, Google, Apple, Facebook, or Mac password.
-Credentials and provider security checks stay on DeviantArt's official page,
-which the app shows inside its own embedded WebView.
+> English: [Authentication and session recovery](/en/authentication.md)
 
-## One-entry sign-in contract
+DAViewer 只有一个用户身份：官方 DeviantArt OAuth 会话。应用既不接收也不存储 DeviantArt、Google、Apple、Facebook 或 Mac 的密码。凭据与各服务商的安全校验都留在 DeviantArt 官方页面，应用只在自己的内嵌 WebView 中展示该页面。
 
-The app exposes one **Sign in or create an account** action, which opens the
-embedded login screen:
+## 单入口登录契约
 
-1. DAKit creates one OAuth/PKCE transaction.
-2. DAViewer loads the official login page in its embedded WebView with a desktop
-   User-Agent, because DeviantArt's mobile login page omits the Google and Apple
-   one-click buttons the desktop page offers.
-3. DeviantArt's page owns account sign-in, registration, password recovery, and
-   every provider it currently offers (DeviantArt, Google, Apple, Facebook).
-   There is no separate "social login" route in the app.
-4. `dakit://oauth/callback` is intercepted inside the WebView and completes the
-   same transaction. The WebView keeps its cookies and CSRF token, so this one
-   login also establishes the web session used by the personalized `rfy` feed
-   and the collection adapters. No second sign-in is requested.
+应用只暴露一个 **登录或创建账号** 操作，它打开内嵌登录界面：
 
-The app does not simulate a provider-button click, embed a password form, copy
-cookies out of a system browser, or inspect human-verification DOM. It does set
-a desktop User-Agent so the full desktop login page is served. Google, Apple, or
-Facebook may still show their own account or CAPTCHA checks inside the WebView;
-those are the providers' pages and are not bypassed by the app.
+1. DAKit 创建一个 OAuth/PKCE 事务。
+2. DAViewer 以内嵌 WebView 加载官方登录页，并使用桌面 User-Agent —— 因为 DeviantArt 的移动登录页不提供桌面页上的一键 Google/Apple 按钮。
+3. 账号登录、注册、找回密码以及当前提供的全部服务商（DeviantArt、Google、Apple、Facebook）都由 DeviantArt 页面负责。应用内没有单独的「社交登录」路径。
+4. `dakit://oauth/callback` 在 WebView 内被拦截并完成同一事务。WebView 保留其 Cookie 与 CSRF token，因此这一次登录同时建立了后续个性化 `rfy` 信息流与合集适配器所需的网页会话，不再要求第二次登录。
 
-## Session roles
+应用不模拟服务商按钮点击、不内嵌密码表单、不从系统浏览器拷贝 Cookie，也不探测人机验证的 DOM。它只设置桌面 User-Agent，以便返回完整的桌面登录页。Google、Apple、Facebook 仍可能在自己的页面内展示账号选择或 CAPTCHA 校验；那属于服务商页面，应用不去绕过。
 
-- **OAuth session** (secure storage) powers the official API: daily
-  deviations, search, artwork lookup, favourites, watch, and downloads.
-- **Web session** (the WebView's cookies plus the CSRF token and login state,
-  persisted locally and restored at startup) powers the website-only adapters:
-  the personalized `rfy/deviations` feed and collection contents. The signed-in
-  cookies are snapshotted into the app's own storage and re-injected on a cold
-  start when the platform WebView store lost them (e.g. across an app update),
-  so the personalized feed survives without another sign-in.
+## 会话角色
 
-One embedded login establishes both sessions. The WebView reports the web
-session (CSRF token and the `userinfo` cookie) only after the OAuth callback has
-navigated back to the DeviantArt home page, so the app never records a
-signed-out web session from the anonymous login page.
+- **OAuth 会话**（安全存储）驱动官方 API：每日作品、搜索、作品查询、收藏、关注与下载。
+- **网页会话**（WebView 的 Cookie 加 CSRF token 与登录态，本地持久化并在启动时恢复）驱动仅网页可用的适配器：个性化 `rfy/deviations` 信息流与合集内容。已登录 Cookie 会快照进应用自身存储，并在冷启动时平台 WebView 存储丢失（例如跨界应用更新）后重新注入，从而不必重新登录也能保住个性化信息流。
 
-The login screen **dismisses itself as soon as a signed-in web session is
-reported** — it does not wait for an OAuth state transition. This covers both a
-first-time login and the "OAuth already signed in, web session lost" case
-(which the cookie vault exists for): the user never has to hunt for a Done
-button, and re-establishing only the web session never asks for a second
-OAuth approval.
+一次内嵌登录同时建立两种会话。WebView 只在 OAuth 回调回到 DeviantArt 首页之后才上报网页会话（CSRF token 与 `userinfo` Cookie），因此应用不会把匿名登录页的未登录状态记录为网页会话。
 
-While waiting, the user can cancel and reopen. Cancelling or starting a new
-attempt clears the pending transaction so a stale callback cannot absorb a later
-login. Settings, proxy, diagnostics, updates, About, language, and appearance
-remain reachable before sign-in.
+**一旦上报了已登录的网页会话，登录界面立即自行关闭**——它不等 OAuth 状态迁移。这同时覆盖首次登录与「OAuth 已登录但网页会话丢失」两种情况（Cookie 保险库正是为此存在）：用户不必寻找「完成」按钮，且仅重建网页会话时不会再次索要 OAuth 授权。
 
-The in-memory PKCE transaction is authoritative while the app process remains
-alive. Its secure-storage copy exists only to recover a callback after a process
-restart: failure to write, read, or clear that recovery copy must never overturn
-the live authorization result. Token storage is different and remains the hard
-commit point—sign-in is reported as successful only after the new token is
-stored securely.
+等待期间用户可以取消并重新打开。取消或开启新尝试都会清除待处理事务，避免过期回调吞掉后续登录。设置、代理、诊断、更新、关于、语言与外观在登录前均可达。
 
-The `dakit` scheme is owned by the embedded WebView, which intercepts the OAuth
-callback and never leaves the app. A system browser is used only as a fallback
-when no WebView listener is registered, and for the "content settings" link to
-DeviantArt's browsing preferences.
+只要应用进程存活，内存中的 PKCE 事务就是权威。它的安全存储副本只用于进程重启后恢复回调：写入、读取或清除该恢复副本失败，绝不能推翻仍在进行的授权结果。token 存储不同，它才是硬提交点——只有新 token 已安全存储，登录才被判定成功。
 
-## Cold-start contract
+`dakit` scheme 由内嵌 WebView 持有，它拦截 OAuth 回调且从不离开应用。只有在没有注册 WebView 监听器作为回退时，以及「内容设置」跳转 DeviantArt 浏览偏好时，才使用系统浏览器。
 
-1. With no cold-start OAuth callback, skip pending-transaction storage and read
-   only the current OAuth token.
-2. Treat only missing or revoked credentials as signed out. Temporary network,
-   upstream, timeout, parsing, and Keychain-availability failures preserve an
-   established session.
-3. Record non-sensitive session evidence only after secure storage has
-   successfully read or written tokens. This prevents a first-run network error
-   from routing an anonymous user into Home while preserving offline recovery
-   for existing users.
-4. Explicit logout clears the current OAuth store, session evidence, and the
-   WebView cookies.
+## 冷启动契约
 
-macOS previews use one private, stable CI signing identity. The identity is
-self-signed, not Apple trusted or notarized, but it prevents a changing ad-hoc
-cdhash from requesting the Mac password after each update. Token and recovery
-storage use the `DAViewer Account` Keychain service; older ad-hoc items are
-never queried, so an inaccessible legacy record cannot block authorization.
+1. 没有冷启动 OAuth 回调时，跳过待处理事务存储，只读取当前 OAuth token。
+2. 只有凭据缺失或被吊销才判定为未登录。临时性的网络、上游、超时、解析与 Keychain 不可用故障都保留既有会话。
+3. 只有在安全存储成功读写 token 之后，才记录非敏感的会话证据。这能避免首次运行的网络错误把匿名用户送进首页，同时保住老用户的离线恢复能力。
+4. 显式登出会清除当前 OAuth 存储、会话证据与 WebView Cookie。
 
-The Home **推荐 / For you** tab is the website's personalized `rfy/deviations`
-feed, fetched with the WebView's Cookie and CSRF token. It requires a signed-in
-web session; when the web session is absent the tab shows the sign-in prompt.
-The **每日精选 / Daily** tab uses the official OAuth API and does not depend on
-the web session. The product must not label these two sources as equivalent.
+macOS 预览版使用同一个私有稳定的 CI 签名身份。该身份是自签名的，不被 Apple 信任也未公证，但它能避免每次更新后变化的 ad-hoc cdhash 索要 Mac 密码。token 与恢复存储使用 `DAViewer Account` Keychain 服务；更早的 ad-hoc 项永不查询，因此无法访问的历史记录不会阻塞授权。
 
-## Public website adapters
+首页 **推荐 / For you** 标签是网站的个性化 `rfy/deviations` 信息流，使用 WebView 的 Cookie 与 CSRF token 拉取。它需要已登录的网页会话；网页会话缺失时该标签展示登录提示。**每日精选 / Daily** 标签使用官方 OAuth API，不依赖网页会话。产品上不得把这两个数据源表述为等价。
 
-A few detail-page features require undocumented public website data, such as
-numeric-id resolution and collection contents. The embedded WebView's web
-session (cookies and CSRF token) provides this on demand. This is infrastructure
-state, not a second user identity: it never blocks Home, never asks the user to
-log in again, and must degrade to a retry or official-API fallback when
-unavailable.
+## 公开网页适配器
 
-Legacy browser cookies are accepted only for public adapter compatibility. If
-they expose a username different from the OAuth account, they are cleared to
-prevent mixed-account data.
+少数详情页功能需要未公开的公开网页数据，例如数字 id 解析与合集内容。内嵌 WebView 的网页会话（Cookie 与 CSRF token）按需提供这些能力。它属于基础设施状态，不是第二个用户身份：绝不阻塞首页、绝不要求用户再次登录，不可用时必须降级为重试或官方 API 回退。
 
-## Cookie viewing, export, and import
+历史浏览器 Cookie 仅为兼容公开适配器而接受。若它们暴露的用户名与 OAuth 账号不同，会被清除，以防混账号数据。
 
-Settings → **账号 Cookie / Account cookies** shows the live deviantart.com
-web-session cookies as indented JSON and can copy them to the clipboard, so the
-user can view or back up their web session. The live WebView cookies are
-preferred; the persisted snapshot is used as a fallback when the WebView store
-cannot be read. The dialog carries an explicit warning that these cookies are
-login credentials. Export is a manual, user-initiated copy: nothing is sent
-anywhere by the app, and diagnostics/report output never includes cookies.
+## Cookie 查看、导出与导入
 
-The same dialog imports pasted cookies: exported JSON, a browser-extension
-cookie array (non-DeviantArt domains are ignored), or a `name=value; …` Cookie
-header. Import is the most identity-sensitive write in the app and follows a
-strict one-account rule (`evaluateCookieImportIdentity`):
+设置 → **账号 Cookie** 以缩进 JSON 展示当前的 deviantart.com 网页会话 Cookie，并可复制到剪贴板，便于用户查看或备份网页会话。优先使用 WebView 的实时 Cookie；WebView 存储不可读时回退到已持久化的快照。该对话框明确警告这些 Cookie 等同于登录凭据。导出是用户主动的手动复制：应用不会把任何内容发送到别处，诊断/报告输出也从不包含 Cookie。
 
-1. The imported cookies must carry a signed-in `userinfo` username; an
-   anonymous paste is rejected.
-2. If an OAuth account is signed in, the imported username must match it.
-3. If the live WebView already has a signed-in web session, the imported
-   username must match it.
-4. A conflict is rejected **before any cookie is written** — the app never
-   overlays one account's session onto another. To switch accounts the user
-   signs out first.
-5. After injection the username is read back from the cookie store. If
-   DeviantArt does not recognize the claimed session (expired/invalid
-   cookies), the previous cookies are restored and nothing is persisted.
+同一对话框也支持粘贴导入：导出的 JSON、浏览器扩展 Cookie 数组（非 DeviantArt 域名会被忽略），或 `name=value; …` 形式的 Cookie 头。导入是应用中最敏感的写入操作，遵循严格的一账号规则（`evaluateCookieImportIdentity`）：
 
-On a verified import the snapshot is persisted, the web-session state is
-updated, and a CSRF refresh runs so website adapters use the new session. An
-imported web-only session (no OAuth account) powers the web adapters and the
-personalized feed, while official-API features still require OAuth sign-in.
-After such an import the app therefore offers the normal embedded sign-in
-once: the DeviantArt page recognizes the imported cookies and typically
-completes without asking for a password, and the user can dismiss the prompt
-(web features keep working; official-API features ask for sign-in again on
-use). Cookies never replace the OAuth token — the official-API session can
-only be established by the OAuth/PKCE flow.
+1. 导入的 Cookie 必须带有已登录的 `userinfo` 用户名；匿名粘贴会被拒绝。
+2. 若已登录 OAuth 账号，导入的用户名必须与之一致。
+3. 若 WebView 已有已登录网页会话，导入的用户名必须与之一致。
+4. 冲突会在**写入任何 Cookie 之前**被拒绝——应用绝不把一个账号的会话叠加到另一个账号上。要切换账号需先登出。
+5. 注入完成后会从 Cookie 存储回读用户名。若 DeviantArt 不认可所声称的会话（Cookie 过期/无效），则恢复原有 Cookie，不持久化任何内容。
 
-## Mature content
+导入校验通过后，快照会被持久化、网页会话状态被更新，并触发一次 CSRF 刷新，使网页适配器使用新会话。仅网页的导入会话（无 OAuth 账号）可驱动网页适配器与个性化信息流，但官方 API 功能仍需 OAuth 登录。因此导入之后，应用会再提供一次常规内嵌登录：DeviantArt 页面会识别导入的 Cookie，通常无需输入密码即可完成，用户也可以关闭该提示（网页功能继续可用；官方 API 功能在使用时再次要求登录）。Cookie 永不替代 OAuth token —— 官方 API 会话只能通过 OAuth/PKCE 流程建立。
 
-`mature_content: true` is only a request flag. DeviantArt account browsing
-preferences remain authoritative and may hide or blur adult content. Settings
-links directly to DeviantArt's browsing preferences; the app does not bypass
-account restrictions.
+## 成人内容
 
-## User-facing error policy
+`mature_content: true` 只是一个请求标记。DeviantArt 的账号浏览偏好仍具权威性，可能隐藏或模糊成人内容。设置中直接链接到 DeviantArt 的浏览偏好；应用不绕过账号限制。
 
-Raw endpoint names, parser errors, HTTP payloads, package identifiers, and
-provider internals belong in Diagnostics. User UI states what failed and the
-next useful action. Authentication errors offer retry, reopen, cancel, proxy,
-and settings paths without claiming that a provider challenge is an App network
-failure. Secure-storage errors are never displayed as the raw phrase “Unable to
-access”; token-storage failures are distinguished from recovery-record cleanup
-warnings so the user is not told that a completed authorization was a network or
-account failure.
+## 面向用户的错误策略
+
+原始端点名、解析器错误、HTTP 负载、包标识与服务商内部信息属于「诊断」。用户界面只说明失败原因与下一步可用操作。认证错误提供重试、重新打开、取消、代理与设置路径，但不会把服务商的挑战页面说成「应用网络故障」。安全存储错误绝不显示为原始的 “Unable to access”；token 存储失败与恢复记录清理告警会被区分开，避免把已完成的授权误报为网络或账号故障。
