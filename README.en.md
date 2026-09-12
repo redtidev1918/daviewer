@@ -24,11 +24,18 @@ features as a native app for Android, macOS, and Windows.
 Download the package for your platform from
 [Releases](https://github.com/redtidev1918/daviewer/releases):
 
-- **Android**: `DAViewer-<version>.apk`
+- **Android**: `DAViewer-v<version>.apk`
 - **macOS 12+ test preview**:
-  `DAViewer-<version>-macos-unsigned-preview.zip` (universal Intel and Apple
+  `DAViewer-v<version>-macos-unsigned-preview.zip` (universal Intel and Apple
   Silicon build; unzip and drag to Applications)
-- **Windows**: `DAViewer-<version>-windows.zip` (unzip and run `DAViewer.exe`)
+- **Windows**: `DAViewer-v<version>-windows.zip` (unzip and run `DAViewer.exe`)
+
+Exactly one asset is published per platform, always named
+`DAViewer-v<version>-<platform>`. The `v` prefix is part of the naming
+contract. Older releases may still carry a duplicate pair from the previous
+release protocol (e.g. both `DAViewer-0.2.184.apk` and
+`DAViewer-v0.2.184.apk`); those are residue, not the output of the current
+pipeline.
 
 The Windows build is portable: sign-in happens entirely inside the app — it
 never touches system settings, needs no administrator rights, and installs
