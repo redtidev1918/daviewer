@@ -3,6 +3,14 @@
 本文件按主题记录用户可见的变更。逐提交历史与每个 patch 版本对应的具体提交见
 [Releases](https://github.com/redtidev1918/daviewer/releases)。
 
+## [0.2.185](https://github.com/redtidev1918/daviewer/compare/v0.2.184...v0.2.185) (2026-09-12)
+
+
+### Bug Fixes
+
+* **release:** one canonical asset name per platform ([3cb3c5d](https://github.com/redtidev1918/daviewer/commit/3cb3c5da115ca6258c93c3d0d3f136042fca605b))
+* 移除外壳通配 alias 与 subMaxLevel，侧边栏改由 docsify 原生按目录解析 ([#24](https://github.com/redtidev1918/daviewer/issues/24)) ([2cb2977](https://github.com/redtidev1918/daviewer/commit/2cb2977abc60bc79d8f7a343e8964674c6faee37))
+
 ## 0.2.184
 
 - 同步 DAKit API/Core 0.2.0 与 Flutter 适配包 0.1.13，保持应用与 SDK 依赖兼容。
