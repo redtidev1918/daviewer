@@ -32,3 +32,25 @@ jobs:
       - run: flutter analyze
       - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter test
+      - name: Canonical release asset naming
+        shell: bash
+        run: |
+          # Exactly one shipped name per platform, always the `v`-prefixed form.
+          # A second, v-less convention does not overwrite anything: release
+          # uploads are additive, so it surfaces as a duplicate pair on the
+          # release (v0.2.184 carries both `DAViewer-0.2.184.apk` and
+          # `DAViewer-v0.2.184.apk`). Guard the producer and the collector.
+          set -euo pipefail
+          if grep -q 'DAViewer-\$RELEASE_VERSION' scripts/build-release; then
+            echo "::error::scripts/build-release writes a non-canonical (v-less) asset name"
+            exit 1
+          fi
+          grep -q 'DAViewer-v\$RELEASE_VERSION' scripts/build-release || {
+            echo "::error::scripts/build-release does not write the canonical v-prefixed names"
+            exit 1
+          }
+          grep -q 'DAViewer-v\*' .release-policy.yml || {
+            echo "::error::.release-policy.yml does not require canonical v-prefixed assets"
+            exit 1
+          }
+          echo "canonical release asset naming OK"

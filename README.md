@@ -15,9 +15,13 @@
 
 从 [Releases](https://github.com/redtidev1918/daviewer/releases) 下载对应平台的安装包：
 
-- **Android**：`DAViewer-<版本>.apk`
-- **macOS 12+ 测试版**：`DAViewer-<版本>-macos-unsigned-preview.zip`（同时支持 Intel 与 Apple Silicon；解压后拖入「应用程序」）
-- **Windows**：`DAViewer-<版本>-windows.zip`（解压后运行 `DAViewer.exe`）
+- **Android**：`DAViewer-v<版本>.apk`
+- **macOS 12+ 测试版**：`DAViewer-v<版本>-macos-unsigned-preview.zip`（同时支持 Intel 与 Apple Silicon；解压后拖入「应用程序」）
+- **Windows**：`DAViewer-v<版本>-windows.zip`（解压后运行 `DAViewer.exe`）
+
+每个平台只发布**一个**资产，文件名固定为 `DAViewer-v<版本>-<平台>`；`v` 前缀是命名规范的一部分，
+不是装饰。历史 Release 上可能残留旧协议的重复文件（例如同时存在 `DAViewer-0.2.184.apk` 与
+`DAViewer-v0.2.184.apk`），这只是旧协议留下的遗留物，**不是**当前流水线的产物。
 
 Windows 版解压即用：登录全程在 App 内完成，不会改动系统设置、不需要管理员权限，也不安装任何服务；文件夹移到任何位置都能直接运行。
 
