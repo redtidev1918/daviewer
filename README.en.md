@@ -8,10 +8,10 @@
 
 [![Docs](https://img.shields.io/badge/Docs-文档站点-6366f1?style=flat-square)](https://redtidev1918.github.io/daviewer/)
 
-> DeviantArt has discontinued its official client app. DAViewer is an
-> open-source DeviantArt client built on
-> [DAKit](https://github.com/redtidev1918/dakit), providing the website's core
-> features as a native app for Android, macOS, and Windows.
+DeviantArt has discontinued its official client app. DAViewer is an
+open-source DeviantArt client built on
+[DAKit](https://github.com/redtidev1918/dakit), providing the website's core
+features as a native app for Android, macOS, and Windows.
 
 [![GitHub stars](https://img.shields.io/github/stars/redtidev1918/daviewer?style=flat&color=yellow)](https://github.com/redtidev1918/daviewer/stargazers)
 [![GitHub license](https://img.shields.io/github/license/redtidev1918/daviewer?style=flat)](LICENSE)
@@ -126,9 +126,9 @@ native interaction live in DAViewer. Dependencies:
 
 ```yaml
 dependencies:
-  dakit_core: ^0.1.15
-  dakit_api: ^0.1.30
-  dakit_flutter: ^0.1.12
+  dakit_core: ^0.2.0
+  dakit_api: ^0.2.0
+  dakit_flutter: ^0.1.13
 ```
 
 Each attempt creates one official OAuth/PKCE transaction. Account selection,

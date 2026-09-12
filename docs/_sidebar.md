@@ -1,6 +1,6 @@
 - 开始
   - [概览](/)
-  - [📥 下载](/download.md)
+  - [下载](/download.md)
 - 使用与配置
   - [认证与会话恢复](/authentication.md)
   - [网络与代理](/networking.md)

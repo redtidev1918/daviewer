@@ -1,4 +1,4 @@
-# 🖼️ DAViewer 文档中心
+# DAViewer 文档中心
 
 **语言 / Language:** 中文 · [English](/en/)
 
@@ -9,9 +9,9 @@
 本站按账号统一文档规范组织：`docs/` 根为**中文**，`docs/en/` 为**英文**，
 中英同名页一一对应（下表可直接对照）。
 
-## 📥 下载
+## 下载
 
-Android / Windows / macOS 安装包见 [📥 下载页](download.md)，始终指向最新 Release；
+Android / Windows / macOS 安装包见 [下载页](download.md)，始终指向最新 Release；
 英文版见 [Download](/en/download.md)。
 
 ## 开发者文档

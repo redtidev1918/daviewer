@@ -1,6 +1,6 @@
 - Getting Started
   - [Overview](/en/)
-  - [📥 Download](/en/download.md)
+  - [Download](/en/download.md)
 - Usage & Configuration
   - [Authentication & Session Recovery](/en/authentication.md)
   - [Networking & Proxy](/en/networking.md)

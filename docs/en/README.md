@@ -11,7 +11,7 @@
 
 | Document | Content |
 | :-- | :-- |
-| [📥 Download](download.md) | Android / Windows / macOS packages, auto-updated on every release |
+| [Download](download.md) | Android / Windows / macOS packages, auto-updated on every release |
 | [README (English)](https://github.com/redtidev1918/daviewer/blob/main/README.en.md) | User-facing overview and install |
 
 ## Developer documentation

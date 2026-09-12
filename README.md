@@ -79,9 +79,9 @@ Windows 版解压即用：登录全程在 App 内完成，不会改动系统设�
 
 ```yaml
 dependencies:
-  dakit_core: ^0.1.15
-  dakit_api: ^0.1.30
-  dakit_flutter: ^0.1.12
+  dakit_core: ^0.2.0
+  dakit_api: ^0.2.0
+  dakit_flutter: ^0.1.13
 ```
 
 每次登录只创建一个官方 OAuth/PKCE 事务，全部账号选择、密码和人机验证都留在 App 内嵌网页的官方页面中。回调后 App 同时使用这一份 OAuth 身份与网页会话，不再要求第二次网页登录。未登录是正常引导状态。详细边界见 [架构说明](docs/architecture.md)。
@@ -192,7 +192,7 @@ macOS 预览包使用稳定的项目签名，登录数据安全保存在系统�
 
 客户端依赖的 SDK 是 [DAKit](https://github.com/redtidev1918/dakit)（已发布到 pub.dev），涉及 SDK 的改动请到那边提 PR，两边一起发布。
 
-如果觉得这个项目有用，**点个 ⭐ Star** 能让它被更多人看到。
+如果觉得这个项目有用，点个 Star 能让它被更多人看到。
 
 ## 说明
 
